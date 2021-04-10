@@ -316,7 +316,8 @@ man_MANS = mcl.1 mclcm.1 clm.1 mclindex.7 mclfamily.7 mclfaq.7 mcx.1 mcxi.1 mcxi
 	tingea.log.7
 
 MAINTAINERCLEANFILES = $(man_MANS) $(doc_DATA_dep)
-ALIENFILES = mcxdeblast.html mcxdeblast.ps mclblastline.html mclblastline.ps
+
+# ALIENFILES =  mcxdeblast.ps mclblastline.html mclblastline.ps
 EXTRA_DIST = mclmcl.txt mcx.zmm\
  stamp.day stamp.month stamp.stamp stamp.year\
  clmformat.azm clmvol.azm clmdist.azm clmmate.azm clminfo2.azm clminfo.azm clmmeet.azm\
@@ -326,7 +327,6 @@ EXTRA_DIST = mclmcl.txt mcx.zmm\
  mcxalter.azm mcxerdos.azm mcxdiameter.azm mcxctty.azm mcxclcf.azm mcxrand.azm\
  mcxload.azm mcxmap.azm mcxarray.azm mcxsubs.azm index.in.azm index.html distindex.html\
  tingea.log.azm\
- $(ALIENFILES)\
  $(MAINTAINERCLEANFILES)
 
 SUFFIXES = .1 .5 .7 .azm .html .ps .txt
@@ -748,7 +748,6 @@ docme-test:
 	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx clcf" mcxclcf.azm
 	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx ctty" mcxctty.azm
 	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx query" mcxquery.azm
-	../scripts/docme --silent ../src/alien/oxygen/src/mcxdeblast ../src/alien/oxygen/doc/mcxdeblast.azm
 
 # ../scripts/docme --silent ../src/shcl/mclpipeline mclpipeline.azm
 

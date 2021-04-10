@@ -312,7 +312,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = . img graphs src include scripts testing
+SUBDIRS = . img graphs doc src include scripts testing
 AM_CPPFLAGS = -DMAN_PATH=\"$(mandir)\"
 EXTRA_DIST = \
    LICENSE VERSION README COPYING THANKS INSTALL AUTHORS \

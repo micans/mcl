@@ -68,7 +68,7 @@ man_MANS = mcl.1 mclcm.1 clm.1 mclindex.7 mclfamily.7 mclfaq.7 mcx.1 mcxi.1 mcxi
 
 MAINTAINERCLEANFILES = $(man_MANS) $(doc_DATA_dep)
 
-ALIENFILES = mcxdeblast.html mcxdeblast.ps mclblastline.html mclblastline.ps
+# ALIENFILES =  mcxdeblast.ps mclblastline.html mclblastline.ps
 ## This is quite hackish (though not deep).
 ## In the alien files, these are copied to this directory.
 ## This is needed so that hyperlinks work correctly when this
@@ -101,7 +101,6 @@ EXTRA_DIST = mclmcl.txt mcx.zmm\
  mcxalter.azm mcxerdos.azm mcxdiameter.azm mcxctty.azm mcxclcf.azm mcxrand.azm\
  mcxload.azm mcxmap.azm mcxarray.azm mcxsubs.azm index.in.azm index.html distindex.html\
  tingea.log.azm\
- $(ALIENFILES)\
  $(MAINTAINERCLEANFILES)
 
 SUFFIXES = .1 .5 .7 .azm .html .ps .txt
@@ -181,7 +180,6 @@ docme-test:
 	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx clcf" mcxclcf.azm
 	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx ctty" mcxctty.azm
 	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx query" mcxquery.azm
-	../scripts/docme --silent ../src/alien/oxygen/src/mcxdeblast ../src/alien/oxygen/doc/mcxdeblast.azm
 
 # ../scripts/docme --silent ../src/shcl/mclpipeline mclpipeline.azm
 

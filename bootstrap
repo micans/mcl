@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash
 
 # $Id: bootstrap,v 1.21 2005/03/27 18:21:20 joostvb Exp $
 
@@ -33,12 +33,11 @@
 #
 # .
 
+set -euo pipefail
 set -x
 
-if test ! -f VERSION
-then
-    ./setversion
-fi
+[[ ! -f VERSION ]] && echo "Need file VERSION (cf setversion)" && false
+
 
 # hack as used in systraq
 test -f acinclude.m4 || {

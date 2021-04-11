@@ -300,7 +300,6 @@ doc_DATA_dep = mcl.html mcl.ps mcl.txt \
  clmmeet.html clmmeet.ps \
  clmformat.html clmformat.ps \
  clmorder.html clmorder.ps \
- minimcl \
  mcxio.html mcxio.ps \
  clmprotocols.html clmprotocols.ps \
  clmprotocols2.html clmprotocols2.ps \

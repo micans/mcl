@@ -49,6 +49,7 @@
 #include "tingea/types.h"
 #include "tingea/err.h"
 #include "tingea/opt.h"
+#include "tingea/minmax.h"
 
 
 
@@ -114,6 +115,7 @@ enum
 enum
 {  VOL_OPT_OUTPUT = CLM_DISP_UNUSED
 ,  VOL_OPT_FACTOR
+,  VOL_OPT_SMOOTH
 }  ;
 
 static mcxOptAnchor volOptions[] =
@@ -128,6 +130,12 @@ static mcxOptAnchor volOptions[] =
    ,  VOL_OPT_FACTOR
    ,  "<num>"
    ,  "stringency factor: require |meet| >= <num> * |cls-size| (default 0.5)"
+   }
+,  {  "--smooth"
+   ,  MCX_OPT_DEFAULT
+   ,  VOL_OPT_SMOOTH
+   ,  NULL
+   ,  "use 1 - |meet| / min(|cl1|, |cl2|) as contribution"
    }
 ,  {  NULL ,  0 ,  0 ,  NULL, NULL}
 }  ;
@@ -208,6 +216,7 @@ static mcxbool mci_g = -1;
 static mcxbool wheel_g = -1;
 static mcxbool split_g = -1;
 static mcxbool sort_g = -1;
+static mcxbool vol_smooth_g = FALSE;
 
 
 static mcxstatus distInit
@@ -252,6 +261,11 @@ static mcxstatus volArgHandle
 
          case VOL_OPT_OUTPUT
       :  mcxIOnewName(xfout, val)
+      ;  break
+      ;
+
+         case VOL_OPT_SMOOTH
+      :  vol_smooth_g = TRUE
       ;  break
       ;
 
@@ -423,13 +437,21 @@ static mcxstatus distMain
                   {  ofs c2id = ct->ivps[l].idx
                   ;  double meet_sz = ct->ivps[l].val
                   ;  c2mem = mclxGetVector(c2, c2id, EXIT_ON_FAIL, c2mem)
-                  ;  if
+                  ;  mclp* tivp = NULL
+                  ;  dim m
+                  ;  if (vol_smooth_g)
+                     {  mclv* meet = mcldMeet(c1mem, c2mem, NULL)
+                     ;  dim minsize = MCX_MIN(c1mem->n_ivps, c2mem->n_ivps)
+                     ;  for (m=0;m<meet->n_ivps;m++)
+                        {  tivp = mclvGetIvp(nff_scores->cols+0, meet->ivps[m].idx, tivp)
+                        ;  tivp->val += 1.0 - 1.0 * meet->n_ivps / (1.0 * minsize)
+                     ;  }
+                  ;  }
+                     else if
                      (  meet_sz < nff_fac * c1mem->n_ivps
                      && meet_sz < nff_fac * c2mem->n_ivps
                      )
                      {  mclv* meet = mcldMeet(c1mem, c2mem, NULL)
-                     ;  mclp* tivp = NULL
-                     ;  dim m
                      ;  if (i_am_vol)
                         for (m=0;m<meet->n_ivps;m++)
                         {  tivp = mclvGetIvp(nff_scores->cols+0, meet->ivps[m].idx, tivp)

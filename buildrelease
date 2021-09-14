@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euo pipefail
+
+version=${1?Need version - suggest $(date '+%y-%j')}
+
+rm -rf build
+mkdir build
+
+./setversion $version
+./bootstrap
+
+cd build
+
+../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode
+
+make
+make dist
+
+

@@ -182,7 +182,7 @@ static mcxstatus adjustMain
             ;  }
             }
          }
-         mcxFree(&cl)
+         mclxFree(&cl)
       ;  cl = cm
          /* mclxWrite(cm, xfout, MCLXIO_VALUE_NONE, RETURN_ON_FAIL) */
       ;  return 0

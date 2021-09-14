@@ -138,14 +138,6 @@
 \mkentry{mcxassemble}{1}{prepare input matrix from cooccurrence scores}
 \utend
 
-
-\modsection{Application specific parsers and wrappers}
-   \mkheader{BLAST package}{\modal}{--enable-blast}
-   \${roff}{\v{__________________}\|}
-   \mkentry{mclblastline}{1}{pipeline for clustering from blast files}
-   \mkentry{mcxdeblast}{1}{prepare input from blast files}
-\modend
-
 \${html}{\@{
 </body>
 </html>

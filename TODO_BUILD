@@ -1,3 +1,6 @@
 
-- consider out of tree build (https://stackoverflow.com/questions/50558889/out-of-source-build-fails-in-autotools)
+- MYPATH in doc/Makefile.am
+  introduced for two targets that have special build script snippet,
+  and to make it work for both (a) development repo out-of-tree build and
+  (b) makedist tarball build.
 

@@ -1,4 +1,8 @@
 # mcl
+
+{M}arkov {CL}uster algorithm, a method and software for clustering undirected
+weighted or simple networks, a.k.a. graphs
+
 Markov CLustering or the Markov CLuster algorithm, mcl is a method and program
 for clustering weighted or simple networks, a.k.a. graphs.  It is accompanied
 in this source code by other network construction and (trait) analysis
@@ -33,15 +37,21 @@ Another reason for new releases is that new compilers and
 compiler settings have unearthed two or three blemishes in the code base that
 needed fixing.
 
+Currently only development mcl releases have been made available from this repository.
+Stable releases will follow in the not too distant future.
+This code needs the C library in the github repo
+[micans/cimfomfa](http://github.com/micans/cimfomfa),
+hence the build procedure has been changed somewhat and needs more steps.
+
+- Use the script [buildrelease](buildrelease) to build an mcl release. Note; to build mcl both an mcl release and a cimfomfa release are required.
+  The cimfomfa repository also has a buildrelease script.
+- Look at [installmcl.sh](installmcl.sh) for an elementary build example. 
+- These [mcl](http://micans.org/mcl/dev/mcl-21-257.tar.gz) and [cimfomfa](http://micans.org/dev/cimfomfa-21-257.tar.gz) releases can be used to
+  test the installmcl.sh script and build an mcl release.
+
 I aim to make a new release, the first since mcl-14-137 (released at about day 137
 in the year 2014), in autumn 2021. A development release (mcl-21-257) is available,
 please have a look at the dev branch.
 
-Some people freak out when they see the C source code due to its unusual indentation.
-It's just whitespace people, try not to faint. This is something I picked
-up from Annius Groenink and never looked back since, although I use other styles
-for other projects.
-
-If you have suggestions that do not concern whitespace, please get in touch or
-open an issue.
+If you have suggestions please get in touch or open an issue.
 

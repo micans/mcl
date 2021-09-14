@@ -4,3 +4,5 @@
   and to make it work for both (a) development repo out-of-tree build and
   (b) makedist tarball build.
 
+- Introduce cimfomfa version dependency check somehow/somewhere.
+

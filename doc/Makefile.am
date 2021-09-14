@@ -34,7 +34,6 @@ doc_DATA_dep = mcl.html mcl.ps mcl.txt \
  mcxmap.html mcxmap.ps \
  mcxquery.html mcxquery.ps \
  mcxassemble.html mcxassemble.ps \
- mclpipeline.html mclpipeline.ps \
  index.html mclindex.ps \
  clmimac.html clmimac.ps \
  clmoptics.html clmoptics.ps \
@@ -60,7 +59,6 @@ man_MANS = mcl.1 mclcm.1 clm.1 mclindex.7 mclfamily.7 mclfaq.7 mcx.1 mcxi.1 mcxi
    clmvol.1 clmdist.1 clminfo2.1 clminfo.1 clmorder.1 \
    mcxconvert.1 mcxassemble.1 mcxmap.1 mcxsubs.1 mcxload.1 mcxdump.1 mcxarray.1 mcxrand.1 \
 	mcxalter.1 mcxerdos.1 mcxdiameter.1 mcxctty.1 mcxclcf.1 mcxquery.1 \
-   mclpipeline.1 \
 	tingea.log.7
 
 
@@ -80,7 +78,7 @@ EXTRA_DIST = mclmcl.txt mcx.zmm\
  stamp.day stamp.month stamp.stamp stamp.year\
  clmformat.azm clmvol.azm clmdist.azm clmmate.azm clminfo2.azm clminfo.azm clmmeet.azm\
  clm.azm clmorder.azm mcl.azm mclcm.azm\
- mclfamily.azm mclfaq.azm mcxi.azm mcx.azm mcxquery.azm mclpipeline.azm\
+ mclfamily.azm mclfaq.azm mcxi.azm mcx.azm mcxquery.azm \
  mcxdump.azm mcxconvert.azm clmprotocols2.azm clmprotocols.azm mcxio.azm clmresidue.azm clmclose.azm clmoptics.azm clmimac.azm mcxassemble.azm\
  mcxalter.azm mcxerdos.azm mcxdiameter.azm mcxctty.azm mcxclcf.azm mcxrand.azm\
  mcxload.azm mcxmap.azm mcxarray.azm mcxsubs.azm index.in.azm index.html distindex.html\
@@ -88,6 +86,16 @@ EXTRA_DIST = mclmcl.txt mcx.zmm\
  $(MAINTAINERCLEANFILES)
 
 SUFFIXES = .1 .5 .7 .azm .html .ps .txt
+
+MYPATH = $(srcdir)
+
+mclindex.7: $(MYPATH)/index.in.azm
+	$(ZOEM) -i $(MYPATH)/index.in -d roff -o mclindex.7 -s install=1
+	$(TROFF) -man mclindex.7 > mclindex.ps
+
+index.html: $(MYPATH)/index.in.azm
+	$(ZOEM) -i $(MYPATH)/index.in -o index.html -d html -s install=1
+	$(ZOEM) -i $(MYPATH)/index.in -o distindex.html -d html -s dist=1
 
 .azm.1:
 	$(ZOEM) -d roff -i $< -o $@
@@ -165,16 +173,6 @@ docme-test:
 	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx ctty" mcxctty.azm
 	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx query" mcxquery.azm
 
-# ../scripts/docme --silent ../src/shcl/mclpipeline mclpipeline.azm
-
-mclindex.7: index.in.azm
-	$(ZOEM) -i index.in -d roff -o mclindex.7 -s install=1
-	$(TROFF) -man mclindex.7 > mclindex.ps
-
-index.html: index.in.azm
-	$(ZOEM) -i index.in -o index.html -d html -s install=1
-	$(ZOEM) -i index.in -o distindex.html -d html -s dist=1
-
 
 mcl: mcl.txt            mcl.1            mcl.html            mcl.ps
 mclcm: mclcm.txt      mclcm.1          mclcm.html          mclcm.ps
@@ -211,9 +209,6 @@ mcxctty:            mcxctty.1        mcxctty.html        mcxctty.ps
 mcxrand:            mcxrand.1        mcxrand.html        mcxrand.ps
 mcxquery:           mcxquery.1      mcxquery.html       mcxquery.ps
                                                      
-
-mclpipeline:    mclpipeline.1    mclpipeline.html    mclpipeline.ps
-
 mcxio:                mcxio.5          mcxio.html          mcxio.ps
 clmprotocols:  clmprotocols.5   clmprotocols.html   clmprotocols.ps
 clmprotocols2: clmprotocols2.5 clmprotocols2.html  clmprotocols2.ps
@@ -224,87 +219,6 @@ mclfamily:        mclfamily.7      mclfamily.html      mclfamily.ps
 
 index:             mclindex.7          index.html distindex.html
 
-
 minimcl:
 	cp ../scripts/minimcl .
-
-sec_mcl.html: sec_mcl.azm
-	$(ZOEM)  -i sec_mcl.azm -o sec_mcl.html -d html
-	- $(TIDY) -e sec_mcl.html
-
-sec_description1.html: sec_description1.azm
-	$(ZOEM)  -i sec_description1.azm -o sec_description1.html -d html
-	- $(TIDY) -e sec_description1.html
-
-sec_description2.html: sec_description2.azm
-	$(ZOEM)  -i sec_description2.azm -o sec_description2.html -d html
-	- $(TIDY) -e sec_description2.html
-
-sec_license.html: sec_license.azm
-	$(ZOEM)  -i sec_license.azm -o sec_license.html -d html
-	- $(TIDY) -e sec_license.html
-
-sec_discovery.html: sec_discovery.azm
-	$(ZOEM)  -i sec_discovery.azm -o sec_discovery.html -d html
-	- $(TIDY) -e sec_discovery.html
-
-sec_characteristics.html: sec_characteristics.azm
-	$(ZOEM)  -i sec_characteristics.azm -o sec_characteristics.html -d html
-	- $(TIDY) -e sec_characteristics.html
-
-sec_mcledge.html: sec_mcledge.azm
-	$(ZOEM)  -i sec_mcledge.azm -o sec_mcledge.html -d html
-	- $(TIDY) -e sec_mcledge.html
-
-sec_networktools.html: sec_networktools.azm
-	$(ZOEM)  -i sec_networktools.azm -o sec_networktools.html -d html
-	- $(TIDY) -e sec_networktools.html
-
-sec_thesisetc.html: sec_thesisetc.azm
-	$(ZOEM)  -i sec_thesisetc.azm -o sec_thesisetc.html -d html
-	- $(TIDY) -e sec_thesisetc.html
-
-sec_edge.html: sec_edge.azm
-	$(ZOEM)  -i sec_edge.azm -o sec_edge.html -d html
-	- $(TIDY) -e sec_edge.html
-
-sec_other.html: sec_other.azm
-	$(ZOEM)  -i sec_other.azm -o sec_other.html -d html
-	- $(TIDY) -e sec_other.html
-
-sec_questions.html: sec_questions.azm
-	$(ZOEM)  -i sec_questions.azm -o sec_questions.html -d html
-	- $(TIDY) -e sec_questions.html
-
-sec_speedmemory.html: sec_speedmemory.azm
-	$(ZOEM)  -i sec_speedmemory.azm -o sec_speedmemory.html -d html
-	- $(TIDY) -e sec_speedmemory.html
-
-sec_software.html: sec_software.azm
-	$(ZOEM)  -i sec_software.azm -o sec_software.html -d html
-	- $(TIDY) -e sec_software.html
-
-sec_news.html: sec_news.azm
-	$(ZOEM)  -i sec_news.azm -o sec_news.html -d html
-	- $(TIDY) -e sec_news.html
-
-sec_community.html: sec_community.azm
-	$(ZOEM)  -i sec_community.azm -o sec_community.html -d html
-	- $(TIDY) -e sec_community.html
-
-intro.html: intro.azm
-	$(ZOEM)  -i intro.azm -d html
-	- $(TIDY) -e intro.html
-
-description2.html: description2.azm
-	$(ZOEM)  -i description2.azm -d html
-	- $(TIDY) -e description2.html
-
-intro3.html: intro3.azm
-	$(ZOEM)  -i intro3.azm -d html
-	- $(TIDY) -e intro3.html
-
-litindex.html: litindex.azm 3Party
-	$(ZOEM)  -i litindex.azm -o litindex.html -d html
-	- $(TIDY) -e litindex.html
 

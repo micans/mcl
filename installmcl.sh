@@ -4,15 +4,20 @@ set -euo pipefail
 
 # This is a quite clumsy demo script with recipes for installing mcl.
 # Requirement: some directory with two tarballs, one for cimfomfa, one for mcl.
+# -- see a little below how to buildl/obtain these tarballs.
 # Release versions are hardcoded in this script.
+
 # Usage:
 # ./installmcl cm THETARBALLDIRECTORY     # install both cimfomfa and mcl
 # Or
 # ./installmcl c THETARBALLDIRECTORY      # first install cimfomfa
 # ./installmcl m THETARBALLDIRECTORY      # then install mcl
 
+# For both cimfomfa and mcl, a release can be build by running the
+# script ./buildrelease in the root of the repo.
+
 # Change versions below if you have different versions.
-cff=21-101
+cff=21-257
 mcl=21-257
 
 # Change if you want to install somewhere else

@@ -76,21 +76,6 @@ MAINTAINERCLEANFILES = $(man_MANS) $(doc_DATA_dep)
 ## So this introduces the dependency that alien documentation must
 ## be processed and created first.
 
-
-##  sec_introduction.html \
-##  sec_license.html \
-##  sec_discovery.html \
-##  sec_description1.html \
-##  sec_description2.html \
-##  sec_characteristics.html \
-##  sec_community.html \
-##  sec_networktools.html \
-##  sec_other.html \
-##  sec_thesisetc.html \
-##  sec_news.html \
-##  sec_software.html \
-##  sec_questions.html \
-
 EXTRA_DIST = mclmcl.txt mcx.zmm\
  stamp.day stamp.month stamp.stamp stamp.year\
  clmformat.azm clmvol.azm clmdist.azm clmmate.azm clminfo2.azm clminfo.azm clmmeet.azm\

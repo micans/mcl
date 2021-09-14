@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -euo pipefail
+
+rm -rf build
+mkdir build
+cd build
+
+../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode
+
+make
+

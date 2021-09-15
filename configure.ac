@@ -92,24 +92,6 @@ if test "$helpful_reminder" = "yes"; then
 fi
 
 
-########################  tribe package      #####################################
-##  DEPRECATED.
-##  PLEASE USE BLAST PACKAGE INSTEAD.
-
-##  # extra ./configure options
-##  AC_ARG_ENABLE(tribe,
-##  [  --enable-tribe  build contributed tribe tools (protein clustering stuff) ],
-##   [
-##       case "${enableval}" in
-##           yes) tribe=true ;;
-##           no)  tribe=false ;;
-##           *) AC_MSG_ERROR([bad value ${enableval} for --enable-tribe]) ;;
-##       esac
-##   ], [tribe=false]
-##  )
-##  AM_CONDITIONAL(BUILD_TRIBE, test x$tribe = xtrue)
-
-
 ########################  blast package      #####################################
 
 AC_ARG_ENABLE(blast,

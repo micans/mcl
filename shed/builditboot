@@ -6,7 +6,7 @@ rm -rf build
 mkdir build
 cd build
 
-../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode
+../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode --enable-blast
 
 make
 

@@ -90,37 +90,19 @@ if test "$helpful_reminder" = "yes"; then
 fi
 
 
-########################  tribe package      #####################################
-##  DEPRECATED.
-##  PLEASE USE BLAST PACKAGE INSTEAD.
-
-##  # extra ./configure options
-##  AC_ARG_ENABLE(tribe,
-##  [  --enable-tribe  build contributed tribe tools (protein clustering stuff) ],
-##   [
-##       case "${enableval}" in
-##           yes) tribe=true ;;
-##           no)  tribe=false ;;
-##           *) AC_MSG_ERROR([bad value ${enableval} for --enable-tribe]) ;;
-##       esac
-##   ], [tribe=false]
-##  )
-##  AM_CONDITIONAL(BUILD_TRIBE, test x$tribe = xtrue)
-
-
 ########################  blast package      #####################################
 
-AC_ARG_ENABLE(blast,
-[  --enable-blast   build bio-informatics tools ],
- [
-     case "${enableval}" in
-         yes) blast=true ;;
-         no)  blast=false ;;
-         *) AC_MSG_ERROR([bad value ${enableval} for --enable-blast]) ;;
-     esac
- ], [blast=false]
-)
-AM_CONDITIONAL(BUILD_BLAST, test x$blast = xtrue)
+## AC_ARG_ENABLE(blast,
+## [  --enable-blast   build bio-informatics tools ],
+##  [
+##      case "${enableval}" in
+##          yes) blast=true ;;
+##          no)  blast=false ;;
+##          *) AC_MSG_ERROR([bad value ${enableval} for --enable-blast]) ;;
+##      esac
+##  ], [blast=false]
+## )
+## AM_CONDITIONAL(BUILD_BLAST, test x$blast = xtrue)
 
 
 ## it would be nice if we'd be able to set

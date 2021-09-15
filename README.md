@@ -7,7 +7,8 @@ This code needs the C library in the github repo
 [micans/cimfomfa](http://github.com/micans/cimfomfa),
 hence the build procedure has been changed somewhat and needs more steps.
 
-- Look at [installmcl.sh](installmcl.sh) for an elementary build example. 
-- These [mcl](http://micans.org/mcl/dev/mcl-21-257.tar.gz) and [cimfomfa](http://micans.org/dev/cimfomfa-21-257.tar.gz) releases can be used to
-  test the installmcl.sh script and build an mcl release.
+- [This script](build-mcl-21-257.sh) will pull http://micans.org/mcl/dev/mcl-21-257.tar.gz
+  and http://micans.org/dev/cimfomfa-21-257.tar.gz and then (attempt to) build an mcl release.
+- [installmcl.sh](installmcl.sh) is similar with a little more control and needs local tar archives,
+  for example the two listed above.
 

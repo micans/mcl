@@ -14,6 +14,7 @@ if [[ -z $1 ]]; then
 fi
 
 VERSION=$1
+# todo should be derived from version.
 MONTHDAY=$(date '+%e')
 MONTH=$(date '+%b')
 YEAR=$(date '+%Y')

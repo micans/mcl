@@ -5,7 +5,7 @@ set -euo pipefail
 rm -rf build
 mkdir build
 
-./bootstrap
+shed/bootstrap
 
 cd build
 

@@ -8,8 +8,8 @@ place="rel-$version"
 rm -rf $place
 mkdir $place
 
-./setversion $version
-./bootstrap
+shed/setversion $version
+shed/bootstrap
 
 cd $place
 

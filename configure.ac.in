@@ -176,5 +176,6 @@ AC_OUTPUT([
     src/shmx/Makefile
     src/shmcxquery/Makefile
     src/shmcx/Makefile
+    shed/Makefile
 ])
 

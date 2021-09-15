@@ -5,7 +5,7 @@
 # $Id: configure.ac.in,v 1.36 2006-11-03 13:06:53 flux Exp $
 
 AC_PREREQ(2.50)
-AC_INIT([mcl], [21-257])
+AC_INIT([mcl], [21-258])
 
 PACKAGE=$PACKAGE_NAME
 VERSION=$PACKAGE_VERSION
@@ -94,17 +94,17 @@ fi
 
 ########################  blast package      #####################################
 
-AC_ARG_ENABLE(blast,
-[  --enable-blast   build bio-informatics tools ],
- [
-     case "${enableval}" in
-         yes) blast=true ;;
-         no)  blast=false ;;
-         *) AC_MSG_ERROR([bad value ${enableval} for --enable-blast]) ;;
-     esac
- ], [blast=false]
-)
-AM_CONDITIONAL(BUILD_BLAST, test x$blast = xtrue)
+## AC_ARG_ENABLE(blast,
+## [  --enable-blast   build bio-informatics tools ],
+##  [
+##      case "${enableval}" in
+##          yes) blast=true ;;
+##          no)  blast=false ;;
+##          *) AC_MSG_ERROR([bad value ${enableval} for --enable-blast]) ;;
+##      esac
+##  ], [blast=false]
+## )
+## AM_CONDITIONAL(BUILD_BLAST, test x$blast = xtrue)
 
 
 ## it would be nice if we'd be able to set
@@ -178,5 +178,6 @@ AC_OUTPUT([
     src/shmx/Makefile
     src/shmcxquery/Makefile
     src/shmcx/Makefile
+    shed/Makefile
 ])
 

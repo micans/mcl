@@ -2,18 +2,18 @@
 
 set -euo pipefail
 
-version=${1?Need version - suggest $(date '+%y-%j')}
-place="rel-$version"
+version=$(cat VERSION)
+place="build/rel-$version"
 
 rm -rf $place
-mkdir $place
+mkdir -p $place
 
-shed/setversion $version
-shed/bootstrap
+# shed/setversion
+# shed/bootstrap
 
 cd $place
 
-../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local
+../../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local
 
 make
 make dist

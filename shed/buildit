@@ -4,5 +4,7 @@ set -euo pipefail
 
 cd build
 
+../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode --enable-blast
+
 make
 

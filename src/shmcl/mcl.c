@@ -91,16 +91,9 @@ static void helpful_reminder
 #ifdef MCL_HELPFUL_REMINDER
 if (mcxLogLevel & MCX_LOG_UNIVERSE) {
 fprintf(stderr, "\nPlease cite:\n");
-fprintf(stderr, "    Stijn van Dongen, Graph Clustering by Flow Simulation.  PhD thesis,\n");
-fprintf(stderr, "    University of Utrecht, May 2000.\n");
-fprintf(stderr, "       (  http://www.library.uu.nl/digiarchief/dip/diss/1895620/full.pdf\n");
-fprintf(stderr, "       or  http://micans.org/mcl/lit/svdthesis.pdf.gz)\n");
-fprintf(stderr, "OR\n");
-fprintf(stderr, "    Stijn van Dongen, A cluster algorithm for graphs. Technical\n");
-fprintf(stderr, "    Report INS-R0010, National Research Institute for Mathematics\n");
-fprintf(stderr, "    and Computer Science in the Netherlands, Amsterdam, May 2000.\n");
-fprintf(stderr, "       (  http://www.cwi.nl/ftp/CWIreports/INS/INS-R0010.ps.Z\n");
-fprintf(stderr, "       or  http://micans.org/mcl/lit/INS-R0010.ps.Z)\n\n");
+fprintf(stderr, "    Stijn van Dongen, Graph Clustering Via a Discrete Uncoupling Process,\n");
+fprintf(stderr, "    SIAM Journal on Matrix Analysis and Applications, 30(1):121-141, 2008.\n");
+fprintf(stderr, "    ( http://link.aip.org/link/?SJMAEL/30/121/1 )\n");
 }
 #endif
    }

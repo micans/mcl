@@ -8,7 +8,6 @@ example_DATA = falkner.mci falkner2.mci falkner.coords make-falkner.pl \
    friends small.mci small.map small.tab fznyy.tab fznyy.mci small64.mci \
 	petersen.mci \
    tiny-min.mci tiny-nil.mci tiny-nilnine.mci tiny-ninenil.mci tiny-one.mci tiny-zero.mci \
-   data.raw data.hdr data.tab data.abc.raw data.abc.hdr data.abc.map \
 	T Tx Ty Txy
 
 EXTRA_DIST = $(example_DATA)

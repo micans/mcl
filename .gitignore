@@ -12,6 +12,8 @@ Makefile
 *.html
 Makefile.in
 config*
+/slate
+/autom4te.cache
 /src/shmx/mcx
 /src/shmx/mcxsubs
 /src/shmx/mcxmap

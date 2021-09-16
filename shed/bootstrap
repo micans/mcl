@@ -12,7 +12,7 @@
 #    cd adirectory
 #    ../configure && make && make distcheck
 #
-# (I use build/copy for adirectory and ../../configure).
+# (I use slate/build for adirectory and ../../configure).
 #
 # this will yield a tarball, e.g. mcl-21-257.tar.gz .  Once this has been
 # run, one can, after e.g. editing sources, run just

@@ -1,5 +1,10 @@
 
 
+   *  mcl on github. The utility library was split off; it is now the
+      library libtingea provided by the project cimfomfa. Mcl can be built
+      by first building cimfomfa/tingea and then building/linking mcl.
+      Install scripts are provided.
+
 Fri May 16 2014
 
    *  mcl-14-137 released. Fix build error under clang.

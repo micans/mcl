@@ -9,13 +9,14 @@ rm -rf $place
 mkdir -p $place
 
 # shed/setversion
-# shed/bootstrap
+
+shed/bootstrap
 
 cd $place
 
 ../../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local
 
 make
-make dist
+CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib make distcheck
 
 

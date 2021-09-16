@@ -132,7 +132,7 @@ static mcxOptAnchor volOptions[] =
    ,  "stringency factor: require |meet| >= <num> * |cls-size| (default 0.5)"
    }
 ,  {  "--smooth"
-   ,  MCX_OPT_DEFAULT
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
    ,  VOL_OPT_SMOOTH
    ,  NULL
    ,  "use 1 - |meet| / min(|cl1|, |cl2|) as contribution"

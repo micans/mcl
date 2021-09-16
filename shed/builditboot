@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-rm -rf build
-mkdir build
-cd build
+rm -rf build/copy
+mkdir -p build/copy
+cd build/copy
 
-../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode --enable-blast
+../../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode
 
 make
 

@@ -144,34 +144,34 @@ SHARE2 = "--exclude=nop,version,set,h,help,debug,test,progress,write-binary"
 
 .PHONY: docme-test
 docme-test:
-	../scripts/docme --doc-exceed=21 --silent $(SHARE1) ../src/shmcl/mcl mcl.azm
-	../scripts/docme --silent $(SHARE1) ../src/shmcl/mclcm mclcm.azm
-	../scripts/docme --silent $(SHARE1) ../src/shmx/mcxdump mcxdump.azm
-	../scripts/docme --silent $(SHARE1) ../src/shmx/mcxload mcxload.azm
-	../scripts/docme --silent $(SHARE1) ../src/shmx/mcxarray mcxarray.azm
-	../scripts/docme --silent $(SHARE1) ../src/shmx/mcxrand mcxrand.azm
-	../scripts/docme --silent $(SHARE1) ../src/shcl/clmformat clmformat.azm
-	../scripts/docme --silent $(SHARE1) ../src/shmx/mcxsubs mcxsubs.azm
-	../scripts/docme --silent $(SHARE1) ../src/shmx/mcxmap mcxmap.azm
-	../scripts/docme --silent $(SHARE1) ../src/shmx/mcxassemble mcxassemble.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm close" clmclose.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm dist" clmdist.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm order" clmorder.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm mate" clmmate.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm meet" clmmeet.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm info" clminfo.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm info2" clminfo2.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm vol" clmvol.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm residue" clmresidue.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm imac" clmimac.azm
-	../scripts/docme --silent $(SHARE2) "../src/shcl/clm optics" clmoptics.azm
-	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx convert" mcxconvert.azm
-	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx diameter" mcxdiameter.azm
-	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx erdos" mcxerdos.azm
-	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx alter" mcxalter.azm
-	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx clcf" mcxclcf.azm
-	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx ctty" mcxctty.azm
-	../scripts/docme --silent $(SHARE2) "../src/shmx/mcx query" mcxquery.azm
+	$(top_srcdir)/scripts/docme --doc-exceed=21 --silent $(SHARE1) ../src/shmcl/mcl $(top_srcdir)/doc/mcl.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmcl/mclcm        $(top_srcdir)/doc/mclcm.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxdump       $(top_srcdir)/doc/mcxdump.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxload       $(top_srcdir)/doc/mcxload.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxarray      $(top_srcdir)/doc/mcxarray.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxrand       $(top_srcdir)/doc/mcxrand.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shcl/clmformat     $(top_srcdir)/doc/clmformat.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxsubs       $(top_srcdir)/doc/mcxsubs.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxmap        $(top_srcdir)/doc/mcxmap.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxassemble   $(top_srcdir)/doc/mcxassemble.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm close"   $(top_srcdir)/doc/clmclose.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm dist"    $(top_srcdir)/doc/clmdist.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm order"   $(top_srcdir)/doc/clmorder.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm mate"    $(top_srcdir)/doc/clmmate.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm meet"    $(top_srcdir)/doc/clmmeet.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm info"    $(top_srcdir)/doc/clminfo.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm info2"   $(top_srcdir)/doc/clminfo2.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm vol"     $(top_srcdir)/doc/clmvol.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm residue" $(top_srcdir)/doc/clmresidue.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm imac"    $(top_srcdir)/doc/clmimac.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm optics"  $(top_srcdir)/doc/clmoptics.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shmx/mcx convert" $(top_srcdir)/doc/mcxconvert.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shmx/mcx diameter"  $(top_srcdir)/doc/mcxdiameter.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shmx/mcx erdos"   $(top_srcdir)/doc/mcxerdos.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shmx/mcx alter"   $(top_srcdir)/doc/mcxalter.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shmx/mcx clcf"    $(top_srcdir)/doc/mcxclcf.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shmx/mcx ctty"    $(top_srcdir)/doc/mcxctty.azm
+	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shmx/mcx query"   $(top_srcdir)/doc/mcxquery.azm
 
 
 mcl: mcl.txt            mcl.1            mcl.html            mcl.ps

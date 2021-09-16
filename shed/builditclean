@@ -2,12 +2,12 @@
 
 set -euo pipefail
 
-rm -rf build/copy
-mkdir -p build/copy
+rm -rf slate/build
+mkdir -p slate/build
 
 shed/bootstrap
 
-cd build/copy
+cd slate/build
 
 ../../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode
 

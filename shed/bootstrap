@@ -6,11 +6,15 @@
 # bootstrap - script to bootstrap the distribution rolling engine
 #
 # to build a tarball, ready for distribution, from fresh checked out
-# cvs sources, do
+# sources, do e.g.
 #
-#    ./bootstrap && ./configure && make && make distcheck
+#    shed/bootstrap
+#    cd adirectory
+#    ../configure && make && make distcheck
 #
-# this will yield a tarball, e.g. mcl-20020109.tar.gz .  Once this has been
+# (I use build/copy for adirectory and ../../configure).
+#
+# this will yield a tarball, e.g. mcl-21-257.tar.gz .  Once this has been
 # run, one can, after e.g. editing sources, run just
 #
 #     make distcheck

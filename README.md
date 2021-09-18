@@ -23,5 +23,11 @@ I aim to make a new release, the first since mcl-14-137 (released at about day 1
 in the year 2014), in autumn 2021. A development release (mcl-21-257) is available,
 please have a look at the dev branch.
 
-If you have suggestions, please get in touch or open an issue.
+Some people freak out when they see the C source code due to its unusual indentation.
+It's just whitespace people, try not to faint. This is something I picked
+up from Annius Groenink and never looked back since, although I use other styles
+for other projects.
+
+If you have suggestions that do not concern whitespace, please get in touch or
+open an issue.
 

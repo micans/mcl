@@ -1,5 +1,16 @@
 # $Id: INSTALL,v 1.1 2001/03/21 00:28:28 vanbaal Exp $
 
+
+This mcl source has 'cimfomfa' (a C utility library) as a dependency. The 'dev'
+tree has a script that installs both cimfomfa and a development version of mcl.
+I plan to release a new mcl version this autumn. At that stage the install
+script will be available from the 'main' branch.
+
+
+
+Below are generic installation instructions from the time when mcl did not have
+any dependencies. Some of these instructions may still be useful.
+
 Basic Installation
 ==================
 

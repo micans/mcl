@@ -587,6 +587,8 @@ mcxstatus mclProcessInit
             BIT_ON(mpp->dumping, MCPVB_ITE)
          ;  if (strstr(arg, "cls"))
             BIT_ON(mpp->dumping, MCPVB_CLUSTERS)
+         ;  if (strstr(arg, "chr"))
+            BIT_ON(mpp->dumping, MCPVB_CHR)
          ;  if (strstr(arg, "dag"))
             BIT_ON(mpp->dumping, MCPVB_DAG)
          ;  if (strstr(arg, "lines"))

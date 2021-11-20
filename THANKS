@@ -10,8 +10,7 @@ Thanks to:
       for co-implementing threading and his interest and enthousiasm for mcl.
    Abel Ureta-Vidal
       for fixes and suggestions for mcxdeblast and mcxassemble.
-      for pointing out a functional bug due to sub-optimal loop weight
-      assignment.
+      for pointing out a functional bug due to sub-optimal loop weight assignment.
       for valuable feedback on using/testing MCL on huge graphs.
    Andreas Kahari
       for packaging mcl for OpenBSD and pointing out various compile warnings

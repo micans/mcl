@@ -1,9 +1,17 @@
 
 
-   *  mcl on github. The utility library was split off; it is now the
-      library libtingea provided by the project cimfomfa. Mcl can be built
-      by first building cimfomfa/tingea and then building/linking mcl.
-      Install scripts are provided.
+   *  Mcl source is now hosted on github.com/micans/mcl .
+		Compiling mcl now requires installation of cimfomfa, which provides the C
+		utility library libtingea.
+      Cimfomfa is hosted on github.com/mican/cimfomfa .
+
+      Tar releases will for the foreseeable future still be hosted on
+      micans.org/mcl and micans.org/cimfomfa .
+
+      Previously cimfomfa was imported in the mcl source tree, but this
+      practice has stopped. The mcl source tree contains a script that
+      will download both cimfomfa and mcl tar archives and compile both.
+
 
 Fri May 16 2014
 

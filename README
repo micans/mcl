@@ -24,6 +24,15 @@
       Nucleic Acids Research 30(7):1575-1584 (2002).
       ( https://pubmed.ncbi.nlm.nih.gov/11917018/ )
 
+   The following article contain some practical recipes and examples that
+   may be of interest:
+
+      Stijn van Dongen, Cei Abreu-Goodger
+      Using MCL to extract clusters from networks,
+      in Bacterial Molecular Networks: Methods and Protocols,
+      Methods in Molecular Biology, Vol 804, p281-295 (2012).
+      ( http://www.ncbi.nlm.nih.gov/pubmed/22144159 )
+
    Please be advised that the TribeMCL module has been disabled.  With mcl's
    new label streaming facilities it is possible to cluster directly from BLAST
    files. Refer to the mcl website for examples.

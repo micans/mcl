@@ -12,7 +12,7 @@
 
       Stijn van Dongen, Graph Clustering by Flow Simulation.
       PhD thesis, University of Utrecht, May 2000.
-      ( http://www.library.uu.nl/digiarchief/dip/diss/1895620/inhoud.htm )
+      ( https://dspace.library.uu.nl/handle/1874/848 )
 
    and proper attributions to mcl's home http://micans.org/mcl/ and its author,
    Stijn van Dongen.  For biological applications, it is appropriate to cite,
@@ -22,6 +22,7 @@
       Enright A.J., Van Dongen S., Ouzounis C.A.
       An efficient algorithm for large-scale detection of protein families,
       Nucleic Acids Research 30(7):1575-1584 (2002).
+      ( https://pubmed.ncbi.nlm.nih.gov/11917018/ )
 
    Please be advised that the TribeMCL module has been disabled.  With mcl's
    new label streaming facilities it is possible to cluster directly from BLAST

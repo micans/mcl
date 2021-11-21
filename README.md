@@ -1,9 +1,6 @@
-# mcl
+# MCL
 
-{M}arkov {CL}uster algorithm, a method and software for clustering undirected
-weighted or simple networks, a.k.a. graphs
-
-Markov CLustering or the Markov CLuster algorithm, mcl is a method and program
+Markov CLustering or the Markov CLuster algorithm, MCL is a method
 for clustering weighted or simple networks, a.k.a. graphs.  It is accompanied
 in this source code by other network construction and (trait) analysis
 programs.
@@ -14,13 +11,13 @@ method published by Enright, van Dongen and Ouzounis.
 A lot (too much) of information and documentation is available
 at [micans.org](http://micans.org/mcl) .
 
-## Mcl-edge
+## MCL-edge
 This is the name I use sometimes to refer to the collection of sibling
-programs to mcl for network and matrix loading, filtering and subsetting,
+programs to MCL for network and matrix loading, filtering and subsetting,
 including computation of network traits such as centrality and clustering coefficient.
 
 ## Status and plans
-The program mcl has been very stable or nearly unchanging for well over 15
+The program MCL has been very stable or nearly unchanging for well over 15
 years now, with the last speed optimisations occurring about a decade ago. I
 aim to do some development in its sibling programs, including improving those
 that implement (currently somewhat inelegant) mini-formats such as `mcx alter`
@@ -37,7 +34,7 @@ Another reason for new releases is that new compilers and
 compiler settings have unearthed two or three blemishes in the code base that
 needed fixing.
 
-Currently only development mcl releases have been made available from this repository.
+Currently only development MCL releases have been made available from this repository.
 Stable releases will follow in the not too distant future.
 This code needs the C library in the github repo
 [micans/cimfomfa](http://github.com/micans/cimfomfa),

@@ -973,6 +973,7 @@ VT.iter = 0;
       ;  levels[cor_i].nb_iqr    =  iqr
       ;  levels[cor_i].cc_exp    =  cc ? mclvPowSum(ccsz, 2.0) / N_COLS(res) : 0
       ;  levels[cor_i].nb_sum    =  mclxNrofEntries(res)
+;fprintf(stderr,"()()\n")
 
       ;  if (!trigger_clcf || levels[cor_i].nb_mean <= trigger_clcf)
          {  mclv* clcf = mclgCLCFdispatch(res, n_thread_l)
@@ -1192,11 +1193,12 @@ static ofs get_cls_id
 
 
 int do_attr
-(  const mclx* mx
+(  mclx* mx
 ,  const mclx* cl
 ,  const mclx* cltp
 )
    {  dim i
+   ;  mclv* clcf = !trigger_clcf ? mclgCLCFdispatch(mx, n_thread_l) : NULL
 
    ;  if (cl && !MCLD_EQUAL(cl->dom_rows, mx->dom_cols))
       mcxDie(1, "query", "cluster row domain and matrix column domains differ")
@@ -1204,6 +1206,8 @@ int do_attr
    ;  fputs("node\tdegree\tmean\tmin\tmax\tmedian\tiqr", xfout_g->fp)
    ;  if (cl)
       fputs("\tclsize\tclid", xfout_g->fp)
+   ;  if (clcf)
+      fputs("\tclcf", xfout_g->fp)
 
    ;  fputc('\n', xfout_g->fp)
 
@@ -1236,6 +1240,10 @@ int do_attr
          {  ofs clid, clsize
          ;  clid = get_cls_id(mx->cols[i].vid, cl, cltp, &clsize)
          ;  fprintf(xfout_g->fp, "\t%ld\t%ld", (long) clsize, (long) clid)
+      ;  }
+         if (clcf)
+         {  mclp* p = mclvGetIvp(clcf, mx->cols[i].vid, NULL)
+         ;  fprintf(xfout_g->fp, "\t%g", p ? p->val : -1.0)
       ;  }
          fputc('\n', xfout_g->fp)
       ;  mclvFree(&v)

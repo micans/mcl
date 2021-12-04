@@ -151,7 +151,7 @@ mclMatrix*  mclProcess
                                        */
 
    ;  if (!mxp->stats)                 /* size dependent init stuff */
-      mclExpandParamDim(mxp, mxIn)
+      mclExpandParamDim(mxp, mxIn, MCPVB(mpp, MCPVB_CHR))
 
    ;  mpp->n_entries = mclxNrofEntries(mxstart[0])
 
@@ -235,6 +235,9 @@ mclMatrix*  mclProcess
    ;  mpp->lap = ((double) (clock() - t1)) / CLOCKS_PER_SEC
 
    ;  *limit = mxIn
+
+   ;  if (mpp->mxp->stats->flow_chr && MCPVB(mpp, MCPVB_CHR))
+      mclDumpMatrix(mpp->mxp->stats->flow_chr, mpp, "chr", "", 0, TRUE)
 
    ;  {  mclx* dag = mclDag(mxIn, mpp->ipp)
       ;  if (1)  /* hum ho fixme docme. is-this-really-necessary-or-is-it-a-debug-remnant ? */
@@ -327,7 +330,7 @@ int doIteration
    ;  n_new_entries = mclxNrofEntries(mxout[0])
 
    ;  homgVec = mxp->stats->homgVec
-   ;  mxp->stats->homgVec = NULL       /* fixme ugly ownership */
+   ;  mxp->stats->homgVec = NULL       /* fixme-ugly-ownership */
 
    ;  for (i=0;i<N_COLS(mxout[0]);i++)
       n_expand_entries += mxp->stats->bob_expand[i]

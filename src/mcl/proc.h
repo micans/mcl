@@ -70,6 +70,7 @@ typedef struct
 ;  mclInterpretParam*   ipp
 ;  int                  dimension   /* of input matrix */
 ;  dim                  n_entries   /* of input matrix after transforms */
+
 ;
 }  mclProcParam         ;
 

@@ -1,4 +1,8 @@
 
+! statsReset moved. valgrind it.
+
+ -  mclxVectorDispatch why is matrix argument not const.
+
  -  update/point README compile instructions
 
  -  mcxarray unit tests

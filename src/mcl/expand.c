@@ -352,6 +352,9 @@ static double mclExpandVector1
    ;  }
 
       {  vecMeasure(dstvec, &maxval, &center)
+      ;  mcxbool get_stats =  stats->flow_chr && stats->i_ite < 8
+      ;  double selfval    =  get_stats ? mclvSelf(dstvec) : -1.0
+
       ;  if (mxp->implementation & MCL_USE_RPRUNE)
          {  cut            =  maxval / mxp->num_prune
          ;  rg_mass_prune  =  mclvSelectGqBar (dstvec, cut)
@@ -365,6 +368,16 @@ static double mclExpandVector1
 
       ;  rg_n_prune        =  dstvec->n_ivps
       ;  rg_mass_final     =  rg_mass_prune
+
+      ;  if (get_stats)
+         {  dim statscol = 5 * (stats->i_ite-1)
+         ;  stats->flow_chr->cols[statscol+0].ivps[col].val = rg_n_expand
+         ;  stats->flow_chr->cols[statscol+1].ivps[col].val = rg_n_prune
+         ;  stats->flow_chr->cols[statscol+2].ivps[col].val = center
+         ;  stats->flow_chr->cols[statscol+3].ivps[col].val = selfval
+         ;  stats->flow_chr->cols[statscol+4].ivps[col].val = maxval
+      ;  }
+
 ;if(DEBUG_SELECTION)fprintf(stdout, "%d pru %d ", (int) dstvec->vid, (int) dstvec->n_ivps)
    ;  }
 
@@ -501,8 +514,8 @@ static double mclExpandVector1
       ;  stats->bob_expand[v_offset]=  rg_n_expand
 
       ;  if (progress && !mxp->n_ethreads)         /* fixme: change to thread-specific data. */
-         {  stats->n_cols++
-         ;  if (stats->n_cols % mxp->vector_progression == 0)
+         {  stats->i_cols++
+         ;  if (stats->i_cols % mxp->vector_progression == 0)
             fwrite(".", sizeof(char), 1, stderr)
       ;  }
       }
@@ -539,7 +552,8 @@ mclMatrix* mclExpand
    ;  chaosVec =  mclvCanonical(NULL, n_cols, 1.0)
    ;  homgVec  =  mclvCanonical(NULL, n_cols, 1.0)
 
-   ;  mclExpandStatsReset(stats)
+   ;  mclExpandStatsReset(stats)       /* does it have to be here for homgVec ownership? */
+   ;  stats->i_ite++    /* reset does not reset everything. needs cleaning up */
 
    ;  if (mxp->n_ethreads)
       {  int i
@@ -632,6 +646,7 @@ mclMatrix* mclExpand
 
 mclExpandStats* mclExpandStatsNew
 (  dim   n_cols
+,  mcxbool  make_flow_chr
 )  
    {  mclExpandStats* stats   =  (mclExpandStats*) mcxAlloc
                                  (  sizeof(mclExpandStats)
@@ -642,9 +657,22 @@ mclExpandStats* mclExpandStatsNew
    ;  stats->bob_expand       =  mcxAlloc(n_cols * sizeof stats->bob_expand[0], EXIT_ON_FAIL)
    ;  stats->bob_sparse       =  0
 
-   ;  stats->homgVec          =  NULL
+   ;  stats->homgVec          =  NULL    /* horrible ownership, see fixme-ugly-ownership in proc.c */
 
-   ;  mclExpandStatsReset(stats)       /* this initializes several members */
+   ;  stats->i_ite            =  0
+
+;fprintf(stderr, "-. %d\n", make_flow_chr)
+   ;  mclExpandStatsReset(stats)       /* this also initializes several members       */
+                                       /* a bit weird tbh. clean-up sometime          */
+                                       /* bob's are not reset. */
+
+   ;  stats->flow_chr  =  make_flow_chr
+                          ?  mclxCartesian
+                             (  mclvCanonical(NULL, 40, 1.0)      /* tbcont 40 hardcoded */
+                             ,  mclvCanonical(NULL, n_cols, 1.0)
+                             ,  -1.0
+                             )
+                          :  NULL
    ;  return stats
 ;  }
 
@@ -657,11 +685,11 @@ void mclExpandStatsReset
    ;  stats->homgMax          =  0.0
    ;  stats->homgMin          =  PVAL_MAX
    ;  stats->homgAvg          =  0.0
-   ;  stats->n_cols           =  0
+   ;  stats->i_cols           =  0
    ;  stats->lap              =  0.0
    ;  stats->bob_sparse       =  0
 
-   ;  mclvFree(&(stats->homgVec))
+   ;  mclvFree(&(stats->homgVec))     /* weird ownership again. It was passed to here */
 ;  }
 
 
@@ -675,6 +703,7 @@ void mclExpandStatsFree
    ;  mcxFree(stats->bob_expand)
 
    ;  mclvFree(&(stats->homgVec))
+   ;  mclxFree(&(stats->flow_chr))
    ;  mcxFree(stats)
 
    ;  *statspp = NULL
@@ -708,9 +737,12 @@ static void vecMeasure
 void mclExpandParamDim
 (  mclExpandParam*  mxp
 ,  const mclMatrix *mx
+,  mcxbool make_flow_chr
 )
-   {  mxp->stats  =  mclExpandStatsNew(N_COLS(mx))
-   ;  mxp->dimension = N_COLS(mx)
+   {  
+;fprintf(stderr, "%d--.\n", make_flow_chr)
+   ;  mxp->stats     =  mclExpandStatsNew(N_COLS(mx), make_flow_chr)
+   ;  mxp->dimension =  N_COLS(mx)
 ;  }
 
 
@@ -1043,8 +1075,8 @@ static double mclExpandVector2
       ;  stats->bob_expand[v_offset]=  rg_n_expand
 
       ;  if (progress && !mxp->n_ethreads)         /* fixme: change to thread-specific data. */
-         {  stats->n_cols++
-         ;  if (stats->n_cols % mxp->vector_progression == 0)
+         {  stats->i_cols++
+         ;  if (stats->i_cols % mxp->vector_progression == 0)
             fwrite(".", sizeof(char), 1, stderr)
       ;  }
       }

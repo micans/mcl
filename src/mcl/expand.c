@@ -352,7 +352,7 @@ static double mclExpandVector1
    ;  }
 
       {  vecMeasure(dstvec, &maxval, &center)
-      ;  mcxbool get_stats =  stats->flow_chr && stats->i_ite < 8
+      ;  mcxbool get_stats =  stats->flow_chr && stats->i_ite < 9
       ;  double selfval    =  get_stats ? mclvSelf(dstvec) : -1.0
 
       ;  if (mxp->implementation & MCL_USE_RPRUNE)
@@ -661,7 +661,6 @@ mclExpandStats* mclExpandStatsNew
 
    ;  stats->i_ite            =  0
 
-;fprintf(stderr, "-. %d\n", make_flow_chr)
    ;  mclExpandStatsReset(stats)       /* this also initializes several members       */
                                        /* a bit weird tbh. clean-up sometime          */
                                        /* bob's are not reset. */
@@ -739,9 +738,7 @@ void mclExpandParamDim
 ,  const mclMatrix *mx
 ,  mcxbool make_flow_chr
 )
-   {  
-;fprintf(stderr, "%d--.\n", make_flow_chr)
-   ;  mxp->stats     =  mclExpandStatsNew(N_COLS(mx), make_flow_chr)
+   {  mxp->stats     =  mclExpandStatsNew(N_COLS(mx), make_flow_chr)
    ;  mxp->dimension =  N_COLS(mx)
 ;  }
 

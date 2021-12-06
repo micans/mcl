@@ -16,15 +16,15 @@
 
 /* This file currently provides nothing */
 
-dim nu_meet_can  ;
-dim nu_meet_sl   ;
-dim nu_meet_zip  ;
-dim nu_diff_can  ;
-dim nu_diff_sl   ;
-dim nu_diff_zip  ;
-double nu_magic  ;
+extern dim nu_meet_can  ;
+extern dim nu_meet_sl   ;
+extern dim nu_meet_zip  ;
+extern dim nu_diff_can  ;
+extern dim nu_diff_sl   ;
+extern dim nu_diff_zip  ;
+extern double nu_magic  ;
 
-dim mclx_n_thread_g  ;
+extern dim mclx_n_thread_g  ;
 
 #endif
 

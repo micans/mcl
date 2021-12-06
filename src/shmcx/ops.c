@@ -1384,7 +1384,7 @@ int opExpand
    ;  mclx *sq
 
    ;  if (!mx) return 0
-   ;  mclExpandParamDim(mxp, mx)
+   ;  mclExpandParamDim(mxp, mx, FALSE)      /* do not compute flow characteristics */
 
    ;  sq = mclExpand(mx, mx, mxp)
   /*  mclExpandParamFree(&mxp)

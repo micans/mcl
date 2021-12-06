@@ -30,6 +30,7 @@ AC_CACHE_CHECK([ _____ weak test for C void* <=> unsigned int conversion],
    [AC_RUN_IFELSE(
          [AC_LANG_SOURCE([[
 #include <limits.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 unsigned test[] =

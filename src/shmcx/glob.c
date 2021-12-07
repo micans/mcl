@@ -286,7 +286,7 @@ int zgUser
 ;  }
 
 
-zgglob_p zgNewHandle
+static zgglob_p zgNewHandle
 (  int         glype
 ,  void*       object
 )
@@ -301,7 +301,7 @@ zgglob_p zgNewHandle
 ;  }
 
 
-zgglob_p zgNew
+static zgglob_p zgNew
 (  int         utype
 ,  void*       object
 )

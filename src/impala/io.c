@@ -191,7 +191,7 @@ static double loop_adjust_force
 
 
 
-void mclxIOinfoFree
+static void mclxIOinfoFree
 (  void*  info_v
 )
    {  mclxIOinfo* info = info_v
@@ -200,7 +200,7 @@ void mclxIOinfoFree
 ;  }
 
 
-mcxstatus mclxIOinfoReset
+static mcxstatus mclxIOinfoReset
 (  void*  info_v
 )
    {  mclxIOinfo* info = info_v
@@ -225,7 +225,7 @@ int mclxIOformat
 ;  }
 
 
-mclxIOinfo* mclxIOinfofy
+static mclxIOinfo* mclxIOinfofy
 (  mcxIO* xf
 )
    {  mclxIOinfo* info  =  xf->usr
@@ -281,7 +281,7 @@ static void tell_wrote_native
 ;  }
 
 
-unsigned long get_env_flags
+static unsigned long get_env_flags
 (  const char* opt
 )
    {  unsigned long val = 0
@@ -292,7 +292,7 @@ unsigned long get_env_flags
 ;  }
 
 
-unsigned long get_quad_mode
+static unsigned long get_quad_mode
 (  const char* opt
 )
    {  unsigned long val = 0
@@ -1758,7 +1758,7 @@ mcxstatus mclvEmbedRead
 
 
 
-mclpAR* mclpReaDaList
+static mclpAR* mclpReaDaList
 (  mcxIO   *xf
 ,  mclpAR  *ar
 ,  mclpAR  *transform
@@ -1902,7 +1902,7 @@ mcxstatus mclvEmbedWrite
  * fixme this interface is obsolete
 */
 
-mcxstatus mclvbWrite
+static mcxstatus mclvbWrite
 (  const mclv      *vec
 ,  mcxIO                *xfout
 ,  mcxOnFail            ON_FAIL
@@ -2556,6 +2556,7 @@ void mclxDebug
 )
    {  mcxIO* xf = mcxIOnew(name, "w")
    ;  if (!mcxIOopen(xf, RETURN_ON_FAIL))
+      return
    ;  fprintf(xf->fp, "[mclxDebug] [%s]\n", msg)
    ;  mclxWrite(mx, xf, valdigits, RETURN_ON_FAIL)
    ;  mcxIOfree(&xf)

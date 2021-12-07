@@ -5,7 +5,9 @@ set -euo pipefail
 mkdir -p slate/build
 cd slate/build
 
-../../configure CFLAGS="-fno-common -I$HOME/local/include" LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode
+../../configure CFLAGS="-Wall -Wextra -std=gnu99 -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition -fno-common -I$HOME/local/include -Wno-int-in-bool-context -Wno-unused-but-set-variable -Wno-unused-function -Wno-enum-compare -Wno-unused-parameter -Wno-unused-variable -Wno-sign-compare -Wno-misleading-indentation" LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local --enable-maintainer-mode
 
-make
+make clean
+
+make > make.log 2>&1
 

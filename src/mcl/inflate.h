@@ -19,7 +19,7 @@ void mclxInflateBoss
 ,  mclProcParam*     mpp
 )  ;
 
-void  mclvInflateLine
+void* mclvInflateLine
 (  void *arg
 )  ;
 

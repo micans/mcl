@@ -10,6 +10,7 @@
 #include <time.h>
 #include <signal.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "proc.h"
 #include "dpsd.h"
@@ -254,7 +255,7 @@ mclMatrix*  mclProcess
 ;  }
 
 
-void mclInflate
+static void mclInflate
 (  mclx*    mx
 ,  double   power
 ,  mclv*    homgVec
@@ -296,7 +297,7 @@ int doIteration
    ;  mcxbool           log_stats      =  XPNVB(mxp, XPNVB_CLUSTERS)
    ;  double            homgAvg
    ;  mclv*             homgVec
-   ;  int               n_cols         =  N_COLS(*mxin)
+   ;  dim               n_cols         =  N_COLS(*mxin)
    ;  dim               n_expand_entries = 0
    ;  dim               n_graph_entries = mclxNrofEntries(mxin[0])
    ;  dim               n_new_entries  =  0

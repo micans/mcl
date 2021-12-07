@@ -23,6 +23,7 @@
 #include <time.h>
 
 #include "mcx.h"
+#include "mcxtab.h"
 
 #include "impala/io.h"
 #include "impala/matrix.h"

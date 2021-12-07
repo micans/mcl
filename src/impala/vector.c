@@ -123,7 +123,7 @@ mclVector* mclvInit
  * This routine should always work also for non-conforming vectors
 */
 
-mclVector* mclvInstantiate
+static mclVector* mclvInstantiate
 (  mclVector*     dst_vec
 ,  dim            new_n_ivps
 ,  const mclIvp*  src_ivps
@@ -257,7 +257,7 @@ mclVector*  mclvResize
 ;  }
 
 
-void mclvRuntime
+static void mclvRuntime    /* fixme useless? */
 (  const mclVector* vec
 ,  const char* caller
 )

@@ -167,7 +167,7 @@ mcxOptAnchor options[]
 */
 
 
-mcxstatus fire_node_next
+static mcxstatus fire_node_next
 (  const mclx* mx
 ,  mclv* seen
 ,  mclv *todo
@@ -195,7 +195,7 @@ mcxstatus fire_node_next
 ;  }
 
 
-ofs fire_node
+static ofs fire_node
 (  const mclx* mx
 ,  dim i
 ,  mclv** seenpp
@@ -220,7 +220,7 @@ ofs fire_node
 ;  }
 
 
-void test_cross_ratio
+static void test_cross_ratio
 (  mclx* mx
 )
    {  dim i, j, n = 0
@@ -251,7 +251,7 @@ void test_cross_ratio
 ;  }
 
 
-void test_for_cycles
+static void test_for_cycles
 (  mclx* mx
 )
    {  mclx* tp = mclxTranspose(mx)
@@ -282,7 +282,7 @@ void test_for_cycles
 ;  }
 
 
-void get_attr
+static void get_attr
 (  mclx* mx
 ,  mclTab* tab
 ,  mcxIO* xfattr
@@ -363,7 +363,7 @@ void dump_label
    perhaps measure first (how many steps does it take)?
 */
 
-void walk_dag
+static void walk_dag
 (  mclx* mx
 ,  mclv* v
 ,  int level
@@ -381,7 +381,7 @@ void walk_dag
 
 /* TODO: hmm.content.subset2 vid values can denote #proteins hitting */
 
-void dump_dag
+static void dump_dag
 (  mclx* mx
 ,  mclTab* tab
 )
@@ -398,7 +398,7 @@ void dump_dag
 
 #endif
 
-void dag_diff_select 
+static void dag_diff_select 
 (  mclx* mx
 ,  mclTab* tab
 ,  mcxIO* xfdiff

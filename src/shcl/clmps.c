@@ -215,7 +215,7 @@ static int    level        =  -1;
 static dim  n_usr_params   =  -1;
 
 
-int kvcmp
+static int kvcmp
 (  const void* keyval1
 ,  const void* keyval2
 )
@@ -292,7 +292,7 @@ const char* ps_bind[] =
 }  ;
 
 
-void write_defs
+static void write_defs
 (  FILE* fp
 )
    {  const char** pp =  defs_ps
@@ -304,7 +304,7 @@ void write_defs
 ;  }
 
 
-void write_params
+static void write_params
 (  FILE* fp
 ,  const char** pslines
 )
@@ -333,7 +333,7 @@ void write_params
    }
 
 
-void list_params
+static void list_params
 (  void
 )
    {  int n   =  0

@@ -23,6 +23,7 @@
 #include <time.h>
 
 #include "mcx.h"
+#include "mcxquery.h"
 
 #include "tingea/types.h"
 #include "tingea/ding.h"
@@ -47,7 +48,7 @@
 #include "mcl/transform.h"
 
 
-int valcmpdesc
+static int valcmpdesc
 (  const void*             i1
 ,  const void*             i2
 )
@@ -55,7 +56,7 @@ int valcmpdesc
 ;  }
 
 
-int valcmpasc
+static int valcmpasc
 (  const void*             i1
 ,  const void*             i2
 )
@@ -63,7 +64,7 @@ int valcmpasc
 ;  }
 
 
-double pearson
+static double pearson
 (  const mclv* a
 ,  const mclv* b
 ,  dim n
@@ -480,7 +481,7 @@ static mcxstatus qInit
 ;  }
 
 
-mcxstatus parse_steps
+static mcxstatus parse_steps
 (  const char* a
 ,  unsigned *startp
 ,  unsigned *endp
@@ -502,7 +503,7 @@ mcxstatus parse_steps
 ;  }
 
 
-mcxstatus parse_threshold
+static mcxstatus parse_threshold
 (  const char* a
 ,  double *startp
 ,  double *endp
@@ -513,9 +514,9 @@ mcxstatus parse_threshold
    ;  do
       {  if (dash_count != 0 && dash_count != 2)
          break
-      ;  if (dash_count == 2 && 3 != sscanf(a, "%lf/%lf/%d", startp, endp, n))
+      ;  if (dash_count == 2 && 3 != sscanf(a, "%lf/%lf/%u", startp, endp, n))
          break
-      ;  if (dash_count == 0 && 1 != sscanf(a, "%d", n))
+      ;  if (dash_count == 0 && 1 != sscanf(a, "%u", n))
          break
       ;  if (dash_count == 2 && startp[0] > endp[0])
          break
@@ -773,7 +774,7 @@ static double ivp_get_double
 ;  }
 
 
-dim get_n_sort_allvals
+static dim get_n_sort_allvals
 (  const mclx* mx
 ,  pval* allvals
 ,  dim noe
@@ -1192,7 +1193,7 @@ static ofs get_cls_id
 ;  }
 
 
-int do_attr
+static int do_attr
 (  mclx* mx
 ,  const mclx* cl
 ,  const mclx* cltp
@@ -1252,7 +1253,7 @@ int do_attr
 ;  }
 
 
-int do_attr_clsonly
+static int do_attr_clsonly
 (  const mclx* cl
 ,  const mclx* cltp
 )
@@ -1268,7 +1269,7 @@ int do_attr_clsonly
 ;  }
 
 
-int do_testmetric
+static int do_testmetric
 (  const mclx* mx
 )
    {  dim N = N_COLS(mx), i
@@ -1333,7 +1334,7 @@ int do_testmetric
 ;  }
 
 
-int do_values
+static int do_values
 (  const mclx* mx
 ,  unsigned mode_dispatch
 )
@@ -1378,7 +1379,7 @@ int do_values
 ;  }
 
 
-int do_degrees_hist
+static int do_degrees_hist
 (  const mclx* mx
 )
    {  long step
@@ -1399,7 +1400,7 @@ int do_degrees_hist
 ;  }
 
 
-int do_size
+static int do_size
 (  mcxIO* xf
 )
    {  const char* fmt
@@ -1440,7 +1441,7 @@ int do_size
 ;  }
 
 
-int do_dimension
+static int do_dimension
 (  mcxIO* xf
 )
    {  const char* fmt

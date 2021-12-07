@@ -440,7 +440,7 @@ void usage
 )  ;
 
 
-mclx* read_packed
+static mclx* read_packed
 (  mcxIO*   xfin
 ,  dim      colhi
 ,  dim      rowhi
@@ -677,9 +677,11 @@ int main
          ;  break
          ;
 
-            case MY_OPT_STRICT_TABG :   t++
-         ;  case MY_OPT_RESTRICT_TABG : t++
-         ;  case MY_OPT_EXTEND_TABG
+            case MY_OPT_STRICT_TABG :   t++ ;
+            // fall through
+            case MY_OPT_RESTRICT_TABG : t++ ;
+            // fall through
+            case MY_OPT_EXTEND_TABG
          :
             {  xfusetabg = mcxIOnew(opt->val, "r")
             ;  bits_stream_tabg
@@ -689,9 +691,11 @@ int main
             ;  break
          ;  }
 
-            case MY_OPT_STRICT_TABC :   t++
-         ;  case MY_OPT_RESTRICT_TABC : t++
-         ;  case MY_OPT_EXTEND_TABC
+            case MY_OPT_STRICT_TABC :   t++ ;
+            // fall through
+            case MY_OPT_RESTRICT_TABC : t++ ;
+            // fall through
+            case MY_OPT_EXTEND_TABC
          :
             {  xfusetabc = mcxIOnew(opt->val, "r")
             ;  bits_stream_tabc
@@ -701,9 +705,11 @@ int main
             ;  break
          ;  }
 
-            case MY_OPT_STRICT_TABR :   t++
-         ;  case MY_OPT_RESTRICT_TABR : t++
-         ;  case MY_OPT_EXTEND_TABR
+            case MY_OPT_STRICT_TABR :   t++ ;
+            // fall through
+            case MY_OPT_RESTRICT_TABR : t++ ;
+            // fall through
+            case MY_OPT_EXTEND_TABR
          :
             {  xfusetabr = mcxIOnew(opt->val, "r")
             ;  bits_stream_tabr

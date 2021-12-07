@@ -217,7 +217,7 @@ static mcxstatus infoArgHandle
 ;  }
 
 
-void do_stack
+static void do_stack
 (  mclx* mx
 ,  mcxIO* xfstack
 ,  mcxIO* xfout

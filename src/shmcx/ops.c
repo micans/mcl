@@ -596,7 +596,7 @@ opAlias opAliasDir[] =
 }  ;
 
 
-void opHookHelp
+static void opHookHelp
 (  opHook* ophook
 )
    {  fprintf

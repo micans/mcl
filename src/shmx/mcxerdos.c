@@ -28,6 +28,7 @@
 #include <time.h>
 
 #include "mcx.h"
+#include "mcxerdos.h"
 
 #include "tingea/types.h"
 #include "tingea/heap.h"
@@ -219,14 +220,14 @@ static mcxstatus erdosArgHandle
 ;  }
 
 
-void label_not_found
+static void label_not_found
 (  const mcxTing* t
 )
    {  fprintf(stderr, "(error label-not-found (%s))\n", t->str)
 ;  }
 
 
-mcxstatus check_bounds
+static mcxstatus check_bounds
 (  const mclx* mx
 ,  long idx
 )
@@ -275,7 +276,7 @@ static void erdos_link_together
 ;  }
 
 
-void handle_tf
+static void handle_tf
 (  mclx*    mx
 ,  mcxTing* sa
 )
@@ -288,7 +289,7 @@ void handle_tf
 ;  }
 
 
-void handle_clcf
+static void handle_clcf
 (  mclx*    mx
 ,  mcxTing* sa
 )
@@ -314,7 +315,7 @@ void handle_clcf
    }
 
 
-void handle_list
+static void handle_list
 (  mclx*    mx
 ,  mcxTing* sa
 )
@@ -346,7 +347,7 @@ void handle_list
    }
 
 
-void handle_top
+static void handle_top
 (  mclx*    mx
 ,  mcxTing* sa
 )
@@ -393,7 +394,7 @@ void handle_top
 ;  }
 
 
-mclx* handle_query
+static mclx* handle_query
 (  mclx*    mx
 ,  mcxIO*   xfmx
 ,  mcxTing* sa

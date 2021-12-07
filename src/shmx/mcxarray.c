@@ -333,7 +333,7 @@ static int ji_step
 ;  }
 
 
-double mclvChebyshev
+static double mclvChebyshev
 (  const mclVector*        lft
 ,  const mclVector*        rgt
 )
@@ -369,7 +369,7 @@ double mclvChebyshev
 ;  }
 
 
-double mclvMinkowski
+static double mclvMinkowski
 (  const mclVector*        lft
 ,  const mclVector*        rgt
 ,  double p
@@ -445,7 +445,7 @@ static double mclv_inner_dot
 ;  }
 
 
-double pearson
+static double pearson
 (  const mclv* a
 ,  const mclv* b
 ,  dim n
@@ -469,7 +469,7 @@ typedef struct rank_unit
 }  rank_unit   ;
 
 
-void*  rank_unit_init
+static void*  rank_unit_init
 (  void*   ruv
 )
    {  rank_unit* ru =   (rank_unit*) ruv
@@ -480,7 +480,7 @@ void*  rank_unit_init
 ;  }
 
 
-int rank_unit_cmp_index
+static int rank_unit_cmp_index
 (  const void* rua
 ,  const void* rub
 )
@@ -490,7 +490,7 @@ int rank_unit_cmp_index
 ;  }
 
 
-int rank_unit_cmp_value
+static int rank_unit_cmp_value
 (  const void* rua
 ,  const void* rub
 )
@@ -1122,7 +1122,7 @@ static mclx* read_data
 ;  }
 
 
-double mydiv
+static double mydiv
 (  pval a
 ,  pval b
 )
@@ -1481,7 +1481,7 @@ static dim get_correlation
 ;  }
 
 
-dim do_range_do
+static dim do_range_do
 (  const mclx* tbl
 ,  mclx* res
 ,  mclx* mxna
@@ -1565,7 +1565,7 @@ dim do_range_do
 ;  }
 
 
-dim do_range
+static dim do_range
 (  const mclx* tbl
 ,  mclx* res
 ,  mclx* mxna
@@ -1677,7 +1677,7 @@ fprintf
 ;  }
 
 
-mclx* normalise
+static mclx* normalise
 (  mclx* tbl
 ,  const char* mode
 )
@@ -1699,7 +1699,7 @@ mclx* normalise
 ;  }
 
 
-void write_the_table
+static void write_the_table
 (  mclx* result
 ,  mcxIO* xf
 ,  int digits

@@ -120,7 +120,7 @@ static void sspxy_flood
    ;  dim  aow_2ofs  =  1
    ;  dim  aow_2len  =  1
 
-   ;  dim  length    =  1
+   ;  ofs  length    =  1              /* tbcont s/dim/ofs/ to appease compiler (last statement in function) */
    ;  mcxbool seen_hit = FALSE
 
    ;  const mclx* mx =  sspo->mx

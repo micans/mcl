@@ -259,7 +259,7 @@ static const char* me = "clm optics";
 #endif
 
 
-mclv* init_reachability
+static mclv* init_reachability
 (  const mclv* coredistance
 ,  const mclx* mx
 )
@@ -282,7 +282,7 @@ mclv* init_reachability
 ;  }
 
 
-mclv* get_coredistance
+static mclv* get_coredistance
 (  const mclx* mx
 )
    {  mclv* coredist = mclvCanonical(NULL, N_COLS(mx), 0)
@@ -343,7 +343,7 @@ if(0)fprintf(stdout, "node %d value %g\n", (int) j, coredist->ivps[j].val)
 */
 
 
-void test_heap
+static void test_heap
 (  mclv* reachability
 ,  dim* h_position
 ,  char* caller
@@ -357,7 +357,7 @@ void test_heap
 ;  }
 
 
-void heap_update_node
+static void heap_update_node
 (  mclv* reachability
 ,  dim* h_position
 ,  dim nbid
@@ -384,7 +384,7 @@ void heap_update_node
 
 
                         /* refreshes from top to bottom; leaves leaf gap */
-void heap_refresh_root
+static void heap_refresh_root
 (  mclv* reachability
 ,  dim* h_position
 )
@@ -427,7 +427,7 @@ void heap_refresh_root
  *    ps logic too much intertwined: the usual.
 */
 
-void do_optics
+static void do_optics
 (  mcxIO* xf
 ,  mcxIO* xfps
 ,  const mclx* mx

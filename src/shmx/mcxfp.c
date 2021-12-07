@@ -44,6 +44,7 @@
 
 
 #include "mcx.h"
+#include "mcxfp.h"
 
 #include "tingea/types.h"
 #include "tingea/io.h"
@@ -561,7 +562,7 @@ struct chem
 }  ;
 
 
-void* chem_init
+static void* chem_init
 (  void* chemp
 )
    {  struct chem* chem = chemp
@@ -572,7 +573,7 @@ void* chem_init
 ;  }
 
 
-void chem_set_bit
+static void chem_set_bit
 (  struct chem* chem
 ,  unsigned pos            /* e.g. range 0 to 2047 */
 )
@@ -585,7 +586,7 @@ void chem_set_bit
 ;  }
 
 
-void bucket_print
+static void bucket_print
 (  uint64_t b
 )
    {  int i
@@ -596,7 +597,7 @@ void bucket_print
    }
 
 
-unsigned chem_count_bits
+static unsigned chem_count_bits
 (  struct chem* c
 ,  int n_buckets
 )
@@ -612,7 +613,7 @@ unsigned chem_count_bits
 ;  }
 
 
-float chem_tanimoto
+static float chem_tanimoto
 (  struct chem* c1
 ,  struct chem* c2
 ,  int n_buckets
@@ -634,7 +635,7 @@ float chem_tanimoto
 ;  }
 
 
-dim chem_n_buckets
+static dim chem_n_buckets
 (  dim n_bits
 )
    {  dim n_buckets = 0
@@ -654,7 +655,7 @@ dim chem_n_buckets
 ;  }
 
 
-void chem_print
+static void chem_print
 (  struct chem* chem
 ,  int n_bits
 )
@@ -668,7 +669,7 @@ void chem_print
 ;  }
 
 
-void chem_sim
+static void chem_sim
 (  struct chem* chems
 ,  int n_chem
 ,  dim start
@@ -702,7 +703,7 @@ void chem_sim
    }
 
 
-void chem_printall
+static void chem_printall
 (  struct chem* chems
 ,  int n_chem
 ,  int n_bits
@@ -713,7 +714,7 @@ void chem_printall
 ;  }
 
 
-void write_hist
+static void write_hist
 (  struct chem* chems
 ,  int n_chem
 ,  mcxIO* xf

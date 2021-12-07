@@ -11,8 +11,8 @@ clmps.defs.h: clmps.defs
 
 clmformat.c: clmformat.zmm.h
 
-bin_PROGRAMS = clmformat clm
-noinst_PROGRAMS = clmdag clmframe
+bin_PROGRAMS = clm
+noinst_PROGRAMS = clmdag clmframe clmformat
 
 clmformat_SOURCES = clmformat.c report.c
 clmframe_SOURCES = clmframe.c report.c
@@ -21,8 +21,8 @@ clmdag_SOURCES = clmdag.c report.c
 clm_SOURCES = clm.c clminfo2.c clminfo.c clmimac.c clmadjust.c clmresidue.c clmclose.c clmmate.c \
 					clmmeet.c clmps.c clmdist.c clmorder.c clmoptics.c report.c
 
-bin_SCRIPTS = mclpipeline
-noinst_SCRIPTS = mclgraga mclgrep
+## bin_SCRIPTS = mclpipeline
+noinst_SCRIPTS = mclgraga mclgrep mclpipeline
 
 EXTRA_DIST = clmorder.h clmdist.h clminfo2.h clminfo.h clmclose.h clmmate.h clmmeet.h clm.h \
 					clmadjust.h clmoptics.h clmresidue.h clmimac.h clmps.h clmps.defs.h\

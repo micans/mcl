@@ -753,7 +753,7 @@ static int cmp_pval
 #endif
 
 
-pval partition_select
+static pval partition_select
 (  pval* d
 ,  dim  N
 ,  dim  K
@@ -828,7 +828,7 @@ pval partition_select
     * of MCL_USE_PARTITION_TIES.
    */
 
-pval selectk
+static pval selectk
 (  pval* d
 ,  dim  N
 ,  dim  K

@@ -23,6 +23,7 @@
 #include <time.h>
 
 #include "mcx.h"
+#include "mcxclcf.h"
 
 #include "tingea/types.h"
 #include "tingea/io.h"

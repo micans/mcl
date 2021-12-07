@@ -28,7 +28,7 @@ struct mclIOV
 }  ;
 
 
-void*  mclIOVinit_v
+static void*  mclIOVinit_v
 (  void*   iovp
 )
    {  mclIOV* iov = (mclIOV*) iovp
@@ -213,7 +213,7 @@ struct compose_data
 
 
 
-void compose_thread
+static void compose_thread
 (  mclx* m2
 ,  dim colidx
 ,  void* data

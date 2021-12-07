@@ -411,7 +411,7 @@ static mcxstatus distMain
          ,  1.0
          )
 
-   ;  if (mci_g)
+   ;  if (mci_g)     /* tbcont what is --mci (hidden) for again? never implemented? */
 
    ;  for (i=0;i<stptr1->n_level;i++)
       {  mclx* c1       =  stptr1->level[i].mx

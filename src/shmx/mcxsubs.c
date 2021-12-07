@@ -338,7 +338,7 @@ mclVector*  VectorFromString
 )  ;
 
 
-void thin_out
+static void thin_out
 (  mclv* universe
 ,  double fac
 )
@@ -353,7 +353,7 @@ void thin_out
 ;  }
 
 
-void prune_edges
+static void prune_edges
 (  mclx* mx
 ,  double efac
 )
@@ -369,7 +369,7 @@ void prune_edges
    }
 
 
-void spec_exec
+static void spec_exec
 (  subspec_mt* spec
 ,  context_mt* ctxt
 ,  mcxIO*   xfmx_reread
@@ -379,13 +379,13 @@ void spec_exec
 )  ;
 
 
-mcxstatus spec_parse
+static mcxstatus spec_parse
 (  subspec_mt*  spec
 ,  context_mt*  ctxt
 )  ;
 
 
-void spec_init
+static void spec_init
 (  subspec_mt*  spec
 ,  const char*  str
 ,  int          ct
@@ -753,7 +753,7 @@ int main
 
 
 
-mcxstatus parse_fin
+static mcxstatus parse_fin
 (  mcxLink*    src
 ,  int         n_args_unused  cpl__unused
 ,  subspec_mt* spec
@@ -811,7 +811,7 @@ mcxstatus parse_fin
 ;  }
 
 
-mcxstatus parse_out
+static mcxstatus parse_out
 (  mcxLink*    src
 ,  int         n_args_unused cpl__unused
 ,  subspec_mt* spec
@@ -852,7 +852,7 @@ mcxstatus parse_out
 ;  }
 
 
-mcxstatus add_vec
+static mcxstatus add_vec
 (  const char*       dtype
 ,  int               itype
 ,  const mclVector*  invec
@@ -951,7 +951,7 @@ mcxstatus add_vec
 ;  }
 
 
-mclv* vec_from_ilist
+static mclv* vec_from_ilist
 (  const mcxLink* lk
 )
    {  mclv* result = mclvInit(NULL), *range = NULL
@@ -987,7 +987,7 @@ mclv* vec_from_ilist
 ;  }
 
 
-mcxstatus parse_dom
+static mcxstatus parse_dom
 (  mcxLink*    src
 ,  int         n_args_unused cpl__unused
 ,  subspec_mt* spec
@@ -1114,7 +1114,7 @@ mcxstatus parse_dom
 ;  }
 
 
-mcxstatus parse_path
+static mcxstatus parse_path
 (  mcxLink*    src
 ,  int         n_args_unused cpl__unused
 ,  subspec_mt* spec
@@ -1144,7 +1144,7 @@ mcxstatus parse_path
 
 
 
-mcxstatus parse_ext
+static mcxstatus parse_ext
 (  mcxLink*    src
 ,  int         n_args_unused cpl__unused
 ,  subspec_mt* spec
@@ -1199,7 +1199,7 @@ mcxstatus parse_ext
 ;  }
 
 
-mcxstatus parse_size
+static mcxstatus parse_size
 (  mcxLink*    src
 ,  int         n_args_unused cpl__unused
 ,  subspec_mt* spec
@@ -1256,7 +1256,7 @@ mcxstatus parse_size
 
 
 
-mcxstatus dispatch
+static mcxstatus dispatch
 (  mcxLink* src
 ,  subspec_mt* spec
 ,  context_mt* ctxt
@@ -1342,7 +1342,7 @@ mcxstatus dispatch
 ;  }
 
 
-mcxstatus extend_path
+static mcxstatus extend_path
 (  mclv*       dom
 ,  const mclv* path_set
 ,  context_mt* ctxt
@@ -1360,7 +1360,7 @@ mcxstatus extend_path
 
 
 
-mcxstatus extend_disc
+static mcxstatus extend_disc
 (  mclv*       dom
 ,  int         ext_disc
 ,  context_mt* ctxt
@@ -1388,7 +1388,7 @@ mcxstatus extend_disc
 ;  }
 
 
-mcxstatus spec_parse
+static mcxstatus spec_parse
 (  subspec_mt* spec
 ,  context_mt* ctxt
 )
@@ -1407,7 +1407,7 @@ mcxstatus spec_parse
 ;  }
 
 
-void spec_exec
+static void spec_exec
 (  subspec_mt* spec
 ,  context_mt* ctxt
 ,  mcxIO*   xfmx_reread

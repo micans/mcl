@@ -145,7 +145,7 @@ void clmVScoreCoverage
    ;  *cov = 0.0
    ;  *covmax = 0.0
 
-   ;  if (sum * sum)
+   ;  if (sum * sum > 0)
       {  double ctr  =  ssq / (powah ? pow(sum, powah) : (sum * sum))
       ;  dim n_join  =  score->n_vdif+score->n_meet+score->n_ddif
       ;  dim n_dom   =  (dim) (n_join - score->n_vdif)

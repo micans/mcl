@@ -13,12 +13,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <limits.h>
-#include <string.h>
 #include <ctype.h>
 #include <time.h>
 
@@ -641,7 +637,7 @@ const char* mclHelp[]
  * fixme: improve doio mish-mash, improve spaghetti (this) code in general.
 */
 
-void postprocess
+static void postprocess
 (  mclAlgParam* mlp
 ,  mclMatrix* cl
 )
@@ -955,7 +951,7 @@ mcxstatus mclAlgorithm
 ;  }
 
 
-mcxbool set_bit
+static mcxbool set_bit
 (  mclAlgParam*   mlp
 ,  const char*    opt
 ,  int            anch_id
@@ -992,7 +988,7 @@ mcxbool set_bit
 ;  }
 
 
-void make_output_name
+static void make_output_name
 (  mclAlgParam* mlp
 ,  mcxTing* suf
 ,  const char* mkappend
@@ -1099,13 +1095,13 @@ mcxstatus mclAlgorithmInit
 
    ;  if (fname)
       {  if (mlp->mx_input)
-         {  mcxErr(__func__, "PBD cached matrix and file argument")
+         {  mcxErr("__func__", "PBD cached matrix and file argument")
          ;  return ALG_INIT_FAIL
       ;  }
          mcxTingWrite(mlp->fnin, fname)
    ;  }
       else if (!mlp->mx_input)
-      {  mcxErr(__func__, "PBD need cached matrix or file argument")
+      {  mcxErr("__func__", "PBD need cached matrix or file argument")
       ;  return ALG_INIT_FAIL
    ;  }
 
@@ -1210,9 +1206,10 @@ mcxstatus mclAlgorithmInit
          ;
 
             case ALG_OPT_AMOIXA
-         :  helpbits |= MCX_OPT_DISPLAY_HIDDEN  
-         ;  case ALG_OPT_SHOWLONGHELP
-         :  helpbits |= MCX_OPT_DISPLAY_SKIP  
+         :  helpbits |= MCX_OPT_DISPLAY_HIDDEN  ;
+            // fall through
+            case ALG_OPT_SHOWLONGHELP
+         :  helpbits |= MCX_OPT_DISPLAY_SKIP
 
          ;  mcxOptApropos
             (  stdout

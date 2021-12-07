@@ -24,6 +24,7 @@
 #include <time.h>
 
 #include "mcx.h"
+#include "mcxalter.h"
 
 #include "tingea/types.h"
 #include "tingea/ding.h"

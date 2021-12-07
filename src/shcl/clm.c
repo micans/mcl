@@ -180,7 +180,7 @@ unsigned mcx_progress_g  =  0;
 mcxbool  mcx_test_g      =  FALSE;
 
 
-mcxstatus sharedArgHandle
+static mcxstatus sharedArgHandle
 (  int optid
 ,  const char* val
 ,  mcxDispHook*   hook

@@ -690,7 +690,7 @@ struct sparse_sel
 }  ;
 
 
-double sparse_sel_cb
+static double sparse_sel_cb
 (  const mclv* vec
 ,  void* data
 )

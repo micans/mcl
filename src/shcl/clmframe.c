@@ -261,7 +261,7 @@ static mcxTing* scratch3_g = NULL;
     *   we go up (ascend towards root) or down (descend towards leaves) the tree
     *   skipping such trivial clusters
    */
-treenode* treenode_new
+static treenode* treenode_new
 (  mcxGrim* gr
 ,  mcxbool ascend
 ,  dim   level
@@ -327,7 +327,7 @@ treenode* treenode_new
 ;  }
 
 
-void treenode_release
+static void treenode_release
 (  treenode* tn
 )
    {  mclvFree(&tn->leaves)
@@ -339,7 +339,7 @@ void treenode_release
    }
 
 
-dim get_projection
+static dim get_projection
 (  mclv* cluster
 ,  mclx* target
 ,  mclv* incident   /* no need to look at any other than these */
@@ -365,7 +365,7 @@ dim get_projection
 
 /* polish: bound checks */
 
-mclv* get_leaves_from_node
+static mclv* get_leaves_from_node
 (  dim      level
 ,  dim      j
 )
@@ -380,7 +380,7 @@ mclv* get_leaves_from_node
 ;  }
 
 
-mclx* frame_matrix
+static mclx* frame_matrix
 (  mcxLink* frame_start
 ,  dim* abdist
 ,  dim* badist
@@ -418,7 +418,7 @@ mclx* frame_matrix
 ;  }
 
 
-void report_treenode
+static void report_treenode
 (  const char* msg
 ,  const treenode* tn
 ,  mcxbool check_incidence
@@ -461,7 +461,7 @@ void report_treenode
 ;  }
 
 
-dim report_target_incidence
+static dim report_target_incidence
 (  const char* msg
 ,  int tid
 ,  const treenode* tn
@@ -487,7 +487,7 @@ dim report_target_incidence
 #define DUMP_DISTANCE   1 << 2
 
 
-void report_distance
+static void report_distance
 (  int n_clusters
 ,  int abdist
 ,  int badist
@@ -503,7 +503,7 @@ void report_distance
 
 
 
-dim dump_dist
+static dim dump_dist
 (  mcxLink* frame_start
 ,  dim dist
 )
@@ -524,7 +524,7 @@ dim dump_dist
          /* todo: test whether tn values in map_target_g lists
           * are all in the current frame
          */
-void dump_state
+static void dump_state
 (  const char* msg
 ,  mcxbits  mode
 ,  mcxLink* frame_start
@@ -569,7 +569,7 @@ void dump_state
 ;  }
 
 
-void clean_up_most_globals
+static void clean_up_most_globals
 (  mcxLink* frame_start
 )
    {  mcxLink* frame_curr = frame_start
@@ -595,7 +595,7 @@ void clean_up_most_globals
     * and create a linked list of treenodes for the children
    */
 
-mcxLink* fun_descend_tree_predict
+static mcxLink* fun_descend_tree_predict
 (  treenode* tnpivot
 ,  int *delta_tree_onto_target
 )
@@ -632,7 +632,7 @@ mcxLink* fun_descend_tree_predict
 ;  }
 
 
-void report_target_list
+static void report_target_list
 (  const char* msg
 ,  int tid
 ,  mcxLink* map_link
@@ -644,7 +644,7 @@ void report_target_list
 ;  }
 
 
-void report_treenode_list
+static void report_treenode_list
 (  const char* msg
 ,  mcxLink* lk_start
 )
@@ -656,7 +656,7 @@ void report_treenode_list
    }
 
 
-void init_map_target
+static void init_map_target
 (  mcxLink* frame_start
 )
    {  dim i
@@ -690,7 +690,7 @@ void init_map_target
 
       /* ordered on the level of the parent, smaller first */
 
-void fun_ascend_frame_update
+static void fun_ascend_frame_update
 (  mcxLink* frame_offset
 ,  treenode* pivot_insert     /* it is a new parent */
 )
@@ -726,7 +726,7 @@ void fun_ascend_frame_update
    }
 
 
-int fun_ascend_treenode_cmp
+static int fun_ascend_treenode_cmp
 (  const void* tn1v
 ,  const void* tn2v
 )
@@ -740,7 +740,7 @@ int fun_ascend_treenode_cmp
 ;  }
 
 
-void init_whittle_frame
+static void init_whittle_frame
 (  mcxLink* frame_start
 ,  dim w
 )
@@ -791,7 +791,7 @@ void init_whittle_frame
 ;  }
 
 
-mcxLink* init_frame
+static mcxLink* init_frame
 (  mcxbool  ascend
 )
    {  dim level = ascend ? 0 : n_clstack_g-1
@@ -842,7 +842,7 @@ mcxLink* init_frame
 
 
    /* we should be able to just compare tn == tnpivot */
-mcxbool not_in_skiplist
+static mcxbool not_in_skiplist
 (  mcxLink* frame_skipstart
 ,  treenode* tnpivot
 )
@@ -857,7 +857,7 @@ mcxbool not_in_skiplist
 ;  }
 
 
-void fun_ascend_target_predict     /* target onto tree */
+static void fun_ascend_target_predict     /* target onto tree */
 (  treenode* pivot_parent
 ,  mcxLink* frame_skipstart
 ,  int* onto_tree_target_parent
@@ -911,7 +911,7 @@ void fun_ascend_target_predict     /* target onto tree */
    }
 
 
-void fun_descend_target_predict     /* target onto tree */
+static void fun_descend_target_predict     /* target onto tree */
 (  treenode* tnpivot
 ,  mcxLink* child_start
 ,  int* onto_tree_target_pivot
@@ -980,7 +980,7 @@ void fun_descend_target_predict     /* target onto tree */
     * -  update map_target_g
     * -  get rid of everything in frame_skipstart->()->()..()->frame_skipend.
    */
-void fun_ascend_state_update
+static void fun_ascend_state_update
 (  mcxbool do_ascend
 ,  treenode* dummy_parent
 ,  mcxLink*  frame_start
@@ -1087,7 +1087,7 @@ void fun_ascend_state_update
     * takes ownership of child_start/child_end
     * but not of tnpivot
    */
-mcxLink* fun_descend_state_update
+static mcxLink* fun_descend_state_update
 (  mcxbool do_descend
 ,  treenode* tnpivot
 ,  mcxLink*  frame_curr
@@ -1205,7 +1205,7 @@ mcxLink* fun_descend_state_update
     *
     * Sets leaves, inc and onto_target in pivot_parent
    */
-mcxLink* fun_ascend_tree_predict
+static mcxLink* fun_ascend_tree_predict
 (  mcxLink*    frame_pivot
 ,  mcxLink*    frame_start
 ,  treenode*   pivot_parent          /* parent to frame_pivot->val */
@@ -1309,7 +1309,7 @@ mcxLink* fun_ascend_tree_predict
 ;  }
 
 
-void fun_ascend_the_tree
+static void fun_ascend_the_tree
 (  mcxLink* frame_start
 )
    {  dim dist = DIM_MAX
@@ -1457,7 +1457,7 @@ void fun_ascend_the_tree
    }
 
 
-void fun_descend_the_tree
+static void fun_descend_the_tree
 (  mcxLink* frame_start
 )
    {  dim dist = DIM_MAX

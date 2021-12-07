@@ -285,7 +285,7 @@ static const char* fname_defs = "clmformat.zmm";
 */
 
 
-void print_el_scores
+static void print_el_scores
 (  mcxTing* scr
 ,  clmVScore* score
 )
@@ -316,7 +316,7 @@ void print_el_scores
 ;  }
 
 
-void freenames
+static void freenames
 (  char** fnames
 )
    {  char** baseptr = fnames
@@ -335,7 +335,7 @@ void freenames
  * nrof elements ...
  * format for nodes: %i:%t <%i t="%t"> etc
 */
-void dodump
+static void dodump
 (  mcxIO*   xf_dump
 ,  mclx*    cl
 ,  mclTab*  tab      /* NULL allowed */
@@ -387,7 +387,7 @@ void dodump
    }
 
 
-char** mknames
+static char** mknames
 (  mclMatrix* cl
 ,  const char* base
 ,  int batchsize
@@ -452,7 +452,7 @@ char** mknames
  * fixme: less verbose way with clew/scan.h now possible?
 */
 
-mclMatrix* mkclvals
+static mclMatrix* mkclvals
 (  mclMatrix* mx
 ,  mclMatrix* cl
 ,  mclMatrix* cl_on_cl
@@ -484,7 +484,7 @@ mclMatrix* mkclvals
  *    for other clusters, it has to be computed on the fly.
 */
 
-clmVScore* mkelvals
+static clmVScore* mkelvals
 (  mclMatrix* mx
 ,  mclMatrix* cl
 ,  mclMatrix* el_to_cl
@@ -500,7 +500,7 @@ clmVScore* mkelvals
 ;  }
 
 
-long getclusid
+static long getclusid
 (  mclMatrix* el_to_cl
 ,  long elid
 )
@@ -509,7 +509,7 @@ long getclusid
 ;  }
 
 
-void mkanindex
+static void mkanindex
 (  const char* ind1
 ,  const char* ind2
 ,  char* title_ind2_unused cpl__unused
@@ -613,7 +613,7 @@ void mkanindex
 ;  }
 
 
-void mkindex
+static void mkindex
 (  const char* infix
 ,  mclMatrix* mx
 ,  mclMatrix* cl

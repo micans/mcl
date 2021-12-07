@@ -197,7 +197,7 @@ void mclgKNN
 
 
 
-void mclgKNNmerge
+static void mclgKNNmerge
 (  mclx* mx
 ,  dim knn
 )

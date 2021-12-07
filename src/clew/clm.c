@@ -66,7 +66,7 @@ mclx* clmProject
 ;  }
 
 
-double clmLogVariance
+static double clmLogVariance
 (  const mclx*  cl
 )
    {  double v = 0.0

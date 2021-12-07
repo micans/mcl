@@ -26,6 +26,8 @@
 #include <time.h>
 
 #include "clm.h"
+#include "report.h"
+#include "clminfo2.h"
 
 #include "tingea/types.h"
 #include "tingea/io.h"
@@ -238,7 +240,7 @@ struct info_bundle
 }  ;
 
 
-double info_do
+static double info_do
 (  const mclx* mx
 ,  const mclv* cl
 ,  dim idx
@@ -274,7 +276,7 @@ static mcxstatus info2Main
 ,  const char*  argv[]
 )
    {  mclx* mx
-   ;  struct info_bundle ib = { NULL, NULL }
+   ;  struct info_bundle ib = { NULL, NULL, NULL, 0 }
    ;  int a =  0
 
    ;  mcxIO* xfmx = mcxIOnew(argv[a++], "r")

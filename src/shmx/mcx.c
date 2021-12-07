@@ -158,7 +158,7 @@ mcxbool  mcx_test_g      =  FALSE;
 mcxbool  mcx_wb_g =  FALSE;
 
 
-mcxstatus sharedArgHandle
+static mcxstatus sharedArgHandle
 (  int optid
 ,  const char* val
 ,  mcxDispHook*   hook

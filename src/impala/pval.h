@@ -239,6 +239,11 @@ double fltMax
 ,  pval     d2
 )  ;
 
+double fltMinNZ
+(  pval     d1
+,  pval     d2
+)  ;
+
 
 /* returns the max if both are nonzero, zero otherwise */
 

@@ -3,7 +3,9 @@
 
 include $(top_srcdir)/include/include.am
 
-bin_PROGRAMS = mcl mclcm
+bin_PROGRAMS = mcl
+noinst_PROGRAMS = mclcm
+
 mcl_SOURCES = mcl.c
 mclcm_SOURCES = mclcm.c
 

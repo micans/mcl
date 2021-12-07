@@ -22,7 +22,7 @@
 #include "tingea/err.h"
 
 
-double mclvMedian
+static double mclvMedian
 (  const mclv* vecx
 )
    {  mclv* vec = mclvClone(vecx)
@@ -39,7 +39,7 @@ double mclvMedian
 ;  }
 
 
-double mclvAvg
+static double mclvAvg
 (  const mclv* vec
 )
    {  if (vec->n_ivps)
@@ -301,7 +301,7 @@ mclv* mcl_density_adjust
 ;fprintf(stdout, " %f\n", pow(factor, da_inflate))
    ;  }
       {  double qvmax = mclvMaxValue(qv)
-      ;  int i
+      ;  dim i
       ;  for (i=0;i<qv->n_ivps;i++)
          {  if (qv->ivps[i].val)
             qv->ivps[i].val /= qvmax

@@ -22,7 +22,7 @@ clm_SOURCES = clm.c clminfo2.c clminfo.c clmimac.c clmadjust.c clmresidue.c clmc
 					clmmeet.c clmps.c clmdist.c clmorder.c clmoptics.c report.c
 
 ## bin_SCRIPTS = mclpipeline
-noinst_SCRIPTS = mclgraga mclgrep mclpipeline
+noinst_SCRIPTS = mclgraga mclgrep
 
 EXTRA_DIST = clmorder.h clmdist.h clminfo2.h clminfo.h clmclose.h clmmate.h clmmeet.h clm.h \
 					clmadjust.h clmoptics.h clmresidue.h clmimac.h clmps.h clmps.defs.h\

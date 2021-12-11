@@ -1,5 +1,7 @@
 
 
+   *  ...
+
    *  Mcl source is now hosted on github.com/micans/mcl .
 		Compiling mcl now requires installation of cimfomfa, which provides the C
 		utility library libtingea.

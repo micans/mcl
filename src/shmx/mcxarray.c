@@ -1446,25 +1446,27 @@ static dim get_correlation
          ;  mclv* veccx = mcldMinus(vecc, merge, NULL)
          ;  mclv* vecdx = mcldMinus(vecd, merge, NULL)
 
+         ;  double N2   =  N - merge->n_ivps
          ;  double s1x  =  mclvSum(veccx)
-         ;  double Nsq1x=  N * mclvPowSum(veccx, 2.0)       /* fixme: still use this N ? */
+         ;  double Nsq1x=  N2 * mclvPowSum(veccx, 2.0)
 
          ;  double s2x  = mclvSum(vecdx)
-         ;  double Nsq2x= N * mclvPowSum(vecdx, 2.0)
+         ;  double Nsq2x= N2 * mclvPowSum(vecdx, 2.0)
 
          ;  n_reduced++
 
          ;  nomleftx =  sqrt(Nsq1x - s1x * s1x)
          ;  nom      =  nomleftx * sqrt(Nsq2x - s2x*s2x)
-         ;  score    =  nom ? ((N*ip - s1x*s2x) / nom) : 0.0
+         ;  score    =  nom ? ((N2*ip - s1x*s2x) / nom) : 0.0
          ;  offending=  nomleftx ? d : c              /* prepare in case !nom */
 
 ;if(0)fprintf(stderr, "vec %d have %d vec %d have %d nom %.2f", (int) c, (int) veccx->n_ivps,  (int) d, (int) vecdx->n_ivps, nom)
-;if(0)fprintf(stderr, " sum1 %.2f sum2 %.2f Nip %.2f N=%d ip=%.2f score %g\n", s1x, s2x, (double) N * ip, (int) N, ip, score)
+;if(0)fprintf(stderr, " sum1 %.2f sum2 %.2f Nip %.2f N=%d ip=%.2f score %g\n", s1x, s2x, (double) N2 * ip, (int) N, ip, score)
          ;  mclvFree(&merge)
          ;  mclvFree(&veccx)
          ;  mclvFree(&vecdx)
       ;  }
+
          else
          {  double s2   =  sums->ivps[d].val
          ;  nom  =  nomleft * sqrt(Nssqs->ivps[d].val - s2*s2)

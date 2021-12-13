@@ -1,4 +1,7 @@
 
+clxdo or other script to compute distances for line-based <LABEL> <CID> cluster format
+
+
 ! statsReset moved. valgrind it.
 
  -  mclxVectorDispatch why is matrix argument not const.

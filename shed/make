@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -euo pipefail
+
+target=""
+subdir=""
+
+if (( $# == 1 )); then
+   subdir=$1
+elif (( $# == 2 )); then
+   subdir=$1
+   target=$2
+fi
+
+if [[ ! -d slate/build ]]; then
+   echo "no dir"
+   false
+fi
+
+cd slate/build/$subdir
+
+make $target 2>&1 | tee make.log
+

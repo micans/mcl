@@ -204,7 +204,7 @@ static dim n_thread_l = 0;
 static dim start_g = 0;
 static dim end_g = 0;
 
-static double minkowski = 0.0;
+static double g_minkowski = 0.0;
 
 static double g_epsilon        =  1e-6;
 
@@ -212,14 +212,15 @@ static double g_epsilon        =  1e-6;
 static unsigned int support_modalities = 0;
 
 
+                           /* The thing where we keep track */
 struct abacus
 {  const mclx* tbl
-;  mclx*       res
-;  mclx*       na          /* const? */
+;  const mclx* na
+;  const mclv* Nssqs
+;  const mclv* sums
 ;  double      cutoff
-;  mclv*       Nssqs       /* const? */
-;  mclv*       sums        /* const? */
 ;  mcxbits     bits
+;  mclx*       res
 ;
 }  ;
 
@@ -442,12 +443,12 @@ static double mclv_inner_minkowski
    ;  double norm = 0.0
 
    ;  if (a->n_ivps < N || b->n_ivps < N)
-      return minkowski ? mclvMinkowski(a, b, minkowski) : mclvChebyshev(a, b)
+      return g_minkowski ? mclvMinkowski(a, b, g_minkowski) : mclvChebyshev(a, b)
 
-   ;  if (minkowski)
+   ;  if (g_minkowski)
       {  for (j=0;j<a->n_ivps;j++)
-         norm += pow(fabs(a->ivps[j].val - b->ivps[j].val), minkowski)
-      ;  return pow(norm, 1/minkowski)
+         norm += pow(fabs(a->ivps[j].val - b->ivps[j].val), g_minkowski)
+      ;  return pow(norm, 1/g_minkowski)
    ;  }
 
       else
@@ -1192,8 +1193,8 @@ static dim get_correlation
 )
    {  const mclx* tbl   =  abc->tbl
    ;  const mclx* mxna  =  abc->na
-   ;  mclv* Nssqs       =  abc->Nssqs
-   ;  mclv* sums        =  abc->sums
+   ;  const mclv* Nssqs =  abc->Nssqs
+   ;  const mclv* sums  =  abc->sums
    ;  mcxbits bits      =  abc->bits
 
    ;  double N  = MCX_MAX(N_ROWS(tbl), 1)      /* fixme; bit odd */
@@ -1344,12 +1345,12 @@ static dim do_range_do
    ;  int n_mod =  MCX_MAX(1+ (MCX_MAX(1, n_thread_l) * 2 * (end - start -1))/40, 1)
    ;  dim n_reduced  =  0
 
-   ;  const mclx* tbl = abc->tbl
+   ;  const mclx* tbl   = abc->tbl
+   ;  const mclx* mxna  =  abc->na
+   ;  const mclv* Nssqs =  abc->Nssqs
+   ;  const mclv* sums  =  abc->sums
    ;  mclx* res      =  abc->res
-   ;  mclx* mxna     =  abc->na
    ;  double cutoff  =  abc->cutoff
-   ;  mclv* Nssqs    =  abc->Nssqs
-   ;  mclv* sums     =  abc->sums
    ;  mcxbits bits   =  abc->bits
 
    ;  mclv* scratch  =  mclvCopy(NULL, tbl->dom_cols)
@@ -1816,15 +1817,15 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          :  case MY_OPT_TAXI
          :  case MY_OPT_L00
          :  
-            minkowski = 1.0
+            g_minkowski = 1.0
          ;  if (anch->id == MY_OPT_L00)
-            minkowski = 0.0
+            g_minkowski = 0.0
          ;  else if (anch->id == MY_OPT_EUCLID)
-            minkowski = 2.0
+            g_minkowski = 2.0
          ;  else if (anch->id == MY_OPT_MINKOWSKI)
-            minkowski = atof(opt->val)
-         ;  if (minkowski < 0)
-            minkowski = 2.0
+            g_minkowski = atof(opt->val)
+         ;  if (g_minkowski < 0)
+            g_minkowski = 2.0
          ;  main_modalities |= ARRAY_MINKOWSKI
          ;  break
          ;

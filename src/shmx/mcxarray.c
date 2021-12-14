@@ -9,6 +9,8 @@
 
 /*    TODO
 
+!  Perhaps (annoy) KNN network construction obviates most TODOs here.
+
 -  { -j -J } should work independently from -t; different
    jobs should be able to have different number of threads.
    So, hierarchical slicing.
@@ -17,7 +19,7 @@
 -  Dice coefficient  2 * in(x,y)  / ( ||x||^2 + ||y||^2 )
 
 -  Kendall Tau
-   Fast algorithms for the calculation of Kendall’s Tau, David Christensen.
+   Fast algorithms for the calculation of Kendall's Tau, David Christensen.
 
 -  Speed up all vs all in metric case.
       M-tree, "Searching in Metric Spaces", Chavez et al
@@ -35,7 +37,9 @@
 
 -  table reading elsewhere in mcl-edge
 
-http://www.mathworks.com/matlabcentral/fileexchange/15935-computing-pairwise-distances-and-metrics/content/pwmetric/slmetric_pw.m
+histogram intersect (perhaps now deleted content code was a poor cousin of that).
+chi-square distance
+information theoretical divergence
 
 A
 B
@@ -47,21 +51,6 @@ cb
 e  = A \/ B    (everything)
 d  = e \ c     (difference)
 
-sum(a)
-sum(a,2)
-in(ca, cb)
-
-restrict(a,c)  a restricted to c
-restrict
-union(a,c,max)
-union(a,c,add)
-a+1
-a*2
-a[a>3]   restrict(a, a>3)
-
-
-
-
 Monve, V.; Introduction to Similarity Searching in Chemistry.
 www.orgchm.bas.bg/~vmonev/SimSearch.pdf
  fingerprint distances:
@@ -72,8 +61,8 @@ www.orgchm.bas.bg/~vmonev/SimSearch.pdf
       soergel            D    (a+b)/(a +b +c)
       patternDifference       ab / (a+b+c+d)^2
       variance                (a+b)/4(a+b+c+d)
-      size                    (a−b)^2/(a+b+c+d)^2
-      shape                   (a+b)/(a+b+c+d) - [(a−b) (a+b+c+d)]^2
+      size                    (a+b)^2/(a+b+c+d)^2
+      shape                   (a+b)/(a+b+c+d) - [(a+b) (a+b+c+d)]^2
   +   jaccard/tanimoto        c / (a+b+c)
       dice                    2c / (a+b)
       mt
@@ -88,7 +77,7 @@ www.orgchm.bas.bg/~vmonev/SimSearch.pdf
       robust
       hamann
       yule
-      pearson                 (cd−ab) / sqrt((a+c)(b+c)(a+d)(b+d))
+      pearson                 (cd+ab) / sqrt((a+c)(b+c)(a+d)(b+d))
       mcconnaughey
       stiles
       simpson
@@ -141,7 +130,7 @@ const char* syntax = "Usage: mcxarray <-data <data-file> | -imx <mcl-file> [opti
 #define ARRAY_COSINESKEW   (1 <<   3)     /* experimental */
 #define ARRAY_SUBSET_MEET  (1 <<   4)
 #define ARRAY_SUBSET_DIFF  (1 <<   5)
-#define ARRAY_CONTENT      (1 <<   6)
+
 #define ARRAY_DOT          (1 <<   7)
 #define ARRAY_FINGERPRINT  (1 <<   8)
 #define ARRAY_SINE         (1 <<   9)
@@ -160,19 +149,12 @@ const char* syntax = "Usage: mcxarray <-data <data-file> | -imx <mcl-file> [opti
 #define MODE_NOWRITE       (1 <<   4)
 #define MODE_SPARSE        (1 <<   5)
 
-#define CONTENT_AVERAGE    (1 <<   0)
-#define CONTENT_COSINE     (1 <<   1)
-#define CONTENT_EUCLID     (1 <<   2)
-#define CONTENT_INTERSECT  (1 <<   3)
-#define CONTENT_MEDIAN     (1 <<   4)
-
 #define FP_TANIMOTO              0
 #define FP_MEET                  1
 #define FP_COSINE                2
 #define FP_COVER                 3
 #define FP_HAMMING               4
 
-#define CONTENT_DEFAULT    (CONTENT_MEDIAN | CONTENT_COSINE | CONTENT_EUCLID | CONTENT_INTERSECT)
 
 
   /* Mutual information (Fast Calculation of pairwise mutual information for gene
@@ -572,8 +554,6 @@ enum
 ,  MY_OPT_DOT
 ,  MY_OPT_SUBSET_MEET
 ,  MY_OPT_SUBSET_DIFF
-,  MY_OPT_CONTENT
-,  MY_OPT_CONTENTX
 ,  MY_OPT_NOTES
 ,  MY_OPT_FINGERPRINT
 ,  MY_OPT_SPARSE
@@ -833,23 +813,11 @@ mcxOptAnchor options[]
    ,  NULL
    ,  "compute arc weight SQRT(<self * other>) / || self ||"
    }
-,  {  "--content"
-   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
-   ,  MY_OPT_CONTENT
-   ,  NULL
-   ,  "compute fantastic mr formula"
-   }
 ,  {  "--no-write"
    ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
    ,  MY_OPT_NW
    ,  NULL
    ,  "exit after computation of correlations"
-   }
-,  {  "-content"
-   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
-   ,  MY_OPT_CONTENTX
-   ,  "(v)verage (c)osine (e)uclid (i)ntersect (m)edian"
-   ,  "compute fantastic mr formula with parts specified"
    }
 ,  {  "--notes"
    ,  MCX_OPT_HIDDEN
@@ -971,7 +939,6 @@ mcxOptAnchor options[]
 
 static mclTab* tab_g = NULL;
 static mcxbool sym_g = TRUE;
-static mcxbits contentx_g = 0;
 static mcxenum fingerprint_g = 0;
 static mcxbool progress_g = TRUE;
 
@@ -1202,181 +1169,6 @@ static double ivp_get_double
 ;  }
 
 
-static double get_array_content_score
-(  const mclx* tbl
-,  dim c
-,  dim d
-,  mclv* meet_c
-)
-   {  mclv* vecc, *vecd, *meet_d
-   ;  double euclid = 1.0, meet_fraction = 1.0, score , sum_meet_c, sum_meet_d
-   ;  double iqrc, iqrd
-   ;  double reduction_c = 1.0, reduction_d = 1.0
-   ;  double median = 1.0, medianc = 1.0, mediand = 1.0
-   ;  double ip = 1.0, cd = 1.0, csn = 1.0
-   ;  double mean = 1.0, meanc = 1.0, meand = 1.0
-
-   ;  vecc = mclvClone(tbl->cols+c)
-   ;  vecd = mclvClone(tbl->cols+d)
-   ;  meet_d = mcldMeet(vecd, meet_c, NULL)
-
-            /* the only purpose is here is to reweight the scores in meet_c */
-   ;  sum_meet_c = mclvSum(meet_c)
-   ;  sum_meet_d = mclvSum(meet_d)
-
-   ;  if (!sum_meet_c || !sum_meet_d)
-      return 0.0
-
-   ;  if (mxseql && mxseqr)
-      {  const mclv* c_start = mxseql->cols+c
-      ;  const mclv* c_end   = mxseqr->cols+c
-      ;  const mclv* d_start = mxseql->cols+d
-      ;  const mclv* d_end   = mxseqr->cols+d
-
-      ;  mclv* width_c =  mclvBinary(c_end, c_start, NULL, fltSubtract)
-      ;  mclv* width_d =  mclvBinary(d_end, d_start, NULL, fltSubtract)
-
-      ;  mclv* rmin   = mclvBinary(c_end, d_end, NULL, fltMin)
-      ;  mclv* lmax   = mclvBinary(c_start, d_start, NULL, fltMax)
-      ;  mclv* delta  = mclvBinary(rmin, lmax, NULL, fltSubtract)
-      ;  mclv* weight_c, *weight_d
-
-      ;  mclvSelectGqBar(delta, 0.0)
-      ;  weight_c = mclvBinary(delta, width_c, NULL, mydiv)
-      ;  weight_d = mclvBinary(delta, width_d, NULL, mydiv)
-
-      ;  mclvBinary(meet_c, weight_c, meet_c, fltMultiply)
-      ;  mclvBinary(meet_d, weight_d, meet_d, fltMultiply)
-
-;if(0&&c!=d)
-mclvaDump(width_c,stdout,5,"\n",0),mclvaDump(width_d,stdout,5,"\n",0)
-
-      ;  mclvFree(&width_c)
-      ;  mclvFree(&width_d)
-      ;  mclvFree(&rmin)
-      ;  mclvFree(&lmax)
-      ;  mclvFree(&delta)
-      ;  mclvFree(&weight_c)
-      ;  mclvFree(&weight_d)
-
-      ;  reduction_c = mclvSum(meet_c) / sum_meet_c
-      ;  reduction_d = mclvSum(meet_d) / sum_meet_d
-   ;  }
-
-      score = 1.0
-
-               /* A and B are vectors; denote the indices on which both
-                * A and B are nonzero by A/\\B
-                * A* denotes the subset of entries of A restricted to A/\\B
-                * B* denotes the subset of entries of B restricted to A/\\B
-                * Then:
-                * median:  min(median(A), median(B))
-                * average: min(avg(A*), avg(B*))
-                * cosine:  cosine(A*, B*)
-                * euclid:  sqrt(sumsq(A*) / sumsq(A))
-                * isect:   #A* / #A
-                *
-                *         |||||
-                *       |||||||||
-                *    ||||||||||||||||
-                * ||||||||||||||||||||||||||||||||||||||
-                *
-                *               |||||
-                *             |||||||||
-                *          ||||||||||||||||
-                *     ||||||||||||||||||||||||||||||||||||||||
-                *
-                *     ----------------------------------
-               */
-   ;  if (contentx_g & CONTENT_MEDIAN)
-      {  mclvSortDescVal(vecc)
-      ;  mclvSortDescVal(vecd)
-      ;  medianc = mcxMedian(vecc->ivps, vecc->n_ivps, sizeof vecc->ivps[0], ivp_get_double, &iqrc)
-      ;  mediand = mcxMedian(vecd->ivps, vecd->n_ivps, sizeof vecd->ivps[0], ivp_get_double, &iqrd)
-      ;  median = MCX_MIN(medianc, mediand)
-      ;  score *= median
-   ;  }
-      else if (contentx_g & CONTENT_AVERAGE)
-      {  meanc = meet_c->n_ivps ? mclvSum(meet_c) / meet_c->n_ivps : 0.0
-      ;  meand = meet_d->n_ivps ? mclvSum(meet_d) / meet_d->n_ivps : 0.0
-      ;  mean  = MCX_MIN(meanc, meand)
-      ;  score *= mean
-   ;  }
-
-      if (contentx_g & CONTENT_COSINE)
-      {  ip = mclvIn(meet_c, meet_d)
-      ;  cd = sqrt(mclvPowSum(meet_c, 2.0) * mclvPowSum(meet_d, 2.0))
-      ;  csn = cd ? ip / cd : 0.0
-      ;  score *= csn
-   ;  }
-
-      if (contentx_g & CONTENT_EUCLID)
-      {  euclid = reduction_c ? sqrt(mclvPowSum(meet_c, 2.0) / mclvPowSum(vecc, 2.0)) : 0.0
-      ;  score *= euclid
-   ;  }
-
-      if (contentx_g & CONTENT_INTERSECT)
-      {  meet_fraction = meet_c->n_ivps * 1.0 / vecc->n_ivps
-      ;  score *= meet_fraction
-   ;  }
-
-      if (0)
-      fprintf
-      (  stdout
-      ,  "%10d%10d%10d%10d%10d%10g%10g%10g%10g%10g%10g%10g%15g\n"
-      ,  (int) c
-      ,  (int) d
-      ,  (int) (vecc->n_ivps - meet_c->n_ivps)
-      ,  (int) (vecd->n_ivps - meet_d->n_ivps)
-      ,  (int) meet_c->n_ivps
-      ,  score
-      ,  mean
-      ,  csn
-      ,  euclid
-      ,  meet_fraction
-      ,  reduction_c
-      ,  reduction_d
-      ,  median
-      )
-
-
-   ;  mclvFree(&meet_d)
-   ;  mclvFree(&vecc)
-   ;  mclvFree(&vecd)
-
-   ;  return score
-;  }
-
-
-
-
-#if 0
-         {  mclv* meet_d = mcldMeet2(vecd, meet_c, NULL)
-         ;  double ip   =  mclvIn(meet_c, meet_d)
-         ;  double cd   =  sqrt(mclvPowSum(meet_c, 2.0) * mclvPowSum(meet_d, 2.0))
-         ;  double csn  =  cd ? ip / cd : 0.0
-         ;  double meanc = mclvSum(meet_c) / meet_c->n_ivps
-         ;  double meand = mclvSum(meet_d) / meet_d->n_ivps
-         ;  double mean =  MCX_MIN(meanc, meand)
-
-         ;  double euclid =   0
-                           ?  1.0
-                           :  (  mean
-                              ?  sqrt(mclvPowSum(meet_c, 2.0) / mclvPowSum(vecc, 2.0))
-                              :  0.0
-                              )
-         ;  score       =  mean * csn * euclid  * (meet_c->n_ivps * 1.0 / vecc->n_ivps)
-
-   ;if (0 && score)
-   fprintf(stdout, "c=%lu d=%lu meet=%d mean=%5g csn=%5g euclid=%5g score=%5g\n", (ulong) c, (ulong) d, (int) meet_c->n_ivps, mean, csn, euclid, score)
-         ;  nom = 1                    /* nonsensical; document */
-         ;  if (!vecd->n_ivps)
-            offending = d              /* nonsensical; document */
-         ;  mclvFree(&meet_d)
-      ;  }
-#endif
-
-
      /* Pearson correlation coefficient:
       *                     __          __   __ 
       *                     \           \    \  
@@ -1449,17 +1241,6 @@ static dim get_correlation
       ;  nom         =  sqrt(Nssqs->ivps[c].val / N)
       ;  score       =  nom ? sqrt(ip > 0 ? ip : 0) / nom : 0.0
       ;  offending   =  c
-   ;  }
-
-      else if (bits & ARRAY_CONTENT)
-      {  mclv* meet_c = mcldMeet2(vecc, vecd, NULL)
-      ;  if
-         (  3 * meet_c->n_ivps >= vecc->n_ivps
-         || 3 * meet_c->n_ivps >= vecd->n_ivps
-         )
-         score = get_array_content_score(tbl, c, d, meet_c)
-      ;  nom = 1
-      ;  mclvFree(&meet_c)
    ;  }
 
       else if (bits & ARRAY_FINGERPRINT)
@@ -2031,31 +1812,8 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
             break
          ;
 
-            case MY_OPT_CONTENTX
-         :  main_modalities |= ARRAY_CONTENT
-         ;  sym_g = FALSE
-         ;  {  const char* c = opt->val
-            ;  for(;c[0];c++)
-               switch(c[0])
-               {  case  'v' : contentx_g |= CONTENT_AVERAGE ;  break
-               ;  case  'c' : contentx_g |= CONTENT_COSINE  ;  break
-               ;  case  'e' : contentx_g |= CONTENT_EUCLID  ;  break
-               ;  case  'i' : contentx_g |= CONTENT_INTERSECT; break
-               ;  case  'm' : contentx_g |= CONTENT_MEDIAN  ;  break
-               ;  default: mcxDie(1, me, "unsupported mode -content mode [%c]", (int) (unsigned char) c[0])
-            ;  }
-            }
-            break
-         ;
-
             case MY_OPT_NW
          :  support_modalities |= MODE_NOWRITE
-         ;  break
-         ;
-
-            case MY_OPT_CONTENT
-         :  main_modalities |= ARRAY_CONTENT
-         ;  sym_g = FALSE
          ;  break
          ;
 
@@ -2182,9 +1940,6 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
 
    ;  mcxOptFree(&opts)
 
-   ;  if ((main_modalities & ARRAY_CONTENT) && !contentx_g)
-      contentx_g = CONTENT_DEFAULT
-
    ;  if (n_thread_l && (start_g || end_g))
       mcxDie(1, me, "-start and -end do not mix with -t -J or -j")
                                     /* dangersign: start_g, threads, and groups */ 
@@ -2236,9 +1991,9 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
       ;  dim N_na = 0
       ;  mclx* mxna  =  NULL
       ;  mclx* tbl   =
-                                                   /* fixme skeleton read makes subsequent code bit brittle */
-               read_table                          /* fixme docme what is ARRAY_CONTENT about? */
-               ?  (  (support_modalities & MODE_JOBINFO && !(main_modalities & ARRAY_CONTENT))
+                                 /* fixme skeleton read makes subsequent code bit brittle */
+               read_table
+               ?  (  support_modalities & MODE_JOBINFO
                   ?  mclxReadSkeleton(xfin, 0, FALSE)
                   :  mclxRead(xfin, EXIT_ON_FAIL)
                   )
@@ -2263,7 +2018,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                                                              * interaction with mxna computation later
                                                             */
       ;  if
-         (  !(main_modalities & (ARRAY_CONTENT | ARRAY_FINGERPRINT))
+         (  !(main_modalities & ARRAY_FINGERPRINT)
          && !(support_modalities & (MODE_SPARSE | MODE_ZEROASNA))
          )
          {  dim n_entries_in = mclxNrofEntries(tbl), n_entries_table = 0
@@ -2336,7 +2091,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
 
       ;  if (support_modalities & MODE_ZEROASNA)
          {  dim i
-         ;  if (main_modalities & (ARRAY_COSINESKEW | ARRAY_SUBSET_MEET | ARRAY_SUBSET_DIFF | ARRAY_CONTENT | ARRAY_FINGERPRINT))
+         ;  if (main_modalities & (ARRAY_COSINESKEW | ARRAY_SUBSET_MEET | ARRAY_SUBSET_DIFF | ARRAY_FINGERPRINT))
             mcxDie(1, me, "--zero-as-na only supported with --spearman or --pearson or --cosine")
 /* fixme: zero-as-na supported when exactly? */
          ;  if (!(main_modalities & (ARRAY_SPEARMAN | ARRAY_PEARSON | ARRAY_COSINE)))
@@ -2347,7 +2102,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          ;  mcxTell(me, "have %d NAs from zero", (int) mclxNrofEntries(mxna))
       ;  }
          else
-         {  if (main_modalities & (ARRAY_SUBSET_DIFF | ARRAY_SUBSET_MEET | ARRAY_CONTENT | ARRAY_FINGERPRINT))
+         {  if (main_modalities & (ARRAY_SUBSET_DIFF | ARRAY_SUBSET_MEET | ARRAY_FINGERPRINT))
             mclxUnary(tbl, fltxCopy, NULL)    /* this removes zeroes from the matrix */
          ;  else
             {  dim i
@@ -2416,7 +2171,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                ,  n_thread_l
                ,  n_group_G
                ,  i_group
-               ,  (main_modalities & (ARRAY_FINGERPRINT | ARRAY_CONTENT | ARRAY_SUBSET_MEET | ARRAY_SUBSET_DIFF))
+               ,  (main_modalities & (ARRAY_FINGERPRINT | ARRAY_SUBSET_MEET | ARRAY_SUBSET_DIFF))
                )
 
             ;  while (ji.dvd_joblo2 < ji.dvd_jobhi1)

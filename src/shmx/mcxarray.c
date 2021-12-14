@@ -150,6 +150,7 @@ const char* syntax = "Usage: mcxarray <-data <data-file> | -imx <mcl-file> [opti
 #define ARRAY_HSINE        (1 <<  12)
 #define ARRAY_HCOSINE      (1 <<  13)
 #define ARRAY_MINKOWSKI    (1 <<  14)
+#define ARRAY_RUN_NACODE   (1 <<  15)
 
 #define MODE_ZEROASNA      (1 <<   0)
 #define MODE_TRANSPOSE     (1 <<   1)
@@ -428,6 +429,7 @@ static double mclv_inner_minkowski
 ;  }
 
 
+                     /* use regular loop for non-sparse data */
 static double mclv_inner_dot
 (  const mclv* a
 ,  const mclv* b
@@ -560,6 +562,7 @@ enum
 ,  MY_OPT_NW
 ,  MY_OPT_HELP
 ,  MY_OPT_VERSION
+,  MY_OPT_RUN_NACODE
 ,  MY_OPT_AMOIXA
 }  ;
 
@@ -686,6 +689,12 @@ mcxOptAnchor options[]
    ,  MY_OPT_SPEARMAN
    ,  NULL
    ,  "compute edge weight as Spearman rank correlation score"
+   }
+,  {  "--runnacode"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  MY_OPT_RUN_NACODE
+   ,  NULL
+   ,  "trigger na branch for cosine/pearson/spearman"
    }
 ,  {  "--zero-as-na"
    ,  MCX_OPT_DEFAULT
@@ -1012,7 +1021,7 @@ static mclx* read_data
                ;  continue
             ;  }
 
-               if (p - o == 0)
+               if (p - o == 0)   /* this case is an empty column (<TAB><TAB>) */
                val = 0.0
             ;  else if (p - o == 3 && (!strncasecmp(o, "NaN", 3) || !strncasecmp(o, "inf", 3)))
                val = 0.0
@@ -1033,7 +1042,10 @@ static mclx* read_data
                ;  n_cols = 0
             ;  }
 
-               if (n_cols >= scratch->n_ivps)
+               if (have_na && (bits & ARRAY_SPEARMAN))
+               val = FLT_MAX
+
+            ;  if (n_cols >= scratch->n_ivps)
                mclvCanonicalExtend(scratch, scratch->n_ivps * 1.44, 0.0)
             ;  scratch->ivps[n_cols].val = val
 
@@ -1350,21 +1362,15 @@ static dim get_correlation
 
    ;  if (bits & ARRAY_COSINE)
       {  mcxbool reduced= mxna->cols[c].n_ivps > 0 || mxna->cols[d].n_ivps > 0
-      ;  double ip      =  mclv_inner_dot(vecc, vecd, N)
+      ;  double ip      =  mclv_inner_dot(vecc, vecd, N)    /* fixme, this N is double */
       ;  double nomleft = Nssqs->ivps[c].val
       ;  double nomright= Nssqs->ivps[d].val
 
-      ;  if (reduced)
-         {  mclv* merge = mcldMerge(mxna->cols+c, mxna->cols+d, NULL)
-         ;  mclv* veccx = mcldMinus(vecc, merge, NULL)
-         ;  mclv* vecdx = mcldMinus(vecd, merge, NULL)
-
-         ;  nomleft     = N * mclvPowSum(veccx, 2.0)
-         ;  nomright    = N * mclvPowSum(vecdx, 2.0)
-
-         ;  mclvFree(&merge)
-         ;  mclvFree(&veccx)
-         ;  mclvFree(&vecdx)
+      ;  if (reduced || (bits & ARRAY_RUN_NACODE))
+         {  dim n_meet  = mcldCountSet(mxna->cols+c, mxna->cols+d, MCLD_CT_MEET)
+         ;  double N2   = N * 1.0 - n_meet
+         ;  nomleft     = N2 * nomleft  / N           /* test this code */
+         ;  nomright    = N2 * nomright / N
       ;  }
 
          nom         =  sqrt(nomleft * nomright) / N
@@ -1441,18 +1447,25 @@ static dim get_correlation
       ;  double ip      =  mclv_inner_dot(vecc, vecd, N)
       ;  double nomleftx
 
-      ;  if (reduced)
+                           /* This code uses the original ranks.  One might
+                            * consider re-computing ranks on veccx and vecdx
+                            * below.
+                           */
+      ;  if (reduced || (bits & ARRAY_RUN_NACODE))
          {  mclv* merge = mcldMerge(mxna->cols+c, mxna->cols+d, NULL)
          ;  mclv* veccx = mcldMinus(vecc, merge, NULL)
          ;  mclv* vecdx = mcldMinus(vecd, merge, NULL)
+/* consider test full equivalence with R code; impala/mclvRank */
 
-         ;  double N2   =  N - merge->n_ivps
-         ;  double s1x  =  mclvSum(veccx)
+         ;  double N2   =  1.0 * N - merge->n_ivps
+         ;  double s1x  =  mclvSum(veccx)    /* not the same as s1 due to rank transform */
          ;  double Nsq1x=  N2 * mclvPowSum(veccx, 2.0)
 
          ;  double s2x  = mclvSum(vecdx)
          ;  double Nsq2x= N2 * mclvPowSum(vecdx, 2.0)
+         ;  ip          = mclv_inner_dot(veccx, vecdx, N - merge->n_ivps)
 
+;if(1)fprintf(stderr, "N2 %4d %4d %4d\n", (int) c, (int) d, (int) N2)
          ;  n_reduced++
 
          ;  nomleftx =  sqrt(Nsq1x - s1x * s1x)
@@ -1460,8 +1473,8 @@ static dim get_correlation
          ;  score    =  nom ? ((N2*ip - s1x*s2x) / nom) : 0.0
          ;  offending=  nomleftx ? d : c              /* prepare in case !nom */
 
-;if(0)fprintf(stderr, "vec %d have %d vec %d have %d nom %.2f", (int) c, (int) veccx->n_ivps,  (int) d, (int) vecdx->n_ivps, nom)
-;if(0)fprintf(stderr, " sum1 %.2f sum2 %.2f Nip %.2f N=%d ip=%.2f score %g\n", s1x, s2x, (double) N2 * ip, (int) N, ip, score)
+;if(0)fprintf(stderr, "v%d sz%d v%d sz%d nom %.2f", (int) c, (int) veccx->n_ivps,  (int) d, (int) vecdx->n_ivps, nom)
+;if(0)fprintf(stderr, " s1 %.2f s2 %.2f Nip %.2f N=%d ip=%.2f score %g\n", s1x, s2x, (double) N2 * ip, (int) N2, ip, score)
          ;  mclvFree(&merge)
          ;  mclvFree(&veccx)
          ;  mclvFree(&vecdx)
@@ -1912,6 +1925,11 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          ;  break
          ;
 
+            case MY_OPT_RUN_NACODE
+         :  main_modalities |= ARRAY_RUN_NACODE
+         ;  break
+         ;
+
             case MY_OPT_PEARSON
          :  main_modalities |= ARRAY_PEARSON
          ;  break
@@ -2232,10 +2250,13 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          ;  mcxIOfree(&xfna)
       ;  }
 
+                                             /* tbcont: perhaps decomission transformations
+                                                like this - leave it to R etc. */
          if (strchr(mode_normalise, 'z'))
          tbl = normalise(tbl, mode_normalise)
 
                                              /* fixme funcify */
+                                             /* tbcont: what about NA values? */
       ;  if (support_modalities & MODE_RANKTRANSFORM)
          {  dim d
          ;  rank_unit* ru
@@ -2256,9 +2277,12 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
             ;  }
                qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_value)
             ;  ru[v->n_ivps].value = ru[v->n_ivps-1].value * 1.1    /* sentinel out-of-bounds value */
+;fprintf(stderr, "sentinel %.4f\n", ru[v->n_ivps].value)
             ;  for (i=0;i<v->n_ivps;i++)
                {  if (ru[i].value != ru[i+1].value)    /* input current stretch */
                   {  dim j
+;if (1 && stretch > 1)
+fprintf(stderr, "vid %d str %d val %.4f\n", (int) v->vid, (int) stretch, ru[i].value)
                   ;  for (j=0;j<stretch;j++)
                      ru[i-j].ord = 1 + (i+1 + i-stretch) / 2.0
                   ;  stretch = 1

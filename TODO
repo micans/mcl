@@ -9,6 +9,7 @@ clxdo or other script to compute distances for line-based <LABEL> <CID> cluster 
  -  update/point README compile instructions
 
  -  mcxarray unit tests
+    implement full re-compute of ranks in case of NAs + spearman?
 
  -  mcxsubs reimplement; mcxi or lex/yacc
   - consider also tf()

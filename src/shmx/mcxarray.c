@@ -212,6 +212,57 @@ static double g_epsilon        =  1e-6;
 static unsigned int support_modalities = 0;
 
 
+struct abacus
+{  const mclx* tbl
+;  mclx*       res
+;  mclx*       na          /* const? */
+;  double      cutoff
+;  mclv*       Nssqs       /* const? */
+;  mclv*       sums        /* const? */
+;  mcxbits     bits
+;
+}  ;
+
+
+typedef struct rank_unit
+{  long     index
+;  double   ord
+;  double   value
+;
+}  rank_unit   ;
+
+
+static void*  rank_unit_init
+(  void*   ruv
+)
+   {  rank_unit* ru =   (rank_unit*) ruv
+   ;  ru->index     =   -1
+   ;  ru->value     =   -1
+   ;  ru->ord       =   -1.0
+   ;  return ru
+;  }
+
+
+static int rank_unit_cmp_index
+(  const void* rua
+,  const void* rub
+)
+   {  long a = ((rank_unit*) rua)->index
+   ;  long b = ((rank_unit*) rub)->index
+   ;  return a < b ? -1 : a > b ? 1 : 0
+;  }
+
+
+static int rank_unit_cmp_value
+(  const void* rua
+,  const void* rub
+)
+   {  double a = ((rank_unit*) rua)->value
+   ;  double b = ((rank_unit*) rub)->value
+   ;  return a < b ? -1 : a > b ? 1 : 0
+;  }
+
+
                            /* first mini job is c=0, d=0..N-1 AND c=N-1, d=N-1 (N+2 tasklets)
                             * second is c=1, d=1..N-1 AND c=N-2, d=N-2..N-1    (N+2 tasklets)
                             * so that mini-jobs are the same size.
@@ -443,45 +494,6 @@ static double pearson
    ;  double nom = sqrt( (n*sumasq - suma*suma) * (n*sumbsq - sumb*sumb) )
    ;  double num = n * mclvIn(a, b) - suma * sumb
    ;  return nom ? num / nom : 0.0
-;  }
-
-
-typedef struct rank_unit
-{  long     index
-;  double   ord
-;  double   value
-;
-}  rank_unit   ;
-
-
-static void*  rank_unit_init
-(  void*   ruv
-)
-   {  rank_unit* ru =   (rank_unit*) ruv
-   ;  ru->index     =   -1
-   ;  ru->value     =   -1
-   ;  ru->ord       =   -1.0
-   ;  return ru
-;  }
-
-
-static int rank_unit_cmp_index
-(  const void* rua
-,  const void* rub
-)
-   {  long a = ((rank_unit*) rua)->index
-   ;  long b = ((rank_unit*) rub)->index
-   ;  return a < b ? -1 : a > b ? 1 : 0
-;  }
-
-
-static int rank_unit_cmp_value
-(  const void* rua
-,  const void* rub
-)
-   {  double a = ((rank_unit*) rua)->value
-   ;  double b = ((rank_unit*) rub)->value
-   ;  return a < b ? -1 : a > b ? 1 : 0
 ;  }
 
 
@@ -1181,18 +1193,21 @@ static double ivp_get_double
      */
 
 static dim get_correlation
-(  const mclx* tbl
-,  const mclx* mxna
+(  struct abacus* abc
 ,  dim c
 ,  dim d
-,  mclv* Nssqs
-,  mclv* sums
 ,  double* scorep
 ,  double* nomp
 ,  dim* offendingp
-,  mcxbits bits
+,  struct rank_unit* ru
 )
-   {  double N  = MCX_MAX(N_ROWS(tbl), 1)      /* fixme; bit odd */
+   {  const mclx* tbl   =  abc->tbl
+   ;  const mclx* mxna  =  abc->na
+   ;  mclv* Nssqs       =  abc->Nssqs
+   ;  mclv* sums        =  abc->sums
+   ;  mcxbits bits      =  abc->bits
+
+   ;  double N  = MCX_MAX(N_ROWS(tbl), 1)      /* fixme; bit odd */
    ;  double nom = 1.0, score = 0
    ;  dim offending = c
    ;  dim n_reduced = 0
@@ -1286,10 +1301,8 @@ static dim get_correlation
 
                      /* this code may run in the absence of NA (ARRAY_RUN_NACODE)*/
          ;  if (bits & ARRAY_NA_FLEXNASP)
-            {  rank_unit* ru = mcxNAlloc(N_ROWS(tbl)+1, sizeof(rank_unit), rank_unit_init, EXIT_ON_FAIL)
-            ;  mclv_spearman(veccx, ru)
+            {  mclv_spearman(veccx, ru)
             ;  mclv_spearman(vecdx, ru)
-            ;  mcxFree(ru)
          ;  }
 
             double N2   =  1.0 * N - merge->n_ivps
@@ -1332,23 +1345,27 @@ static dim get_correlation
 
 
 static dim do_range_do
-(  const mclx* tbl
-,  mclx* res
-,  mclx* mxna
-,  double cutoff
+(  struct abacus* abc
 ,  dim start
 ,  dim end
-,  mclv* Nssqs
-,  mclv* sums
-,  mcxbits bits
 ,  mcxbool lower_diagonal
 ,  dim thread_id
+,  struct rank_unit* ru
 )
    {  dim c, p = 0
    ;  int n_mod =  MCX_MAX(1+ (MCX_MAX(1, n_thread_l) * 2 * (end - start -1))/40, 1)
+   ;  dim n_reduced  =  0
+
+   ;  const mclx* tbl = abc->tbl
+   ;  mclx* res      =  abc->res
+   ;  mclx* mxna     =  abc->na
+   ;  double cutoff  =  abc->cutoff
+   ;  mclv* Nssqs    =  abc->Nssqs
+   ;  mclv* sums     =  abc->sums
+   ;  mcxbits bits   =  abc->bits
+
    ;  mclv* scratch  =  mclvCopy(NULL, tbl->dom_cols)
-   ;  dim n_reduced = 0
-   ;  unsigned mink = bits & ARRAY_MINKOWSKI
+   ;  unsigned mink  =  bits & ARRAY_MINKOWSKI
 
    ;  for (c=start;c<end;c++)
       {  ofs s = 0
@@ -1364,7 +1381,7 @@ static dim do_range_do
          ;  dim offending
 
 ;if(0)fprintf(stderr, "%d\t%d\n", (int) c, (int) d)
-         ;  n_reduced += get_correlation(tbl, mxna, c, d, Nssqs, sums, &score, &nom, &offending, bits)
+         ;  n_reduced += get_correlation(abc, c, d, &score, &nom, &offending, ru)
 
          ;  if ((bits & ARRAY_PEARSON) && !nom && tbl->dom_cols->ivps[offending].val < 1.5)
             {  char* label = tab_g ? mclTabGet(tab_g, offending, NULL) : NULL
@@ -1416,28 +1433,23 @@ static dim do_range_do
 
 
 static dim do_range
-(  const mclx* tbl
-,  mclx* res
-,  mclx* mxna
-,  double cutoff
+(  struct abacus* abc
 ,  dim start
 ,  dim end
-,  mclv* Nssqs
-,  mclv* sums
-,  mcxbits bits
 ,  dim thread_id
+,  struct rank_unit* ru
 )
    {  dim n_reduced = 0, i
 
-   ;  if (!end || end > N_COLS(tbl))
-      end = N_COLS(tbl)
+   ;  if (!end || end > N_COLS(abc->tbl))
+      end = N_COLS(abc->tbl)
    
    ;  for (i=start;i<end;i++)
-      {  if (res->dom_cols->ivps[i].val > 1.5)
+      {  if (abc->res->dom_cols->ivps[i].val > 1.5)
          {  mcxErr(me, "overlap in range %u-%u", (unsigned) start, (unsigned) end)
          ;  break
       ;  }
-         res->dom_cols->ivps[i].val = 2.0
+         abc->res->dom_cols->ivps[i].val = 2.0
    ;  }
 
       if (1 && (support_modalities & MODE_JOBINFO))
@@ -1445,53 +1457,25 @@ static dim do_range
       ;  return 0
    ;  }
 
-      n_reduced
-      =  do_range_do
-         (  tbl
-         ,  res
-         ,  mxna
-         ,  cutoff
-         ,  start
-         ,  end
-         ,  Nssqs
-         ,  sums
-         ,  bits
-         ,  TRUE
-         ,  thread_id
-         )
-   ;  if (!sym_g)          /* result is not symmetric, so compute upper diagonal separately */
-      n_reduced
-      += do_range_do
-         (  tbl
-         ,  res
-         ,  mxna
-         ,  cutoff
-         ,  start
-         ,  end
-         ,  Nssqs
-         ,  sums
-         ,  bits
-         ,  FALSE
-         ,  thread_id
-         )
+      n_reduced = do_range_do(abc, start, end, TRUE, thread_id, ru)
+
+                      /* result is not symmetric, so compute upper diagonal separately */
+   ;  if (!sym_g)
+      n_reduced += do_range_do(abc, start, end, FALSE, thread_id, ru)
+
    ;  return n_reduced
 ;  }
 
 
 typedef struct
-{  const mclx* tbl
-;  mclx*    res
-;  mclx*    mxna
-;  double   cutoff
+{  struct abacus* abc
+;  struct rank_unit* ru
 ;  dim      job_lo1
 ;  dim      job_lo2
 ;  dim      job_hi1
 ;  dim      job_hi2
 ;  dim      job_size
-;  mclv*    Nssqs
-;  mclv*    sums
 ;  dim      n_reduced
-;  mcxbits  bits
 ;  dim      thread_id
 ;
 }  array_data   ;
@@ -1504,14 +1488,14 @@ static void* array_thread
 
    ;  if (d->job_lo2 > d->job_hi1)
       {  d->n_reduced
-         =  do_range(d->tbl, d->res, d->mxna, d->cutoff, d->job_lo1, d->job_hi2, d->Nssqs, d->sums, d->bits, d->thread_id)
+         =  do_range(d->abc, d->job_lo1, d->job_hi2, d->thread_id, d->ru)
 ;if (0) fprintf(stderr, "thread %d %d-%d\n", (int) d->thread_id, (int) d->job_lo1, (int) d->job_hi2)
    ;  }
       else
       {  d->n_reduced
-         += do_range(d->tbl, d->res, d->mxna, d->cutoff, d->job_lo1, d->job_lo2, d->Nssqs, d->sums, d->bits, d->thread_id)
+         += do_range(d->abc, d->job_lo1, d->job_lo2, d->thread_id, d->ru)
       ;  d->n_reduced
-         += do_range(d->tbl, d->res, d->mxna, d->cutoff, d->job_hi1, d->job_hi2, d->Nssqs, d->sums, d->bits, d->thread_id)
+         += do_range(d->abc, d->job_hi1, d->job_hi2, d->thread_id, d->ru)
 ;if (0)
 fprintf
 (  stderr
@@ -1989,6 +1973,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
 
       {  dim i
       ;  dim N_na = 0
+      ;  struct rank_unit* ru = NULL
       ;  mclx* mxna  =  NULL
       ;  mclx* tbl   =
                                  /* fixme skeleton read makes subsequent code bit brittle */
@@ -2073,8 +2058,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                                              /* tbcont: what about NA values? */
       ;  if (support_modalities & MODE_RANKTRANSFORM)
          {  dim d
-         ;  rank_unit* ru
-            =  mcxNAlloc
+         ;  ru = mcxNAlloc
                (  N_ROWS(tbl) + 1            /* one extra for sentinel */
                ,  sizeof(rank_unit)
                ,  rank_unit_init
@@ -2143,14 +2127,23 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          )
 
       ;  {  dim n_reduced =0
-;if(0)fprintf(stderr, "%d %d\n", (int) n_thread_l, (int) n_group_G)
+         ;  struct abacus abc
+
+         ;  abc.tbl  =  tbl
+         ;  abc.res  =  res
+         ;  abc.na   =  mxna
+         ;  abc.cutoff =cutoff
+         ;  abc.Nssqs = Nssqs
+         ;  abc.sums =  sums
+         ;  abc.bits =  main_modalities
+
          ;  if (n_thread_l * n_group_G <= 1)
-            n_reduced = do_range(tbl, res, mxna, cutoff, start_g, end_g, Nssqs, sums, main_modalities, 0)
+            n_reduced = do_range(&abc, start_g, end_g, 0, ru)
 
          ;  else
             {  struct jobinfo ji
             ;  dim t_this_group = 0, t_max = 0, t = 0
-
+;fprintf(stderr, "Needle at the ready\n")
                            /* Computation of the group of threads for a job
                             * is somewhat complicated by our mini-job balancing as
                             * described above.
@@ -2180,20 +2173,15 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                ;  if (!ji_step(&ji, t++, t_this_group))
                   continue
 
-               ;  d->tbl      =  tbl
-               ;  d->res      =  res
-               ;  d->mxna     =  mxna
-               ;  d->cutoff   =  cutoff
-               ;  d->job_lo1  =  ji.dvd_joblo1
-               ;  d->job_lo2  =  ji.dvd_joblo2
-               ;  d->job_hi1  =  ji.dvd_jobhi1
-               ;  d->job_hi2  =  ji.dvd_jobhi2
-               ;  d->job_size =  ji.dvd_jobsize
-               ;  d->Nssqs    =  Nssqs
-               ;  d->sums     =  sums
-               ;  d->bits     =  main_modalities
-               ;  d->n_reduced=  0
-               ;  d->thread_id=  t_this_group
+               ;  d->abc = &abc
+               ;  d->job_lo1     =  ji.dvd_joblo1
+               ;  d->job_lo2     =  ji.dvd_joblo2
+               ;  d->job_hi1     =  ji.dvd_jobhi1
+               ;  d->job_hi2     =  ji.dvd_jobhi2
+               ;  d->job_size    =  ji.dvd_jobsize
+               ;  d->n_reduced   =  0
+               ;  d->thread_id   =  t_this_group
+               ;  d->ru          =  mcxNAlloc(N_ROWS(tbl)+1, sizeof(rank_unit), rank_unit_init, EXIT_ON_FAIL)
 
                ;  if (pthread_create(threads_array+t_this_group, &t_attr, array_thread, d))
                   mcxDie(1, me, "error creating thread %d", (int) t_this_group)
@@ -2286,24 +2274,5 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
    ;  mclxFree(&mxseql)
    ;  return 0
 ;  }
-
-
-
-/*
-   M use median
-   V use average
-   S use sum(fabs)
-   E use sqrt(ssq)
-   N use #entries
-   A  vector A
-   a  vector A*
-   B  vector B
-   b  vector B*
-   c  cosine(a,b)
-   +
-   /
-   *
-   r
-*/
 
 

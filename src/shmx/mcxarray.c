@@ -151,6 +151,7 @@ const char* syntax = "Usage: mcxarray <-data <data-file> | -imx <mcl-file> [opti
 #define ARRAY_HCOSINE      (1 <<  13)
 #define ARRAY_MINKOWSKI    (1 <<  14)
 #define ARRAY_RUN_NACODE   (1 <<  15)
+#define ARRAY_NA_FLEXNASP  (1 <<  16)     /* flexible NA-Spearman; compute rank on the fly */
 
 #define MODE_ZEROASNA      (1 <<   0)
 #define MODE_TRANSPOSE     (1 <<   1)
@@ -502,6 +503,45 @@ static int rank_unit_cmp_value
 ;  }
 
 
+static void mclv_spearman
+(  mclv*       v              /* will be updated with ranks */
+,  rank_unit*  ru             /* caller must make sure capacity at least v->n_ivps+1 */
+)
+   {  dim stretch = 1
+   ;  dim i
+   ;  for (i=0;i<v->n_ivps;i++)
+      {  ru[i].index = v->ivps[i].idx
+      ;  ru[i].value = v->ivps[i].val
+      ;  ru[i].ord = -14
+   ;  }
+      qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_value)
+
+                              /* sentinel out-of-bounds value. We set NA values
+                               * to FLT_MAX (elsewhere) and use double in
+                               * rank_unit, so this is genuinely different. For
+                               * future generalisation/extraction, beware
+                              */
+   ;  ru[v->n_ivps].value = ru[v->n_ivps-1].value * 1.1
+;if(0) fprintf(stderr, "sentinel %.4f\n", ru[v->n_ivps].value)
+   ;  for (i=0;i<v->n_ivps;i++)
+      {  if (ru[i].value != ru[i+1].value)    /* input current stretch */
+         {  dim j
+;if (1 && stretch > 1)
+fprintf(stderr, "vid %d str %d val %.4f\n", (int) v->vid, (int) stretch, ru[i].value)
+         ;  for (j=0;j<stretch;j++)
+            ru[i-j].ord = 1 + (i+1 + i-stretch) / 2.0
+         ;  stretch = 1
+      ;  }
+         else
+         stretch++
+   ;  }
+      qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_index)
+   ;  for (i=0;i<v->n_ivps;i++)
+      v->ivps[i].val = ru[i].ord
+;if(0)fprintf(stderr, "vid %d id %d value from %.4g to %.1f\n", (int) v->vid, (int) v->ivps[i].idx, (double) ru[i].value, (double) ru[i].ord)
+;  }
+
+
 enum
 {  MY_OPT_DATA
 ,  MY_OPT_TABLE
@@ -563,6 +603,7 @@ enum
 ,  MY_OPT_HELP
 ,  MY_OPT_VERSION
 ,  MY_OPT_RUN_NACODE
+,  MY_OPT_FLEXNASP
 ,  MY_OPT_AMOIXA
 }  ;
 
@@ -695,6 +736,12 @@ mcxOptAnchor options[]
    ,  MY_OPT_RUN_NACODE
    ,  NULL
    ,  "trigger na branch for cosine/pearson/spearman"
+   }
+,  {  "--flexnasp"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  MY_OPT_FLEXNASP
+   ,  NULL
+   ,  "update spearman ranks on NA-cleaned data"
    }
 ,  {  "--zero-as-na"
    ,  MCX_OPT_DEFAULT
@@ -1455,9 +1502,16 @@ static dim get_correlation
          {  mclv* merge = mcldMerge(mxna->cols+c, mxna->cols+d, NULL)
          ;  mclv* veccx = mcldMinus(vecc, merge, NULL)
          ;  mclv* vecdx = mcldMinus(vecd, merge, NULL)
-/* consider test full equivalence with R code; impala/mclvRank */
 
-         ;  double N2   =  1.0 * N - merge->n_ivps
+                     /* this code may run in the absence of NA (ARRAY_RUN_NACODE)*/
+         ;  if (bits & ARRAY_NA_FLEXNASP)
+            {  rank_unit* ru = mcxNAlloc(N_ROWS(tbl)+1, sizeof(rank_unit), rank_unit_init, EXIT_ON_FAIL)
+            ;  mclv_spearman(veccx, ru)
+            ;  mclv_spearman(vecdx, ru)
+            ;  mcxFree(ru)
+         ;  }
+
+            double N2   =  1.0 * N - merge->n_ivps
          ;  double s1x  =  mclvSum(veccx)    /* not the same as s1 due to rank transform */
          ;  double Nsq1x=  N2 * mclvPowSum(veccx, 2.0)
 
@@ -1925,6 +1979,11 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          ;  break
          ;
 
+            case MY_OPT_FLEXNASP
+         :  main_modalities |= ARRAY_NA_FLEXNASP
+         ;  break
+         ;
+
             case MY_OPT_RUN_NACODE
          :  main_modalities |= ARRAY_RUN_NACODE
          ;  break
@@ -2268,32 +2327,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                )
          ;  for (d=0;d<N_COLS(tbl);d++)
             {  mclv* v = tbl->cols+d
-            ;  dim stretch = 1
-            ;  dim i
-            ;  for (i=0;i<v->n_ivps;i++)
-               {  ru[i].index = v->ivps[i].idx
-               ;  ru[i].value = v->ivps[i].val
-               ;  ru[i].ord = -14
-            ;  }
-               qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_value)
-            ;  ru[v->n_ivps].value = ru[v->n_ivps-1].value * 1.1    /* sentinel out-of-bounds value */
-;fprintf(stderr, "sentinel %.4f\n", ru[v->n_ivps].value)
-            ;  for (i=0;i<v->n_ivps;i++)
-               {  if (ru[i].value != ru[i+1].value)    /* input current stretch */
-                  {  dim j
-;if (1 && stretch > 1)
-fprintf(stderr, "vid %d str %d val %.4f\n", (int) v->vid, (int) stretch, ru[i].value)
-                  ;  for (j=0;j<stretch;j++)
-                     ru[i-j].ord = 1 + (i+1 + i-stretch) / 2.0
-                  ;  stretch = 1
-               ;  }
-                  else
-                  stretch++
-            ;  }
-               qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_index)
-            ;  for (i=0;i<v->n_ivps;i++)
-               v->ivps[i].val = ru[i].ord
-;if(0)fprintf(stderr, "vid %d id %d value from %.4g to %.1f\n", (int) v->vid, (int) v->ivps[i].idx, (double) ru[i].value, (double) ru[i].ord)
+            ;  mclv_spearman(v, ru)
          ;  }
          }
 

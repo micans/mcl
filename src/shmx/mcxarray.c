@@ -520,7 +520,7 @@ static void mclv_spearman
    ;  for (i=0;i<v->n_ivps;i++)
       {  if (ru[i].value != ru[i+1].value)    /* input current stretch */
          {  dim j
-;if (1 && stretch > 1)
+;if(0 && stretch > 1)
 fprintf(stderr, "vid %d str %d val %.4f\n", (int) v->vid, (int) stretch, ru[i].value)
          ;  for (j=0;j<stretch;j++)
             ru[i-j].ord = 1 + (i+1 + i-stretch) / 2.0
@@ -1181,17 +1181,6 @@ static double ivp_get_double
 ;  }
 
 
-     /* Pearson correlation coefficient:
-      *                     __          __   __ 
-      *                     \           \    \  
-      *                  n  /_ x y   -  /_ x /_ y
-      *   -----------------------------------------------------------
-      *      ___________________________________________________________
-      *     /       __        __ 2                __        __ 2       |
-      * \  /  /     \   2     \       \     /     \   2     \       \ 
-      *  \/   \   n /_ x   -  /_ x    /  *  \   n /_ y   -  /_ y    / 
-     */
-
 static dim get_correlation
 (  struct abacus* abc
 ,  dim c
@@ -1290,16 +1279,15 @@ static dim get_correlation
       ;  double ip      =  mclv_inner_dot(vecc, vecd, N)
       ;  double nomleftx
 
-                           /* This code uses the original ranks.  One might
-                            * consider re-computing ranks on veccx and vecdx
-                            * below.
-                           */
+                        /* This code uses the original ranks by default.
+                         * Use --flexnasp to recompute ranks on shared segment.
+                        */
       ;  if (reduced || (bits & ARRAY_RUN_NACODE))
          {  mclv* merge = mcldMerge(mxna->cols+c, mxna->cols+d, NULL)
          ;  mclv* veccx = mcldMinus(vecc, merge, NULL)
          ;  mclv* vecdx = mcldMinus(vecd, merge, NULL)
 
-                     /* this code may run in the absence of NA (ARRAY_RUN_NACODE)*/
+                        /* this code may run in the absence of NA (ARRAY_RUN_NACODE)*/
          ;  if (bits & ARRAY_NA_FLEXNASP)
             {  mclv_spearman(veccx, ru)
             ;  mclv_spearman(vecdx, ru)
@@ -1313,7 +1301,7 @@ static dim get_correlation
          ;  double Nsq2x= N2 * mclvPowSum(vecdx, 2.0)
          ;  ip          = mclv_inner_dot(veccx, vecdx, N - merge->n_ivps)
 
-;if(1)fprintf(stderr, "N2 %4d %4d %4d\n", (int) c, (int) d, (int) N2)
+;if(0)fprintf(stderr, "N2 %4d %4d %4d\n", (int) c, (int) d, (int) N2)
          ;  n_reduced++
 
          ;  nomleftx =  sqrt(Nsq1x - s1x * s1x)
@@ -2143,7 +2131,6 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          ;  else
             {  struct jobinfo ji
             ;  dim t_this_group = 0, t_max = 0, t = 0
-;fprintf(stderr, "Needle at the ready\n")
                            /* Computation of the group of threads for a job
                             * is somewhat complicated by our mini-job balancing as
                             * described above.

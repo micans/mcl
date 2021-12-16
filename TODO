@@ -1,4 +1,6 @@
 
+ !  doc/{Makefile.am,index.in.azm} (mcxassemble, mclpipeline)
+
  -  unit test
       mcxarray
       mcxload
@@ -15,19 +17,15 @@
          -  with --expect-values should they always be present?
          -  lots of fixmes in code
 
- -  doc/{Makefile.am,index.in.azm} (mcxassemble, mclpipeline)
-
-!   statsReset moved. fresh mcl valgrind
+ -  statsReset moved. fresh mcl valgrind
 
  -  mclxVectorDispatch; matrix argument not const. This for e.g. mclxSymReduceDispatch,
     but perhaps consider the latter and similar (knn reductions) for purge.
 
  -  update/point README compile instructions
 
- -  mcxarray unit tests
-
  -  mcxsubs reimplement; mcxi or lex/yacc
-  - consider also tf()
+  - consider also mcxalter/tf()
 
  -  mcx{load,dump} restrict tab: report intersect and difference (useful sanity-check feedback for user).
 

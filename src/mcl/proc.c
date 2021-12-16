@@ -260,10 +260,7 @@ static void mclInflate
 ,  double   power
 ,  mclv*    homgVec
 )
-   {  mcxbool   local   cpl__unused = getenv("MCL_AUTO_LOCAL") ? TRUE : FALSE
-   ;  mcxbool   smooth  cpl__unused = getenv("MCL_AUTO_SMOOTH") ? TRUE : FALSE  
-
-   ;  double    infl   =   power
+   {  double    infl   =   power
    ;  mclv*     vec_infl = NULL
    ;  dim k
 

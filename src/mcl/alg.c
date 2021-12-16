@@ -23,7 +23,6 @@
 #include "interpret.h"
 #include "expand.h"
 #include "procinit.h"
-#include "shadow.h"
 #include "transform.h"
 
 #include "clew/clm.h"
@@ -84,15 +83,9 @@ enum
 ,  ALG_OPT_APPEND_LOG
 ,  ALG_OPT_SHOW_LOG
 ,  ALG_OPT_CACHE_MX
-,  ALG_OPT_ADAPTLOCAL
-,  ALG_OPT_ADAPTTEST
-,  ALG_OPT_ADAPTSMOOTH
 ,  ALG_OPT_REGULARIZED
 ,  ALG_OPT_DENSITY_ADJUST
 ,  ALG_OPT_NULLNODE
-,  ALG_OPT_SHADOW_MODE
-,  ALG_OPT_SHADOW_VL
-,  ALG_OPT_SHADOW_S
 ,  ALG_OPT_DISCARDLOOPS
 ,  ALG_OPT_SUMLOOPS
 ,  ALG_OPT_SCALELOOPS
@@ -114,7 +107,6 @@ enum
 ,  ALG_OPT_ABC_NEGLOGTRANSFORM10
 ,  ALG_OPT_WRITE_MXIN
 ,  ALG_OPT_WRITE_MXTF
-,  ALG_OPT_WRITE_SHADOW
                         ,  ALG_OPT_WRITE_XP
 ,  ALG_OPT_ANNOT        =  ALG_OPT_WRITE_XP + 2
 ,  ALG_OPT_AUTOAPPEND
@@ -126,7 +118,6 @@ enum
 ,  ALG_OPT_TRANSFORM    =  ALG_OPT_AUTODIR + 2
 ,  ALG_OPT_BASECLUSTER
 ,  ALG_OPT_PREINFLATION
-,  ALG_OPT_PREINFLATIONX
 ,  ALG_OPT_INFLATE_FIRST
 }  ;
 
@@ -262,24 +253,6 @@ mcxOptAnchor mclAlgOptions[] =
    ,  "y/n"
    ,  "keep input matrix in memory"
    }
-,  {  "--adapt-test"
-   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
-   ,  ALG_OPT_ADAPTTEST
-   ,  NULL
-   ,  "report adapt homg measure"
-   }
-,  {  "--adapt-smooth"
-   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
-   ,  ALG_OPT_ADAPTSMOOTH
-   ,  NULL
-   ,  "locally change inflation based on dispersion, smoothed"
-   }
-,  {  "--adapt-local"
-   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
-   ,  ALG_OPT_ADAPTLOCAL
-   ,  NULL
-   ,  "locally change inflation based on dispersion"
-   }
 ,  {  "--regularized"
    ,  MCX_OPT_HIDDEN
    ,  ALG_OPT_REGULARIZED
@@ -293,7 +266,7 @@ mcxOptAnchor mclAlgOptions[] =
    ,  "adjust edge weights between density differentiated nodes"
    }
 ,  {  "--sum-loops"
-   ,  MCX_OPT_DEFAULT
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
    ,  ALG_OPT_SUMLOOPS
    ,  NULL
    ,  "set loop weight to sum of node arc weights"
@@ -315,24 +288,6 @@ mcxOptAnchor mclAlgOptions[] =
    ,  ALG_OPT_NULLNODE
    ,  NULL
    ,  "use /dev/null node"
-   }
-,  {  "-shadow"
-   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
-   ,  ALG_OPT_SHADOW_MODE
-   ,  "st|eh|el|vh|vl|xx"
-   ,  "dilate parts of the graph"
-   }
-,  {  "--shadow-vl"
-   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
-   ,  ALG_OPT_SHADOW_VL
-   ,  NULL
-   ,  "shadow low values"
-   }
-,  {  "-shadow-s"
-   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
-   ,  ALG_OPT_SHADOW_S
-   ,  "<power>"
-   ,  "set fac = fac ** power when fac > 1"
    }
 ,  {  "-append-log"
    ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
@@ -568,12 +523,6 @@ mcxOptAnchor mclAlgOptions[] =
    ,  "<num>"
    ,  "preprocess by applying inflation with parameter <num>"
    }
-,  {  "-ph"
-   ,  MCX_OPT_HASARG
-   ,  ALG_OPT_PREINFLATIONX
-   ,  "<num>"
-   ,  "as -pi, applied before shadowing"
-   }
 ,  {  "-if"
    ,  MCX_OPT_HASARG
    ,  ALG_OPT_INFLATE_FIRST
@@ -652,7 +601,6 @@ static void postprocess
          &  (  ALG_DO_CHECK_CONNECTED
             |  ALG_DO_FORCE_CONNECTED
             |  ALG_DO_ANALYZE
-            |  ALG_DO_SHADOW
             )
          )
 
@@ -784,48 +732,6 @@ fprintf(stderr, "postprocess read tab with %d entries: %p\n", (int) N_TAB(mlp->t
 ;  }
 
 
-static void mcl_unshadow_matrix
-(  mclx* mx
-,  mclv* dom_cols             /* if NULL then mx is a clustering */
-,  mclv* dom_rows
-)
-   {  if (!mx)
-      return
-   ;  mclxChangeDomains(mx, mclvClone(dom_cols), mclvClone(dom_rows))
-   ;  if (!dom_cols)
-      {  dim o, m, e
-      ;  clmEnstrict(mx, &o, &m, &e, ENSTRICT_KEEP_OVERLAP)
-   ;  }
-;  }
-
-
-static void mcl_unshadow
-(  mclx* cluster
-,  mclAlgParam*  mlp
-)
-   {  mclv* dom = mlp->shadow_cache_domain
-
-   ;  mcxLog(MCX_LOG_MODULE, "mcl", "removing shadow loops")
-
-   ;  mcl_unshadow_matrix(cluster, NULL, dom)
-   ;  mcl_unshadow_matrix(mlp->mx_input, dom, dom)
-
-   ;  mcl_unshadow_matrix(mlp->mx_start, dom, dom)
-   ;  if (mlp->mx_start)
-      mclxMakeStochastic(mlp->mx_start)
-   ;  mcl_unshadow_matrix(mlp->mx_expanded, dom, dom)
-   ;  if (mlp->mx_expanded)
-      mclxMakeStochastic(mlp->mx_expanded)
-
-   ;  mcl_unshadow_matrix(mlp->mx_limit, dom, dom)
-   ;  mcl_unshadow_matrix(mlp->cl_result, NULL, dom)
-   ;  mcl_unshadow_matrix(mlp->cl_assimilated, NULL, dom)
-
-   ;  mcxLog(MCX_LOG_MODULE, "mcl", "done")
-;  }
-
-
-
 mcxstatus mclAlgorithm
 (  mclAlgParam*   mlp
 )
@@ -869,10 +775,7 @@ mcxstatus mclAlgorithm
          mlp->mx_start = NULL   /* twas freed by mclProcess (fixme logic) */
    ;  }
 
-      if (mlp->modes & ALG_DO_SHADOW)
-      mcl_unshadow(thecluster, mlp)
-
-   ;  if (mlp->expand_only)
+      if (mlp->expand_only)
       {  mclxFree(&thecluster)         /* lazy for now */
       ;  return STATUS_OK    /* mclProcess can not convey failure (yet) */
    ;  }
@@ -1004,14 +907,10 @@ static void make_output_name
    ;  if (mpp->initLoopLength)
          mcxTingPrintAfter(suf, "l%d", (int) mpp->initLoopLength)
       ,  mcxTingPrintAfter(suf, "i%.1f", (double) mpp->initInflation)
-   ;  if (mlp->pre_inflationx >= 0.0)
-      mcxTingPrintAfter(suf, "ph%.1f", (double) mlp->pre_inflationx)
    ;  if (mlp->pre_inflation >= 0.0)
       mcxTingPrintAfter(suf, "pi%.1f", (double) mlp->pre_inflation)
    ;  if (mlp->center >= 0)
       mcxTingPrintAfter(suf, "c%.1f", (double) mlp->center)
-   ;  if (mlp->modes & ALG_DO_SHADOW)
-      mcxTingAppend(suf, "SH")
 
    ;  mcxTingTr(suf, NULL, NULL, ".", "", 0)
 
@@ -1228,7 +1127,6 @@ mcxstatus mclAlgorithmInit
             ,  mclProcOptions
             )
          ;  fputs(legend, stdout)
-;if(0)fputs("set MCL_DUMP_SHADOW to dump shadow matrix\n", stdout)
          ;  return ALG_INIT_DONE
          ;
 
@@ -1297,23 +1195,6 @@ mcxstatus mclAlgorithmInit
                               :  case ALG_OPT_SUMLOOPS
                         :
             vok = set_bit(mlp, opt->anch->tag, anch->id, opt->val)
-         ;  break
-         ;
-
-            case ALG_OPT_ADAPTTEST
-         :  mcxSetenv("MCL_AUTO_TEST=1")
-         ;  break
-         ;
-
-            case ALG_OPT_ADAPTSMOOTH
-         :  mcxSetenv("MCL_AUTO_SMOOTH=1")
-         ;  mcxTell(us, "--adapt-smooth is a no-op now")
-         ;  break
-         ;
-
-            case ALG_OPT_ADAPTLOCAL
-         :  mcxSetenv("MCL_AUTO_LOCAL=1")
-         ;  mcxTell(us, "--adapt-local is a no-op now")
          ;  break
          ;
 
@@ -1387,49 +1268,8 @@ mcxstatus mclAlgorithmInit
          ;  break
          ;
 
-            case ALG_OPT_PREINFLATIONX
-         :  mlp->pre_inflationx =  atof(opt->val)
-         ;  break
-         ;
-
             case ALG_OPT_NULLNODE
          :  mcxTell("null node", "not yet interfaced")
-         ;  break
-         ;
-
-            case ALG_OPT_SHADOW_S
-         :  mlp->shadow_s = atof(opt->val)
-         ;  BIT_ON(mlp->shadow_mode, MCL_SHADOW_TRY)
-         ;  break
-         ;
-
-            case ALG_OPT_SHADOW_VL
-         :  mlp->shadow_mode = 0
-         ;  BIT_ON(mlp->shadow_mode, MCL_SHADOW_V_LOW)
-         ;  mlp->modes |= ALG_DO_SHADOW
-         ;  break
-         ;
-
-            case ALG_OPT_SHADOW_MODE
-         :  mlp->shadow_mode = 0
-
-         ;  if (strstr(opt->val, "ey"))
-            BIT_ON(mlp->shadow_mode, MCL_SHADOW_EARLY)
-         ;  if (strstr(opt->val, "xx"))
-            BIT_ON(mlp->shadow_mode, MCL_SHADOW_MULTIPLY)
-         ;  if (strstr(opt->val, "sf"))
-            BIT_ON(mlp->shadow_mode, MCL_SHADOW_SELF)
-
-         ;  if (strstr(opt->val, "eh"))
-            BIT_ON(mlp->shadow_mode, MCL_SHADOW_E_HIGH)
-         ;  if (strstr(opt->val, "el"))
-            BIT_ON(mlp->shadow_mode, MCL_SHADOW_E_LOW)
-         ;  if (strstr(opt->val, "vh"))
-            BIT_ON(mlp->shadow_mode, MCL_SHADOW_V_HIGH)
-         ;  if (strstr(opt->val, "vl"))
-            BIT_ON(mlp->shadow_mode, MCL_SHADOW_V_LOW)
-
-         ;  mlp->modes |= ALG_DO_SHADOW
          ;  break
          ;
 
@@ -1527,7 +1367,6 @@ static mclAlgParam* mclAlgParamNew
    ;  mlp->expandDigits    =     8
 
    ;  mlp->pre_inflation   =    -1.0
-   ;  mlp->pre_inflationx  =    -1.0
 
    ;  mlp->modes           =     ALG_DO_SHOW_PID | ALG_DO_SHOW_JURY | ALG_DO_DISCARDLOOPS
    ;  mlp->foundOverlap    =     FALSE
@@ -1551,9 +1390,6 @@ static mclAlgParam* mclAlgParamNew
 
    ;  mlp->stream_transform_spec  =     NULL
    ;  mlp->stream_transform       =    NULL
-   ;  mlp->shadow_cache_domain   =     NULL
-   ;  mlp->shadow_mode     =     0
-   ;  mlp->shadow_s        =     1.0
    ;  mlp->center          =     -1.0
    ;  mlp->expand_only     =     FALSE
 
@@ -1624,7 +1460,6 @@ void mclAlgParamFree
    ;  mcxTingFree(&(mlp->fn_write_input))
    ;  mcxTingFree(&(mlp->fn_write_start))
 
-   ;  mclvFree(&(mlp->shadow_cache_domain))
    ;  mclvFree(&(mlp->mx_start_sums))
 
    ;  if (free_composites)
@@ -1768,36 +1603,6 @@ static mclx* test_tab
 ;  }
 
 
-static void mcl_add_nullsink
-(  mclx* mx
-)
-   {  mclv* maxes = mclxColNums(mx, mclvMaxValue, MCL_VECTOR_COMPLETE)
-   ;  dim nullidx = N_COLS(mx) - 1
-   ;  dim j
-
-   ;  for (j=0;j<N_COLS(mx)-1;j++)
-      {  double weighted_nb_max = 0.0
-      ;  double this_max = maxes->ivps[j].val
-      ;  mclv* nblist = mclvClone(mx->cols+j)
-      ;  dim k
-      ;  ofs o = -1
-
-      ;  mclvInflate(nblist, 1.0)
-
-      ;  for (k=0;k<nblist->n_ivps;k++)
-         {  o =  mclxGetVectorOffset(mx, nblist->ivps[k].idx, RETURN_ON_FAIL, o)
-         ;  if (o >= 0)
-            weighted_nb_max += nblist->ivps[k].val * maxes->ivps[o].val
-      ;  }
-         if (weighted_nb_max > this_max)
-         mclvInsertIdx(mx->cols+j, nullidx, weighted_nb_max - this_max)
-,fprintf(stderr, "node %d add link %.16f to %d\n", (int) j, (double) (weighted_nb_max-this_max), (int) nullidx)
-      ;  mclvFree(&nblist)
-   ;  }
-      mclvFree(&maxes)
-;  }
-
-
 static mclx* mclAlgorithmStreamIn
 (  mcxIO* xfin
 ,  mclAlgParam* mlp
@@ -1856,11 +1661,7 @@ static int mclAlgorithmTransform
 ,  mcxbool reread
 )
    {  int n_ops = 0
-   ;  mclv* shadow_factors = NULL
 
-         /* if we are rereading we do not want shadowing:
-          * we reread to do postprocessing.
-         */
    ;  if (mlp->modes & ALG_DO_DISCARDLOOPS)
       mclxAdjustLoops(mx, mclxLoopCBremove, NULL)
 
@@ -1878,71 +1679,7 @@ static int mclAlgorithmTransform
       ;  n_ops++
    ;  }
 
-      if (!reread && (mlp->shadow_mode & MCL_SHADOW_EARLY))
-      shadow_factors
-      =  mcl_get_shadow_turtle_factors
-         (  mx
-         ,  mlp->shadow_mode
-         ,  mlp->shadow_s
-         )
-
-   ;  if (mlp->pre_inflationx > 0)
-      {  dim j
-      ;  for (j=0;j<N_COLS(mx);j++)
-         {  mclv* vec = mx->cols+j
-         ;  if (vec->n_ivps)
-            {  double vec_max = mclvMaxValue(vec)
-            ;  mclvUnary(vec, fltxPower, &mlp->pre_inflationx)
-            ;  if (vec_max > 0)
-               {  double fac = pow(vec_max, mlp->pre_inflationx-1)
-               ;  mclvUnary(vec, fltxScale, &fac)
-            ;  }
-            }
-         }
-         n_ops++
-   ;  }
-
-      if (da)
-      shadow_factors = mcl_density_adjust(mx, da)
-
-   ;  if (!reread && (mlp->modes & ALG_DO_SHADOW))
-      {  if (!shadow_factors) /* might already be computed */
-         shadow_factors
-            =  mcl_get_shadow_turtle_factors
-               (  mx
-               ,  mlp->shadow_mode
-               ,  mlp->shadow_s
-               )
-      ;  mlp->shadow_cache_domain
-         =  mcl_shadow_matrix
-            (  mx
-            ,  shadow_factors
-            )
-
-;  if(getenv("MCL_DUMP_SHADOW"))
-   {  mcxIO* xf = mcxIOnew("-", "w")
-   ;  double factor = 1000
-   ;  mclx* mx2 = mclxCopy(mx)
-;fprintf(stdout, "_________________________>\n")
-   ;  mclxUnary(mx2, fltxMul, &factor)
-   ;  mclxWrite(mx2, xf, MCLXIO_VALUE_GETENV, RETURN_ON_FAIL)
-   ;  mclxFree(&mx2)
-   ;  mcxIOfree(&xf)
-   ;
-   }
-      ;  mclvFree(&shadow_factors)
-   ;  }
-
-   else if (0 && getenv("MCL_NULL_NODE"))
-   {  mclv* new_domain = mclvClone(mx->dom_cols)
-   ;  dim nullidx = MCLV_MAXID(new_domain)+1
-   ;  mclvInsertIdx(new_domain, nullidx, 1.0)
-   ;  mclxAccommodate(mx, new_domain, new_domain)
-   ;  mcl_add_nullsink(mx)
-   ;  mclxAdjustLoops(mx, mclxLoopCBmax, NULL)
-;  }
-
-      else if (mlp->modes & ALG_DO_SUMLOOPS)
+      if (mlp->modes & ALG_DO_SUMLOOPS)
       mclxAdjustLoops(mx, mclxLoopCBsum, NULL)
 
    ;  else if (mlp->modes & ALG_DO_DISCARDLOOPS)
@@ -1957,8 +1694,6 @@ static int mclAlgorithmTransform
          ;  mclp* ivp = mclvGetIvp(vec, vec->vid, NULL)
          ;  if (ivp)
             ivp->val *= mlp->center
-         ;  if (ns && mlp->modes & ALG_DO_SHADOW && 2*j >= N_COLS(mx))
-            break
       ;  }
       }
 

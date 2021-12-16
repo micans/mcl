@@ -8,8 +8,8 @@
 include $(top_srcdir)/include/include.am
 
 noinst_LIBRARIES = libmcl.a
-libmcl_a_SOURCES = shadow.c inflate.c alg.c expand.c dpsd.c interpret.c proc.c procinit.c transform.c
+libmcl_a_SOURCES = inflate.c alg.c expand.c dpsd.c interpret.c proc.c procinit.c transform.c
 
-EXTRA_DIST = shadow.h inflate.h alg.h expand.h dpsd.h interpret.h proc.h transform.h \
+EXTRA_DIST = inflate.h alg.h expand.h dpsd.h interpret.h proc.h transform.h \
   procinit.h
 

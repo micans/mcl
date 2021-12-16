@@ -903,6 +903,10 @@ static void free_pars
 ;  }
 
 
+      /* Todo. (1) Describe all possible states in which this can be called;
+       * (2) Ensure state consistency with checks and messages.
+       * Some (a lot) of these checks happen now in mcxload.
+      */
 mclx* mclxIOstreamIn
 (  mcxIO*   xf
 ,  mcxbits  bits
@@ -934,7 +938,15 @@ mclx* mclxIOstreamIn
    ;  unsigned long n_ite = 0
    ;  mclx* mx = NULL
 
-   ;  if (!ivpmerge)
+   ;  if (mirror && !symmetric)
+      {  mcxErr(me, "mirror mode needs symmetric mode (shared-tab-logic)")
+      ;  if (ON_FAIL == EXIT_ON_FAIL)
+         mcxDie(1, me, "fini")
+      ;  mcxTingFree(&linebuf)
+      ;  return NULL
+   ;  }
+
+      if (!ivpmerge)
       ivpmerge = mclpMergeMax
 
    ;  if (symmetric)
@@ -960,15 +972,15 @@ mclx* mclxIOstreamIn
                                  /* fixme: put the block below in a subroutine */
    ;  while (1)
       {  if (abc + one23 + longlist > TRUE)   /* OUCH */
-         {  mcxErr(module, "multiple stream formats specified")
+         {  mcxErr(me, "multiple stream formats specified")
          ;  break
       ;  }
          if (!symmetric && streamer->tab_sym_in)
-         {  mcxErr(module, "for now disallowed, single tab, different domains")
+         {  mcxErr(me, "for now disallowed, single tab, different domains")
          ;  break
       ;  }
          if ((!one23 && !abc && !longlist))
-         {  mcxErr(module, "not enough to get going")
+         {  mcxErr(me, "not enough to get going")
          ;  break
       ;  }
 
@@ -1079,9 +1091,15 @@ mclx* mclxIOstreamIn
             {  mcxErr(me, "x-extend fails")
             ;  break
          ;  }
-                                 /* fixme: this code should check somewhere that y is in range;
-                                  * right now we depend on caller not having set mirror in multi-column case
-                                 */
+
+         /* shared-tab-logic
+          * Code below works because pars_realloc elsewhere depends on iface.map_c->max_seen
+          * and in symmetric mode map_c and map_r are the same thing.
+          * For now we exclude the possibility of longlist + mirror with a combination
+          * of code in mcxload and here (check at start of this routine).
+          * For longlist + mirror either use -ri max to add reverse image, or
+          * use mcxi to check the network is undirected.
+         */
             if (mirror && mclpARextend(iface.pars+y, x, value))
             {  mcxErr(me, "y-extend fails")
             ;  break

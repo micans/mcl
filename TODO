@@ -12,6 +12,7 @@
          -  symmetric vs directed tabs
          -  symmetric vs directed edges
          -  values vs novalues
+         -  with --expect-values should they always be present?
          -  lots of fixmes in code
 
  -  doc/{Makefile.am,index.in.azm} (mcxassemble, mclpipeline)

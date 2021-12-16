@@ -1,7 +1,5 @@
 
 
-   *  ...
-
    *  Mcl source is now hosted on github.com/micans/mcl .
 		Compiling mcl now requires installation of cimfomfa, which provides the C
 		utility library libtingea.
@@ -13,6 +11,18 @@
       Previously cimfomfa was imported in the mcl source tree, but this
       practice has stopped. The mcl source tree contains a script that
       will download both cimfomfa and mcl tar archives and compile both.
+
+   *  Fixed bug in mcxarray in the case of NAs in data. The wrong N was used.
+      Additionally in the presence of NAs the spearman correlation coefficient
+      uses the ranks from the vectors pre-removal of the join NA set. There is
+      now a mode --flexnasp that will re-compute ranks after removal of this
+      set in both vectors, separately for each pair of vectors.
+
+   *  Fixed bug in mcxload -etc <file> --expect-values; a logical cascade
+      triggered wrong parse branch.
+
+   *  Fixed bug in mcxload -etc / -235 and others. It is no longer possible
+      to combine these with --stream-mirror. Use -ri instead.
 
 
 Fri May 16 2014

@@ -63,7 +63,10 @@ mcxstatus mclxIOstreamOut
 #define MCLXIO_STREAM_GTAB_RESTRICT (MCLXIO_STREAM_RTAB_RESTRICT | MCLXIO_STREAM_CTAB_RESTRICT)
 #define MCLXIO_STREAM_GTAB_STRICT (MCLXIO_STREAM_RTAB_STRICT | MCLXIO_STREAM_CTAB_STRICT)
 
+#define MCLXIO_STREAM_ETCANY (MCLXIO_STREAM_ETC | MCLXIO_STREAM_ETC_AI | MCLXIO_STREAM_SIF)
+#define MCLXIO_STREAM_235ANY (MCLXIO_STREAM_235 | MCLXIO_STREAM_235_AI)
 
+#define MCLXIO_STREAM_MULTICOLUMN (MCLXIO_STREAM_ETCANY | MCLXIO_STREAM_235ANY)
 
 /* In abc mode, it tries to separate on tab if it spots a tab;
  * otherwise it separates on whitespace.
@@ -81,6 +84,7 @@ typedef struct
 ;  dim            cmax_123
 ;  dim            rmax_123
 ;  dim            cmax_235
+;  dim            rmax_235
 ;
 }  mclxIOstreamer ;
 

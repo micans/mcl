@@ -69,9 +69,6 @@ const char* module = "mclxIOstreamIn";
 #define MCLXIO_STREAM_CTAB_RO (MCLXIO_STREAM_CTAB_STRICT | MCLXIO_STREAM_CTAB_RESTRICT)
 #define MCLXIO_STREAM_RTAB_RO (MCLXIO_STREAM_RTAB_STRICT | MCLXIO_STREAM_RTAB_RESTRICT)
 
-#define MCLXIO_STREAM_ETCANY (MCLXIO_STREAM_ETC | MCLXIO_STREAM_ETC_AI | MCLXIO_STREAM_SIF)
-#define MCLXIO_STREAM_235ANY (MCLXIO_STREAM_235 | MCLXIO_STREAM_235_AI)
-
 #define DEBUG  0
 #define DEBUG2 0
 #define DEBUG3 0
@@ -312,6 +309,7 @@ static mcxstatus read_etc
                ;  break
             ;  }
                state->etcbuf_ofs += n_char_read
+;if(0)fprintf(stderr, "start found %lu\n", iface->x)
             ;  if (iface->map_c->max_seen+1 < iface->x+1)      /* note mixed-sign comparison */
                iface->map_c->max_seen = iface->x
             ;  state->x_prev = iface->x
@@ -357,11 +355,15 @@ static mcxstatus read_etc
       ;  }
 
          if (bits & (MCLXIO_STREAM_235_AI | MCLXIO_STREAM_235))
-         {  if
+         {  
+;if(0)fprintf(stderr, "what's buf it's [%s]\n", state->etcbuf->str+state->etcbuf_ofs);
+            if
             (  (  tryvalue
                && 2 != sscanf(state->etcbuf->str+state->etcbuf_ofs, "%lu:%lf%n", &(iface->y), value, &n_char_read)
                )
-            || 1 != sscanf(state->etcbuf->str+state->etcbuf_ofs, "%lu%n", &(iface->y), &n_char_read)
+            || ( ! tryvalue
+               && 1 != sscanf(state->etcbuf->str+state->etcbuf_ofs, "%lu%n", &(iface->y), &n_char_read)
+               )
             )
             {  char* s = state->etcbuf->str+state->etcbuf_ofs
             ;  while(isspace((uchar) s[0]))
@@ -376,7 +378,7 @@ static mcxstatus read_etc
          ;  }
             else
             {
-;if(DEBUG3)fprintf(stdbug, "hit at %d\n", (int) state->etcbuf_ofs);
+;if(DEBUG3)fprintf(stdbug, "hit at %d (value %f) (read %d)\n", (int) state->etcbuf_ofs, *value, (int)n_char_read);
                state->etcbuf_ofs += n_char_read
             ;  if (iface->map_r->max_seen+1 < iface->y+1)      /* note mixed-sign comparison */
                iface->map_r->max_seen = iface->y
@@ -814,8 +816,10 @@ static mclx* make_mx_from_pars
    ;  dim i
 
    ;  if (bits & MCLXIO_STREAM_235ANY)
-      {  if (streamer->cmax_235 > 0 && dc_max_seen < streamer->cmax_235 - 1)
+      {  if (streamer->cmax_235 > 0 && dc_max_seen+1 < streamer->cmax_235)
          dc_max_seen = streamer->cmax_235-1
+      ;  if (streamer->rmax_235 > 0 && dr_max_seen+1 < streamer->rmax_235)
+         dr_max_seen = streamer->rmax_235-1
    ;  }
       else if (bits & MCLXIO_STREAM_123)
       {  if (streamer->cmax_123 > 0 && dc_max_seen+1 < streamer->cmax_123)
@@ -1075,6 +1079,9 @@ mclx* mclxIOstreamIn
             {  mcxErr(me, "x-extend fails")
             ;  break
          ;  }
+                                 /* fixme: this code should check somewhere that y is in range;
+                                  * right now we depend on caller not having set mirror in multi-column case
+                                 */
             if (mirror && mclpARextend(iface.pars+y, x, value))
             {  mcxErr(me, "y-extend fails")
             ;  break

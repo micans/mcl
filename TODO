@@ -1,15 +1,29 @@
 
-clxdo or other script to compute distances for line-based <LABEL> <CID> cluster format
+ -  unit test
+      mcxarray
+      mcxload
+    autogenerate. idempotency, some sort of invariant check.
+      mcxload issues/axes
+         -  auto-extension of tabs
+         -  keeping track of maximum index seen (symmetric/directed)
+         -  strict / restrict / extend
+         -  dropping/ignoring of data (restrict)
+         -  labels vs numbers
+         -  symmetric vs directed tabs
+         -  symmetric vs directed edges
+         -  values vs novalues
+         -  lots of fixmes in code
 
+ -  doc/{Makefile.am,index.in.azm} (mcxassemble, mclpipeline)
 
-! statsReset moved. valgrind it.
+!   statsReset moved. fresh mcl valgrind
 
- -  mclxVectorDispatch why is matrix argument not const.
+ -  mclxVectorDispatch; matrix argument not const. This for e.g. mclxSymReduceDispatch,
+    but perhaps consider the latter and similar (knn reductions) for purge.
 
  -  update/point README compile instructions
 
  -  mcxarray unit tests
-    implement full re-compute of ranks in case of NAs + spearman?
 
  -  mcxsubs reimplement; mcxi or lex/yacc
   - consider also tf()

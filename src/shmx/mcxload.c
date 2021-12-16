@@ -80,7 +80,7 @@ enum
 ,  MY_OPT_OUT_TABG
 ,  MY_OPT_DMAX
 
-,  MY_OPT_STRICT_TABC = MY_OPT_OUT_TABG + 2
+,  MY_OPT_STRICT_TABC = MY_OPT_DMAX + 2
 ,  MY_OPT_RESTRICT_TABC
 ,  MY_OPT_EXTEND_TABC
 ,  MY_OPT_CANONICALC
@@ -88,8 +88,9 @@ enum
 ,  MY_OPT_OUT_TABC
 ,  MY_OPT_CMAX
 ,  MY_OPT_CREQUIRE_235
+,  MY_OPT_RREQUIRE_235
 
-,  MY_OPT_STRICT_TABR = MY_OPT_CMAX + 2
+,  MY_OPT_STRICT_TABR = MY_OPT_RREQUIRE_235 + 2
 ,  MY_OPT_RESTRICT_TABR
 ,  MY_OPT_EXTEND_TABR
 ,  MY_OPT_SCRUB_DOMR
@@ -97,7 +98,7 @@ enum
 ,  MY_OPT_OUT_TABR
 ,  MY_OPT_RMAX
 
-,  MY_OPT_DEDUP         =  MY_OPT_OUT_TABR + 2
+,  MY_OPT_DEDUP         =  MY_OPT_RMAX + 2
 ,  MY_OPT_STREAM_TRANSFORM
 ,  MY_OPT_TRANSFORM
 ,  MY_OPT_STREAM_LOG
@@ -277,6 +278,12 @@ mcxOptAnchor options[] =
    ,  MY_OPT_CREQUIRE_235
    ,  "<num>"
    ,  "number of columns is set to <num> at least"
+   }
+,  {  "-235-maxr"
+   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  MY_OPT_RREQUIRE_235
+   ,  "<num>"
+   ,  "number of rows is set to <num> at least"
    }
 ,  {  "-extend-tab"
    ,  MCX_OPT_HASARG
@@ -527,7 +534,8 @@ int main
    ;  mclxIOstreamer streamer
    ;  void (*merge)(void* ivp1, const void* ivp2) = NULL
 
-   ;  mcxbool symmetric =  FALSE
+   ;  mcxbool symmetric =  FALSE       /* this means domains are the same (implicit or explicit) */
+   ;  mcxbool mirror    =  FALSE       /* this means edges should be undirected */
    ;  mcxbool transpose =  FALSE
    ;  mcxbool cleanup   =  FALSE
    ;  mcxbool dowrite   =  TRUE
@@ -552,6 +560,7 @@ int main
    ;  streamer.cmax_123    =  0
    ;  streamer.rmax_123    =  0
    ;  streamer.cmax_235    =  0
+   ;  streamer.rmax_235    =  0
 
    ;  mcxLogLevel =
       MCX_LOG_AGGR | MCX_LOG_MODULE | MCX_LOG_IO | MCX_LOG_GAUGE | MCX_LOG_WARN
@@ -648,6 +657,11 @@ int main
 
             case MY_OPT_CREQUIRE_235
          :  streamer.cmax_235 = atoi(opt->val)
+         ;  break
+         ;
+
+            case MY_OPT_RREQUIRE_235
+         :  streamer.rmax_235 = atoi(opt->val)
          ;  break
          ;
 
@@ -856,6 +870,10 @@ int main
       mcxOptFree(&opts)
 
    ;  symmetric = bits_stream_other & MCLXIO_STREAM_SYMMETRIC
+   ;  mirror    = bits_stream_other & MCLXIO_STREAM_MIRROR
+
+   ;  if (mirror && (bits_stream_input & MCLXIO_STREAM_MULTICOLUMN))
+      mcxDie(1, me, "symmetric mode not compatible with multi-column input formats")
 
    ;  if ((xfusetabc || xfusetabr || xfcachetabc || xfcachetabr) && symmetric)
       mcxDie(1, me, "(implied) symmetric mode precludes all tabc and tabr options")

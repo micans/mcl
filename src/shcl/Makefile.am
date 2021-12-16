@@ -3,18 +3,12 @@
 
 include $(top_srcdir)/include/include.am
 
-clmformat.zmm.h: clmformat.zmm
-	../../scripts/cfy clmformat.zmm clmformat.zmm.h defs_zmm
-
 clmps.defs.h: clmps.defs
 	../../scripts/cfy clmps.defs clmps.defs.h defs_ps
 
-clmformat.c: clmformat.zmm.h
-
 bin_PROGRAMS = clm
-noinst_PROGRAMS = clmdag clmframe clmformat
+noinst_PROGRAMS = clmdag clmframe
 
-clmformat_SOURCES = clmformat.c report.c
 clmframe_SOURCES = clmframe.c report.c
 clmdag_SOURCES = clmdag.c report.c
 
@@ -28,6 +22,6 @@ EXTRA_DIST = clmorder.h clmdist.h clminfo2.h clminfo.h clmclose.h clmmate.h clmm
 					clmadjust.h clmoptics.h clmresidue.h clmimac.h clmps.h clmps.defs.h\
 					report.h report.c \
 					$(bin_SCRIPTS) \
-               mclgraga mclgrep clmformat.zmm clmformat.zmm.h \
+               mclgraga mclgrep \
 					clmps.defs clmps.defs.h
 

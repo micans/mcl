@@ -1555,7 +1555,8 @@ with value 0.8.}
 
 \par{
    Tim Hughes contributed several good bug reports for mcxassemble,
-   mcxdeblast and zoem (a workhorse for \clmformat).}
+   mcxdeblast and zoem.
+   }
 
 \sec{seealso}{SEE ALSO}
 

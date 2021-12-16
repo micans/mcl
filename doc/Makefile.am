@@ -45,7 +45,6 @@ doc_DATA_dep = mcl.html mcl.ps mcl.txt \
  clminfo2.html clminfo2.ps \
  clmmate.html clmmate.ps \
  clmmeet.html clmmeet.ps \
- clmformat.html clmformat.ps \
  clmorder.html clmorder.ps \
  mcxio.html mcxio.ps \
  clmprotocols.html clmprotocols.ps \
@@ -55,7 +54,7 @@ doc_DATA_dep = mcl.html mcl.ps mcl.txt \
 doc_DATA = $(doc_DATA_dep) mclmcl.txt
 
 man_MANS = mcl.1 mclcm.1 clm.1 mclindex.7 mclfamily.7 mclfaq.7 mcx.1 mcxi.1 mcxio.5 clmprotocols2.5 clmprotocols.5 \
-   clmresidue.1 clmclose.1 clmoptics.1 clmimac.1 clmmate.1 clmmeet.1 clmformat.1 \
+   clmresidue.1 clmclose.1 clmoptics.1 clmimac.1 clmmate.1 clmmeet.1 \
    clmvol.1 clmdist.1 clminfo2.1 clminfo.1 clmorder.1 \
    mcxconvert.1 mcxassemble.1 mcxmap.1 mcxsubs.1 mcxload.1 mcxdump.1 mcxarray.1 mcxrand.1 \
 	mcxalter.1 mcxerdos.1 mcxdiameter.1 mcxctty.1 mcxclcf.1 mcxquery.1 \
@@ -76,7 +75,7 @@ MAINTAINERCLEANFILES = $(man_MANS) $(doc_DATA_dep)
 
 EXTRA_DIST = mclmcl.txt mcx.zmm\
  stamp.day stamp.month stamp.stamp stamp.year\
- clmformat.azm clmvol.azm clmdist.azm clmmate.azm clminfo2.azm clminfo.azm clmmeet.azm\
+ clmvol.azm clmdist.azm clmmate.azm clminfo2.azm clminfo.azm clmmeet.azm\
  clm.azm clmorder.azm mcl.azm mclcm.azm\
  mclfamily.azm mclfaq.azm mcxi.azm mcx.azm mcxquery.azm \
  mcxdump.azm mcxconvert.azm clmprotocols2.azm clmprotocols.azm mcxio.azm clmresidue.azm clmclose.azm clmoptics.azm clmimac.azm mcxassemble.azm\
@@ -150,7 +149,6 @@ docme-test:
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxload       $(top_srcdir)/doc/mcxload.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxarray      $(top_srcdir)/doc/mcxarray.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxrand       $(top_srcdir)/doc/mcxrand.azm
-	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shcl/clmformat     $(top_srcdir)/doc/clmformat.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxsubs       $(top_srcdir)/doc/mcxsubs.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxmap        $(top_srcdir)/doc/mcxmap.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxassemble   $(top_srcdir)/doc/mcxassemble.azm
@@ -181,7 +179,6 @@ clm:                    clm.1            clm.html            clm.ps
 clminfo2:          clminfo2.1       clminfo2.html       clminfo2.ps
 clminfo:            clminfo.1        clminfo.html        clminfo.ps
 clmmeet:            clmmeet.1        clmmeet.html        clmmeet.ps
-clmformat:        clmformat.1      clmformat.html      clmformat.ps
 clmdist:            clmdist.1        clmdist.html        clmdist.ps
 clmvol:              clmvol.1         clmvol.html         clmvol.ps
 clmmate:            clmmate.1        clmmate.html        clmmate.ps

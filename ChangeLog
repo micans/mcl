@@ -1,8 +1,8 @@
 
 
    *  Mcl source is now hosted on github.com/micans/mcl .
-		Compiling mcl now requires installation of cimfomfa, which provides the C
-		utility library libtingea.
+      Compiling mcl now requires installation of cimfomfa, which provides
+      the C utility library libtingea.
       Cimfomfa is hosted on github.com/mican/cimfomfa .
 
       Tar releases will for the foreseeable future still be hosted on
@@ -21,8 +21,9 @@
    *  Fixed bug in mcxload -etc <file> --expect-values; a logical cascade
       triggered wrong parse branch.
 
-   *  Fixed bug in mcxload -etc / -235 and others. It is no longer possible
-      to combine these with --stream-mirror. Use -ri instead.
+   *  Fixed bug in mcxload -etc / -235 and derived options, where --stream-mirror
+      would cause a crash.  Achieve the intended effect e.g. with '-ri max'
+      instead.
 
 
 Fri May 16 2014

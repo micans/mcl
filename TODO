@@ -1,11 +1,12 @@
 
  !  doc/{Makefile.am,index.in.azm} (mcxassemble, mclpipeline)
 
- -  unit test
+ -  integration/unit test
       mcxarray
       mcxload
+      binary format
     autogenerate. idempotency, some sort of invariant check.
-      mcxload issues/axes
+      mcxload axes
          -  auto-extension of tabs
          -  keeping track of maximum index seen (symmetric/directed)
          -  strict / restrict / extend

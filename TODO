@@ -12,10 +12,11 @@
          -  strict / restrict / extend
          -  dropping/ignoring of data (restrict)
          -  labels vs numbers
-         -  symmetric vs directed tabs
+         -  symmetric vs directed domains (tabs)
          -  symmetric vs directed edges
          -  values vs novalues
          -  with --expect-values should they always be present?
+            auto-detect values should be possible.
          -  lots of fixmes in code
 
  -  statsReset moved. fresh mcl valgrind

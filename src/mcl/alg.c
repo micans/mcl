@@ -772,7 +772,7 @@ mcxstatus mclAlgorithm
             ,  &(mlp->mx_limit)
             )
       ;  if (!(mlp->modes & ALG_CACHE_START) && !mpp->expansionVariant)
-         mlp->mx_start = NULL   /* twas freed by mclProcess (fixme logic) */
+         mlp->mx_start = NULL   /* twas freed by mclProcess (ouch fixme logic) */
    ;  }
 
       if (mlp->expand_only)
@@ -1284,6 +1284,8 @@ mcxstatus mclAlgorithmInit
 
             case ALG_OPT_REGULARIZED
          :  mpp->expansionVariant = 1
+         ;  if (!mpp->mainLoopLength)        /* default 0; otherwise user set it */
+            mpp->mainLoopLength   = 30
          ;  break
          ;
 

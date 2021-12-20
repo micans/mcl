@@ -1,6 +1,8 @@
 
  !  doc/{Makefile.am,index.in.azm} (mcxassemble, mclpipeline)
 
+ -  check mclvIdxVal offset use
+
  -  integration/unit test
       mcxarray
       mcxload
@@ -19,15 +21,15 @@
             auto-detect values should be possible.
          -  lots of fixmes in code
 
+ -  mcxsubs reimplement; mcxi or lex/yacc
+ -  consider also mcxalter/tf()
+
  -  statsReset moved. fresh mcl valgrind
 
  -  mclxVectorDispatch; matrix argument not const. This for e.g. mclxSymReduceDispatch,
     but perhaps consider the latter and similar (knn reductions) for purge.
 
  -  update/point README compile instructions
-
- -  mcxsubs reimplement; mcxi or lex/yacc
-  - consider also mcxalter/tf()
 
  -  mcx{load,dump} restrict tab: report intersect and difference (useful sanity-check feedback for user).
 

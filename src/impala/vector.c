@@ -1479,7 +1479,7 @@ double mclvIdxVal
 ,  long        idx
 ,  ofs*        p_offset
 )  
-   {  ofs     offset   =  mclvGetIvpOffset(vec, idx, -1)
+   {  ofs     offset   =  mclvGetIvpOffset(vec, idx, -1)       /* fixme: should use p_offset */
    ;  double  value    =  0.0
 
    ;  if (p_offset)

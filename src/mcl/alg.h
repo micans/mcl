@@ -61,6 +61,7 @@ typedef struct
 #  define   ALG_DO_SHOW_PID            1  << 16
 #  define   ALG_DO_SHOW_JURY           1  << 17
 #  define   ALG_DO_SUMLOOPS            1  << 18
+#  define   ALG_DO_DEGREE_ADJUST       1  << 19
 
 ;  mcxbits              modes
 

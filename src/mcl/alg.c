@@ -54,8 +54,6 @@
 
 static const char* us = "mcl::alg";
 
-static const char* da = NULL;
-
 const char* legend
 =
    "\n"
@@ -84,11 +82,11 @@ enum
 ,  ALG_OPT_SHOW_LOG
 ,  ALG_OPT_CACHE_MX
 ,  ALG_OPT_REGULARIZED
-,  ALG_OPT_DENSITY_ADJUST
 ,  ALG_OPT_NULLNODE
 ,  ALG_OPT_DISCARDLOOPS
 ,  ALG_OPT_SUMLOOPS
 ,  ALG_OPT_SCALELOOPS
+,  ALG_OPT_DEGREE_ADJUST
 ,  ALG_OPT_QUIET
 ,  ALG_OPT_ANALYZE
 ,  ALG_OPT_SORT
@@ -259,11 +257,11 @@ mcxOptAnchor mclAlgOptions[] =
    ,  NULL
    ,  "use 'regularized mcl' expansion step"
    }
-,  {  "-da"
-   ,  MCX_OPT_HIDDEN | MCX_OPT_HASARG
-   ,  ALG_OPT_DENSITY_ADJUST
-   ,  "<mojo>"
-   ,  "adjust edge weights between density differentiated nodes"
+,  {  "--degree-adjust"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  ALG_OPT_DEGREE_ADJUST
+   ,  NULL
+   ,  "scale edge weights inversely to deg(i) + deg(j)"
    }
 ,  {  "--sum-loops"
    ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
@@ -882,6 +880,7 @@ static mcxbool set_bit
       ;  case  ALG_OPT_OUTPUT_LIMIT    : bit = ALG_DO_OUTPUT_LIMIT   ;  break
       ;  case  ALG_OPT_DISCARDLOOPS    : bit = ALG_DO_DISCARDLOOPS   ;  break
       ;  case  ALG_OPT_SUMLOOPS        : bit = ALG_DO_SUMLOOPS       ;  break
+      ;  case  ALG_OPT_DEGREE_ADJUST   : bit = ALG_DO_DEGREE_ADJUST  ;  break
    ;  }
 
       mlp->modes |= bit
@@ -1174,11 +1173,6 @@ mcxstatus mclAlgorithmInit
          ;  break
          ;
 
-            case ALG_OPT_DENSITY_ADJUST
-         :  da = opt->val
-         ;  break
-         ;
-
             case ALG_OPT_SHOWSCHEMES
          :  mclShowSchemes(FALSE)
          ;  return ALG_INIT_DONE
@@ -1193,6 +1187,7 @@ mcxstatus mclAlgorithmInit
                         :  case ALG_OPT_CACHE_MX
                            :  case ALG_OPT_DISCARDLOOPS
                               :  case ALG_OPT_SUMLOOPS
+                                 :  case ALG_OPT_DEGREE_ADJUST
                         :
             vok = set_bit(mlp, opt->anch->tag, anch->id, opt->val)
          ;  break
@@ -1657,8 +1652,25 @@ fprintf(stderr, "reconstrict tab with %d entries: %p\n", (int) N_TAB(mlp->tab), 
 ;  }
 
 
+static void adjust_degree
+(  mclx* mx
+)
+   {  dim i, j
+   ;  mclv* sz = mclxColSizes(mx, MCL_VECTOR_COMPLETE)
+   ;  for (i=0;i<N_COLS(mx);i++)
+      {  mclv* v = mx->cols+i
+      ;  double xdegr = mclvIdxVal(sz, v->vid, NULL)
+      ;  for (j=0; j<v->n_ivps; j++)
+         {  double ydegr = mclvIdxVal(sz, v->ivps[j].idx, NULL)
+         ;  v->ivps[j].val /= MCX_MAX(1.0, (xdegr + ydegr))
+      ;  }
+   ;  }
+      mclvFree(&sz)
+;  }
+
+
 static int mclAlgorithmTransform
-(  mclx* mx  
+(  mclx* mx
 ,  mclAlgParam* mlp
 ,  mcxbool reread
 )
@@ -1681,7 +1693,10 @@ static int mclAlgorithmTransform
       ;  n_ops++
    ;  }
 
-      if (mlp->modes & ALG_DO_SUMLOOPS)
+      if (mlp->modes & ALG_DO_DEGREE_ADJUST)
+      adjust_degree(mx)
+
+   ;  if (mlp->modes & ALG_DO_SUMLOOPS)
       mclxAdjustLoops(mx, mclxLoopCBsum, NULL)
 
    ;  else if (mlp->modes & ALG_DO_DISCARDLOOPS)

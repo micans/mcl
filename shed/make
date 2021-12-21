@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# E.g.
+# shed/make src/mcl alg.o
+# shed/make src/mcl
+# shed/make src/shmcl
+# shed/make src/shmcl install
+# shed/make . install
+
+
 set -euo pipefail
 
 target=""

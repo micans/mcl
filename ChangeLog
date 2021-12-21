@@ -25,6 +25,17 @@
       would cause a crash.  Achieve the intended effect e.g. with '-ri max'
       instead.
 
+   *  Added --degree-adjust option to mcl; this adjusts edge weight A(i,j)
+      inversely proportional to deg(i)+deg(j), i.e. it decreases similarity
+      between highly connected nodes.
+
+   *  After 40 iterations slightly perturb inflation. This is to force convergence
+      in case a subgraph corresponds to the matrix
+
+      [ 4 1 1 ]
+      [ 1 4 1 ]
+      [ 1 1 4 ]
+
 
 Fri May 16 2014
 

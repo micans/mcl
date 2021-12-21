@@ -26,7 +26,7 @@
  '  check mclvIdxVal offset use
 
  -  mclxVectorDispatch; matrix argument not const. This for e.g. mclxSymReduceDispatch,
-    but perhaps consider the latter and similar (knn reductions) for purge.
+    but perhaps consider the latter and similar (knn reductions) for purge. certainly shrug etc.
 
  -  update/point README compile instructions
 

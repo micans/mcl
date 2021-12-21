@@ -87,6 +87,7 @@ enum
 ,  ALG_OPT_SUMLOOPS
 ,  ALG_OPT_SCALELOOPS
 ,  ALG_OPT_DEGREE_ADJUST
+,  ALG_OPT_DEGREE_ADJUST_EXP
 ,  ALG_OPT_QUIET
 ,  ALG_OPT_ANALYZE
 ,  ALG_OPT_SORT
@@ -262,6 +263,12 @@ mcxOptAnchor mclAlgOptions[] =
    ,  ALG_OPT_DEGREE_ADJUST
    ,  NULL
    ,  "scale edge weights inversely to deg(i) + deg(j)"
+   }
+,  {  "-dae"
+   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  ALG_OPT_DEGREE_ADJUST_EXP
+   ,  "<num>"
+   ,  "scale edge weights inversely to (deg(i) + deg(j))^<num>"
    }
 ,  {  "--sum-loops"
    ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
@@ -982,7 +989,7 @@ mcxstatus mclAlgorithmInit
    ;  mcxTing* suf = mcxTingEmpty(NULL, 20)
    ;  const mcxOption* opt
    ;  int mkbounce = 0
-   ;  float f, f_0  =  0.0
+   ;  float f, f_0  =  0.0, f_1 = 1.0
    ;  int i_1     =  1
    ;  int i_10    =  10
    ;  int i
@@ -1181,16 +1188,25 @@ mcxstatus mclAlgorithmInit
             case ALG_OPT_FORCE_CONNECTED
          :  case ALG_OPT_CHECK_CONNECTED
             :  case ALG_OPT_OUTPUT_LIMIT
-               :  case ALG_OPT_APPEND_LOG
-                  :  case ALG_OPT_SHOW_LOG
-                     :  case ALG_OPT_ANALYZE
-                        :  case ALG_OPT_CACHE_MX
-                           :  case ALG_OPT_DISCARDLOOPS
-                              :  case ALG_OPT_SUMLOOPS
-                                 :  case ALG_OPT_DEGREE_ADJUST
-                        :
+            :  case ALG_OPT_APPEND_LOG
+            :  case ALG_OPT_SHOW_LOG
+            :  case ALG_OPT_ANALYZE
+            :  case ALG_OPT_CACHE_MX
+            :  case ALG_OPT_DISCARDLOOPS
+            :  case ALG_OPT_SUMLOOPS
+            :  case ALG_OPT_DEGREE_ADJUST
+            :
             vok = set_bit(mlp, opt->anch->tag, anch->id, opt->val)
          ;  break
+         ;
+
+            case ALG_OPT_DEGREE_ADJUST_EXP
+         :  f = atof(opt->val)
+         ;  if ((vok = chb(anch->tag, 'f', &f, fltGq, &f_1, NULL, NULL)))
+            {  mlp->degree_adjust_exp = atof(opt->val)
+            ;  BIT_ON(mlp->modes, ALG_DO_DEGREE_ADJUST)
+         ;  }
+            break
          ;
 
             case ALG_OPT_QUIET
@@ -1654,6 +1670,7 @@ fprintf(stderr, "reconstrict tab with %d entries: %p\n", (int) N_TAB(mlp->tab), 
 
 static void adjust_degree
 (  mclx* mx
+,  double power
 )
    {  dim i, j
    ;  mclv* sz = mclxColSizes(mx, MCL_VECTOR_COMPLETE)
@@ -1662,7 +1679,7 @@ static void adjust_degree
       ;  double xdegr = mclvIdxVal(sz, v->vid, NULL)
       ;  for (j=0; j<v->n_ivps; j++)
          {  double ydegr = mclvIdxVal(sz, v->ivps[j].idx, NULL)
-         ;  v->ivps[j].val /= MCX_MAX(1.0, (xdegr + ydegr))
+         ;  v->ivps[j].val /= pow(MCX_MAX(1.0, (xdegr + ydegr)), power)
       ;  }
    ;  }
       mclvFree(&sz)
@@ -1694,7 +1711,7 @@ static int mclAlgorithmTransform
    ;  }
 
       if (mlp->modes & ALG_DO_DEGREE_ADJUST)
-      adjust_degree(mx)
+      adjust_degree(mx, mlp->degree_adjust_exp)
 
    ;  if (mlp->modes & ALG_DO_SUMLOOPS)
       mclxAdjustLoops(mx, mclxLoopCBsum, NULL)
@@ -1916,6 +1933,7 @@ mcxstatus mclAlgInterface
 
    ;  mcxTingFree(&mlp->cline)
    ;  mlp->cline = mcxOptArgLine((const char**) argv2, argc2, '"')
+   ;  mlp->degree_adjust_exp = 1.0
 
    ;  *mlppp = mlp
 

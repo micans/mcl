@@ -294,7 +294,7 @@ static mcxstatus infoMain
 
       if (inflation)
       {  mclxInflate(mx, inflation)
-      ;  mcxTingPrintAfter(ginfo, "inflation=%.2f\n", (double) inflation)
+      ;  mcxTingPrintAfter(ginfo, "inflation=%.2f", (double) inflation)
    ;  }
 
       mclxAdjustLoops(mx, mclxLoopCBmax, NULL)

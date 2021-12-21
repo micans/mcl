@@ -81,6 +81,7 @@ typedef struct
 ;  mcxbool              adjust_loops
 ;  double               center
 ;  mcxbool              expand_only
+;  double               degree_adjust_exp
 
 ;  mclx*                mx_input
 ;  mclx*                mx_start

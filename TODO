@@ -1,8 +1,6 @@
 
  !  doc/{Makefile.am,index.in.azm} (mcxassemble, mclpipeline)
 
- -  check mclvIdxVal offset use
-
  -  integration/unit test
       mcxarray
       mcxload
@@ -24,7 +22,8 @@
  -  mcxsubs reimplement; mcxi or lex/yacc
  -  consider also mcxalter/tf()
 
- -  statsReset moved. fresh mcl valgrind
+ '  statsReset moved. fresh mcl valgrind
+ '  check mclvIdxVal offset use
 
  -  mclxVectorDispatch; matrix argument not const. This for e.g. mclxSymReduceDispatch,
     but perhaps consider the latter and similar (knn reductions) for purge.

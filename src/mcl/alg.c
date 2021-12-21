@@ -1202,7 +1202,7 @@ mcxstatus mclAlgorithmInit
 
             case ALG_OPT_DEGREE_ADJUST_EXP
          :  f = atof(opt->val)
-         ;  if ((vok = chb(anch->tag, 'f', &f, fltGq, &f_1, NULL, NULL)))
+         ;  if ((vok = chb(anch->tag, 'f', &f, fltGt, &f_0, NULL, NULL)))
             {  mlp->degree_adjust_exp = atof(opt->val)
             ;  BIT_ON(mlp->modes, ALG_DO_DEGREE_ADJUST)
          ;  }

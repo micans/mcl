@@ -231,7 +231,7 @@ mclMatrix*  mclProcess
              */
       ;  if (mpp->n_ite > 40)
             mpp->mainInflation *= 1.001
-         ,  mcxLog(MCX_LOG_MODULE, me, "====== Inflation bumped to %.4f ======")
+         ,  mcxLog(MCX_LOG_MODULE, me, "====== Inflation bumped to %.4f ======", mpp->mainInflation)
 
       ;  if (abort_loop || convergence)
          break

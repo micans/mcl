@@ -229,7 +229,7 @@ mclMatrix*  mclProcess
              /* This is to force convergence for the rare invariant beast (possibly
               * as sub-network); graphs/infinity.mci or [4, 1, 1 | 1, 4, 1 | 1 1, 4]
              */
-      ;  if (mpp->n_ite > 40)
+      ;  if (mpp->n_ite >= 40)
             mpp->mainInflation *= 1.001
          ,  mcxLog(MCX_LOG_MODULE, me, "====== Inflation bumped to %.4f ======", mpp->mainInflation)
 

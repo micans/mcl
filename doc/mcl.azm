@@ -1587,18 +1587,33 @@ with value 0.8.}
 \sec{references}{REFERENCES}
 
 \par{
-   \reference{gcbfs}
-   Stijn van Dongen, \it{Graph Clustering by Flow Simulation}.
-   PhD thesis, University of Utrecht, May 2000.\|
-   \httpref{http://www.library.uu.nl/digiarchief/dip/diss/1895620/inhoud.htm}}
-
-\par{
    \reference{gcvdup}
    Stijn van Dongen, \it{Graph Clustering Via a Discrete Uncoupling Process},
    SIAM Journal on Matrix Analysis and Applications, 30(1):121-141, 2008.
    \httpref{http://link.aip.org/link/?SJMAEL/30/121/1}
    }
 
+\par{
+   \reference{eaflsdopf}
+   Enright A.J., Van Dongen S., Ouzounis C.A.
+   \it{An efficient algorithm for large-scale detection of protein families},
+   Nucleic Acids Research 30(7):1575-1584 (2002).}
+
+\par{
+   \reference{gcbfs}
+   Stijn van Dongen, \it{Graph Clustering by Flow Simulation}.
+   PhD thesis, University of Utrecht, May 2000.\|
+   \httpref{http://www.library.uu.nl/digiarchief/dip/diss/1895620/inhoud.htm}}
+
+\par{
+   \reference{umtecfn}
+   Stijn van Dongen and Cei Abreu-Goodger, \it{Using mcl to extract clusters from networks},
+   in \it{Bacterial Molecular Networks: Methods and Protocols},
+   Methods in Molecular Biology, Vol 804, pages 281\-295 (2012). PMID\~22144159.\|
+   \httpref{http://www.ncbi.nlm.nih.gov/pubmed/22144159}}
+
+
+\""{
 \par{
    \reference{cafg}
    Stijn van Dongen. \it{A cluster algorithm for graphs}.
@@ -1620,12 +1635,7 @@ with value 0.8.}
    Institute for Mathematics and Computer Science in the Netherlands,
    Amsterdam, May 2000.\|
    \httpref{http://www.cwi.nl/ftp/CWIreports/INS/INS-R0012.ps.Z}}
-
-\par{
-   \reference{eaflsdopf}
-   Enright A.J., Van Dongen S., Ouzounis C.A.
-   \it{An efficient algorithm for large-scale detection of protein families},
-   Nucleic Acids Research 30(7):1575-1584 (2002).}
+}
 
 \sec{notes}{NOTES}
 

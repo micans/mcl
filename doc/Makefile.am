@@ -33,7 +33,6 @@ doc_DATA_dep = mcl.html mcl.ps mcl.txt \
  mcxsubs.html mcxsubs.ps \
  mcxmap.html mcxmap.ps \
  mcxquery.html mcxquery.ps \
- mcxassemble.html mcxassemble.ps \
  index.html mclindex.ps \
  clmimac.html clmimac.ps \
  clmoptics.html clmoptics.ps \
@@ -56,7 +55,7 @@ doc_DATA = $(doc_DATA_dep) mclmcl.txt
 man_MANS = mcl.1 mclcm.1 clm.1 mclindex.7 mclfamily.7 mclfaq.7 mcx.1 mcxi.1 mcxio.5 clmprotocols2.5 clmprotocols.5 \
    clmresidue.1 clmclose.1 clmoptics.1 clmimac.1 clmmate.1 clmmeet.1 \
    clmvol.1 clmdist.1 clminfo2.1 clminfo.1 clmorder.1 \
-   mcxconvert.1 mcxassemble.1 mcxmap.1 mcxsubs.1 mcxload.1 mcxdump.1 mcxarray.1 mcxrand.1 \
+   mcxconvert.1 mcxmap.1 mcxsubs.1 mcxload.1 mcxdump.1 mcxarray.1 mcxrand.1 \
 	mcxalter.1 mcxerdos.1 mcxdiameter.1 mcxctty.1 mcxclcf.1 mcxquery.1 \
 	tingea.log.7
 
@@ -78,7 +77,7 @@ EXTRA_DIST = mclmcl.txt mcx.zmm\
  clmvol.azm clmdist.azm clmmate.azm clminfo2.azm clminfo.azm clmmeet.azm\
  clm.azm clmorder.azm mcl.azm mclcm.azm\
  mclfamily.azm mclfaq.azm mcxi.azm mcx.azm mcxquery.azm \
- mcxdump.azm mcxconvert.azm clmprotocols2.azm clmprotocols.azm mcxio.azm clmresidue.azm clmclose.azm clmoptics.azm clmimac.azm mcxassemble.azm\
+ mcxdump.azm mcxconvert.azm clmprotocols2.azm clmprotocols.azm mcxio.azm clmresidue.azm clmclose.azm clmoptics.azm clmimac.azm \
  mcxalter.azm mcxerdos.azm mcxdiameter.azm mcxctty.azm mcxclcf.azm mcxrand.azm\
  mcxload.azm mcxmap.azm mcxarray.azm mcxsubs.azm index.in.azm index.html distindex.html\
  tingea.log.azm\
@@ -151,7 +150,6 @@ docme-test:
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxrand       $(top_srcdir)/doc/mcxrand.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxsubs       $(top_srcdir)/doc/mcxsubs.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxmap        $(top_srcdir)/doc/mcxmap.azm
-	$(top_srcdir)/scripts/docme --silent $(SHARE1) ../src/shmx/mcxassemble   $(top_srcdir)/doc/mcxassemble.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm close"   $(top_srcdir)/doc/clmclose.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm dist"    $(top_srcdir)/doc/clmdist.azm
 	$(top_srcdir)/scripts/docme --silent $(SHARE2) "../src/shcl/clm order"   $(top_srcdir)/doc/clmorder.azm
@@ -190,7 +188,6 @@ clmorder:          clmorder.1       clmorder.html       clmorder.ps
                                                       
 mcx:                    mcx.1            mcx.html            mcx.ps
 mcxi:                  mcxi.1           mcxi.html           mcxi.ps
-mcxassemble:    mcxassemble.1    mcxassemble.html    mcxassemble.ps
 mcxmap:              mcxmap.1         mcxmap.html         mcxmap.ps
 mcxsubs:            mcxsubs.1        mcxsubs.html        mcxsubs.ps
 mcxarray:          mcxarray.1       mcxarray.html       mcxarray.ps

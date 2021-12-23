@@ -29,12 +29,16 @@
       inversely proportional to deg(i)+deg(j), i.e. it decreases similarity
       between highly connected nodes.
 
-   *  After 40 iterations slightly perturb inflation. This is to force convergence
-      in case a subgraph corresponds to the matrix
+   *  After 40 iterations slightly perturb mcl inflation. This is to force convergence
+      in case a subgraph corresponds (proportionally) to the matrix
 
       [ 4 1 1 ]
       [ 1 4 1 ]
       [ 1 1 4 ]
+
+      This sub-network happens to be a rare beast for which inflation and expansion
+      cancel each other out. Nearly all mcl processes start converging noticeably after
+      10 iterations, so 40 is a conservative number here.
 
 
 Fri May 16 2014

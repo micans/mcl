@@ -486,9 +486,9 @@ begin
 \car{
    Few. Some experiments are described in \refer{pcfgcmce}, and
    \refer{eaflsdopf} mentions large graphs being clustered in very reasonable
-   time. In protein clustering, \mcl has been applied to graphs with up to one
+   time. In protein clustering, \mcl has been applied to graphs with over seven
    million nodes, and on high-end hardware such graphs can be clustered within
-   a few hours.}
+   a few hours, using mcl's \tt{-t} threads option.}
 
 \faq{colsort}{Does this implementation need to sort vectors?}
 \car{
@@ -598,9 +598,7 @@ begin
 
 \faq{xyzslower}{I've read someplace that MCL is slow [compared with XYZ]}
 \car{
-   Presumably, they did not know mcl, and did not read the parts
-   in \refer{gcbfs} and \refer{cafg} that discuss implementation.  Perhaps
-   they assume or insist that the only way to implement MCL is to implement the
+   Perhaps they assume or insist that the only way to implement MCL is to implement the
    ideal process.  And there is always the genuine possibility
    of a \it{really} stupifyingly fast algorithm. It is certainly not the
    case that MCL has a time complexity of \v{O(N^3)} as is sometimes erroneously
@@ -1005,7 +1003,7 @@ How can I trust the output clustering?}
 \faq{olapintro}{Introduction}
    A natural mapping exists of MCL iterands to DAGs
    (directed acyclic graphs). This is because MCL iterands are generally
-   \it{diagonally positive semi-definite} \- see \refer{supfg}.
+   \it{diagonally positive semi-definite} \- see \refer{gcvdup}.
    Such a DAG can be interpreted as a clustering, simply by taking
    as cores all endnodes (sinks) of the DAG, and by attaching to each
    core all the nodes that reach it. This procedure may result
@@ -1080,7 +1078,7 @@ How can I trust the output clustering?}
 \par{
    When set to 0, the \genopt{-strict} parameter results in the clustering
    associated with the DAG associated with an MCL iterand as described
-   in \refer{supfg}. This DAG is pruned (thus possibly resulting
+   in \refer{gcvdup}. This DAG is pruned (thus possibly resulting
    in less overlap in the clustering) by increasing the \genopt{-strict}
    parameter. [add]}
 
@@ -1141,6 +1139,13 @@ How can I trust the output clustering?}
 \sec{references}{REFERENCES}
 
 \par{
+   \reference{gcvdup}
+   Stijn van Dongen, \it{Graph Clustering Via a Discrete Uncoupling Process},
+   SIAM Journal on Matrix Analysis and Applications, 30(1):121-141, 2008.
+   \httpref{http://link.aip.org/link/?SJMAEL/30/121/1}
+   }
+
+\par{
    \reference{gcbfs}
    Stijn van Dongen. \it{Graph Clustering by Flow Simulation}.
    PhD thesis, University of Utrecht, May 2000.\|
@@ -1154,11 +1159,11 @@ How can I trust the output clustering?}
    \httpref{http://www.cwi.nl/ftp/CWIreports/INS/INS-R0010.ps.Z}}
 
 \par{
-   \reference{supfg}
-   Stijn van Dongen.  \it{A stochastic uncoupling process for graphs}.
-   Technical Report INS-R0011, National Research Institute for Mathematics and
-   Computer Science in the Netherlands, Amsterdam, May 2000.\|
-   \httpref{http://www.cwi.nl/ftp/CWIreports/INS/INS-R0011.ps.Z}}
+   \reference{umtecfn}
+   Stijn van Dongen and Cei Abreu-Goodger, \it{Using mcl to extract clusters from networks},
+   in \it{Bacterial Molecular Networks: Methods and Protocols},
+   Methods in Molecular Biology, Vol 804, pages 281\-295 (2012). PMID\~22144159.\|
+   \httpref{http://www.ncbi.nlm.nih.gov/pubmed/22144159}}
 
 \par{
    \reference{pcfgcmce}

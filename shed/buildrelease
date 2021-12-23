@@ -8,15 +8,11 @@ place="slate/rel-$version"
 rm -rf $place
 mkdir -p $place
 
-# shed/setversion
-
-shed/bootstrap
-
 cd $place
 
 ../../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local
 
-make
+make install
 CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib make distcheck
 
 

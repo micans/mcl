@@ -1,5 +1,4 @@
 
- !  doc/{Makefile.am,index.in.azm} (mcxassemble, mclpipeline)
 
  -  integration/unit test
       mcxarray
@@ -19,7 +18,7 @@
             auto-detect values should be possible.
          -  lots of fixmes in code
 
- -  mcxsubs reimplement; mcxi or lex/yacc
+ -  mcxsubs reimplement; mcxi and/or lex/yacc. cellatac one use case.
  -  consider also mcxalter/tf()
 
  '  statsReset moved. fresh mcl valgrind

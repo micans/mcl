@@ -377,7 +377,7 @@ static mcxstatus distMain
 
          ;  meet12 =  clmContingency(c1, c2)
          ;  meet21 =  mclxTranspose(meet12)
-;fprintf(stderr, ">> %d %d\n", i, j)
+
          ;  if (i_am_vol)
             {  dim k
             ;  for (k=0;k<N_COLS(meet12);k++)

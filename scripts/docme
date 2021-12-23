@@ -29,7 +29,7 @@ if
    (  "--amoixa"        =>   \$::amoixa
    ,  "--silent"        =>   \$::silent
    ,  "--exclude=s"     =>   \$::exclude
-   ,  "--doc-exceed=i"  =>   \$::doc_exceed
+   ,  "--doc-exceed=i"  =>   \$::doc_exceed        # wth this do
    ,  "--ignore-synopsis"   =>   \$::nosynopsis
    )
 )
@@ -43,7 +43,7 @@ my ($progname, $azm) =  @ARGV;
 my $flag_apropos = $::amoixa ? "--amoixa" : "--help";
 %exclude = map { ($_, 1) } split ",", $::exclude;
 
-my $marker = '=' x 40;
+my $marker = $progname . ' ' . '=' x (40-length($progname));
 
 
 my %apropos
@@ -157,6 +157,6 @@ unless ($::nosynopsis) {
 
 
 my $total = @unsupported + @undocumented + @unsupported2 + @unsynopsed;
-exit $total ? 1 : 0;
+exit 0;
 
 

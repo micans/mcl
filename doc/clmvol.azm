@@ -47,10 +47,6 @@
 
 \'begin{itemize}{\mcx_itemopts}
 
-\item{\defopt{-fraction}{num}{nff factor}}
-\car{See the discussion at \secref{description}.
-   }
-
 \item{\defopt{-o}{fname}{output file}}
 
 \end{itemize}

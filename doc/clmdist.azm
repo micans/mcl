@@ -79,12 +79,8 @@ d  d1  d2  N  v  name1  name2  [v50,v75,v90,v95,v99]}
    (alternatively called GCS, intersection, or meet) of the two clusterings,
    \v{d2} is similarly the distance from the second clustering to the GCS,
    \v{N} is the number of nodes in the set over which the clusterings are
-   defined, \v{name1} is the name of the file containing the first clustering,
-   \v{name2} is the name of the file containing the second clustering, and
-   \v{vXX} is the number of \it{volatile nodes} at stringency factor \v{0.XX}
-   (i.e. 0.5 for \v{v50}).  Refer to \clmref{vol} for a definition of
-   \it{volatile node}.
-
+   defined, and \v{name1} and \v{name2} are the names of the files from which the
+   clusterings were taken.
 }
 
 \sec{options}{OPTIONS}
@@ -170,7 +166,8 @@ d  d1  d2  N  v  name1  name2  [v50,v75,v90,v95,v99]}
 \par{
    \sjd is a metric distance on the space of partitions of
    a set of a given fixed cardinality. It has the following linearity
-   property. Let \p1 and \p2 be partitions, then}
+   property (shared with the Variation of Information metric and the Mirkin distance).
+   Let \p1 and \p2 be partitions, then}
 
 \par{
    \sjd(\p1, \p2) = \sjd(\p1, \D) + \sjd(\p2, \D)}

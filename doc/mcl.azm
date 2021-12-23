@@ -163,7 +163,6 @@ option.}
    \synoptopt{-pi}{<num>}{pre-inflation}
    \synoptopt{-if}{<num>}{start-inflation}
    \synoptkvp{--discard-loops}{<y/n>}{discard y/n loops in input}
-   \synoptopt{--sum-loops}{set loops to sum of other arcs weights}
    \synoptopt{-c}{<num>}{reweight loops}
 }
 \cpar{Clustering processing options}{

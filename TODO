@@ -2,7 +2,7 @@
 
  -  integration/unit test
       mcxarray
-      mcxload
+      mcxload  (ahem, see testing)
       binary format
     autogenerate. idempotency, some sort of invariant check.
       mcxload axes

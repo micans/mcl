@@ -54,7 +54,6 @@ const char* clm_syntax =
    "       clm <mode> -h (for mode specific options)"
    ;
 
-
 enum
 {  ID_MATE = 0
 ,  ID_MEET
@@ -175,9 +174,9 @@ mcxOptAnchor clmSharedOptions[] =
 }  ;
 
 
-mcxbits  mcx_debug_g     =  0;
-unsigned mcx_progress_g  =  0;
-mcxbool  mcx_test_g      =  FALSE;
+mcxbits  clm_debug_g     =  0;
+unsigned clm_progress_g  =  0;
+mcxbool  clm_test_g      =  FALSE;
 
 
 static mcxstatus sharedArgHandle
@@ -228,27 +227,27 @@ static mcxstatus sharedArgHandle
       ;
 
          case CLM_DISP_TEST
-      :  mcx_test_g = TRUE
+      :  clm_test_g = TRUE
       ;  break
       ;
 
          case CLM_DISP_PROGRESS
-      :  mcx_progress_g = atoi(val)
+      :  clm_progress_g = atoi(val)
       ;  break
       ;
 
          case CLM_DISP_PROGRESS2
-      :  mcx_progress_g = 1
+      :  clm_progress_g = 1
       ;  break
       ;
 
          case CLM_DISP_DEBUG
-      :  mcx_debug_g = atoi(val)
+      :  clm_debug_g = atoi(val)
       ;  break
       ;
 
          case CLM_DISP_DEBUG2
-      :  mcx_debug_g = -1u
+      :  clm_debug_g = -1u
       ;  break
       ;
 

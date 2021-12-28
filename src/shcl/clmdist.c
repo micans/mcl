@@ -113,6 +113,8 @@ enum
 
 enum
 {  VOL_OPT_OUTPUT = CLM_DISP_UNUSED
+,  VOL_OPT_IMX
+,  VOL_OPT_WOTC
 }  ;
 
 static mcxOptAnchor volOptions[] =
@@ -121,6 +123,18 @@ static mcxOptAnchor volOptions[] =
    ,  VOL_OPT_OUTPUT
    ,  "<fname>"
    ,  "output file name"
+   }
+,  {  "-imx"
+   ,  MCX_OPT_HASARG
+   ,  VOL_OPT_IMX
+   ,  "<fname>"
+   ,  "read network"
+   }
+,  {  "-wotc"
+   ,  MCX_OPT_HASARG
+   ,  VOL_OPT_WOTC
+   ,  "<fname>"
+   ,  "output wotc"
    }
 ,  {  NULL ,  0 ,  0 ,  NULL, NULL}
 }  ;
@@ -185,7 +199,9 @@ static mcxOptAnchor distOptions[] =
 }  ;
 
 
-static mcxIO*  xfout    =  (void*) -1;
+static mcxIO*  xfout    =  NULL;
+static mcxIO*  xfwotc   =  NULL;
+static mcxIO*  xfimx    =  NULL;
 static int digits       =  -1;
 static int mode_g       =  -1;
 static mcxbool i_am_vol =  FALSE;   /* node faithfulness */
@@ -210,6 +226,7 @@ static mcxstatus volInit
 (  void
 )
    {  xfout       =  mcxIOnew("-", "w")
+   ;  xfwotc      =  mcxIOnew("out.wotc", "w")
    ;  i_am_vol    =  TRUE
    ;  consecutive_g = FALSE
    ;  return STATUS_OK
@@ -223,6 +240,16 @@ static mcxstatus volArgHandle
    {  switch(optid)
       {  case VOL_OPT_OUTPUT
       :  mcxIOnewName(xfout, val)
+      ;  break
+      ;
+
+         case VOL_OPT_WOTC
+      :  mcxIOnewName(xfwotc, val)
+      ;  break
+      ;
+
+         case VOL_OPT_IMX
+      :  xfimx = mcxIOnew(val, "r")
       ;  break
       ;
 
@@ -298,6 +325,14 @@ static mcxstatus distArgHandle
 ;  }
 
 
+double flt_add_if_left
+(  pval lft
+,  pval rgt
+)
+   {  return lft ?  lft + rgt : 0.0
+;  }
+
+
 static mcxstatus distMain
 (  int                  argc
 ,  const char*          argv[]
@@ -305,6 +340,9 @@ static mcxstatus distMain
    {  int               i
    ;  int a             =  0
    ;  mclx* vol_scores  =  NULL
+   ;  mclx* mxwotc          =  NULL
+   ;  double  one       =  1.00
+   ;  dim n_comparisons =  0
    ;  mcxIO* xfin       =  mcxIOnew("-", "r")
    ;  mcxbits bits      =  MCLX_PRODUCE_PARTITION | MCLX_REQUIRE_DOMSTACK
 
@@ -329,6 +367,13 @@ static mcxstatus distMain
       digits = 0
 
    ;  mcxIOopen(xfout, EXIT_ON_FAIL)
+
+   ;  if (xfimx)
+         mcxIOopen(xfimx, EXIT_ON_FAIL)
+      ,  mcxIOopen(xfwotc, EXIT_ON_FAIL)
+      ,  mxwotc = mclxReadx(xfimx, EXIT_ON_FAIL, MCLX_REQUIRE_GRAPH)
+      ,  mclxUnary(mxwotc, fltxConst, &one)
+
 
    ;  for (a=0;a<argc;a++)
       {  mcxstatus status
@@ -377,10 +422,20 @@ static mcxstatus distMain
 
          ;  meet12 =  clmContingency(c1, c2)
          ;  meet21 =  mclxTranspose(meet12)
+         ;  n_comparisons++
 
          ;  if (i_am_vol)
             {  dim k
-            ;  for (k=0;k<N_COLS(meet12);k++)
+            ;  if (clm_progress_g)
+               {  if (i && j==jstart)
+                  {  dim j2
+                  ;  fputc(' ', stderr)
+                  ;  for (j2=2; j2<jstart;j2++) fputc('|', stderr)
+                  ;  fputc('\n', stderr)
+               ;  }
+                  fputc('.', stderr)
+            ;  }
+               for (k=0;k<N_COLS(meet12);k++)
                {  dim l
                ;  mclv* ct = meet12->cols+k
                ;  mclv* c1mem = c1->cols+k
@@ -392,12 +447,22 @@ static mcxstatus distMain
                   ;  mclp* tivp = NULL
                   ;  dim m
                   ;  mclv* meet = mcldMeet(c1mem, c2mem, NULL)
+                  ;  mclv* nbvec = NULL
                   ;  dim minsize = MCX_MIN(c1mem->n_ivps, c2mem->n_ivps)
+                  ;  if (mxwotc)
+                     mclvMakeConstant(meet, 1.0 * meet->n_ivps / (1.0 * minsize))
+
                   ;  for (m=0;m<meet->n_ivps;m++)
-                     {  tivp = mclvGetIvp(vol_scores->cols+0, meet->ivps[m].idx, tivp)
+                     {  dim thenode = meet->ivps[m].idx
+                     ;  tivp = mclvGetIvp(vol_scores->cols+0, thenode, tivp)
                      ;  tivp->val += 1.0 - 1.0 * meet->n_ivps / (1.0 * minsize)
-                  ;  }
-                  }
+                     ;  if (mxwotc)
+                        {  nbvec = mclxGetVector(mxwotc, thenode, EXIT_ON_FAIL, nbvec)
+                        ;  mclvBinary(nbvec, meet, nbvec, flt_add_if_left)
+                     ;  }
+                     }
+                     mclvFree(&meet)
+               ;  }
                }
                continue
          ;  }
@@ -484,8 +549,17 @@ static mcxstatus distMain
    ;  }
 
       if (i_am_vol)
-      {  mclxaWrite(vol_scores, xfout, 4, RETURN_ON_FAIL)
-   ;  }
+      {  double factor = n_comparisons ? n_comparisons / 100.0 : 1.0
+      ;  mclxUnary(vol_scores, fltxScale, &factor)
+      ;  mclxUnary(mxwotc, fltxScale, &factor)
+
+      ;  if (clm_progress_g) fputc('\n', stderr)
+      ;  mclxaWrite(vol_scores, xfout, 4, RETURN_ON_FAIL)
+      ;  if (mxwotc)
+         {  mclxaWrite(mxwotc, xfwotc, 6, RETURN_ON_FAIL)
+         ;  mcxIOclose(xfwotc)
+      ;  }
+      }
       return STATUS_OK
 ;  }
 

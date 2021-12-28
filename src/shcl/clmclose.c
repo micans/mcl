@@ -60,6 +60,8 @@ enum
 ,  MY_OPT_WRITECC
 ,  MY_OPT_WRITECOUNT
 ,  MY_OPT_WRITESIZES
+,  MY_OPT_WRITESIZECOUNTS
+,  MY_OPT_LEVELS
 ,  MY_OPT_WRITEGRAPH
 ,  MY_OPT_WRITEGRAPHC
 ,  MY_OPT_CCBOUND
@@ -104,11 +106,23 @@ mcxOptAnchor closeOptions[] =
    ,  NULL
    ,  "output cluster/connected-component file"
    }
+,  {  "--write-size-counts"
+   ,  MCX_OPT_DEFAULT
+   ,  MY_OPT_WRITESIZECOUNTS
+   ,  NULL
+   ,  "output compmressed list of component sizes"
+   }
 ,  {  "--write-sizes"
    ,  MCX_OPT_DEFAULT
    ,  MY_OPT_WRITESIZES
    ,  NULL
    ,  "output list of component sizes"
+   }
+,  {  "-levels"
+   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  MY_OPT_LEVELS
+   ,  "low/step/high"
+   ,  "NO-OP not implemented write results for each (edge weight cut-off) level"
    }
 ,  {  "--write-count"
    ,  MCX_OPT_DEFAULT
@@ -201,6 +215,10 @@ static mcxbool canonical=  -1;
 static mcxbool make_symmetric=  -1;
 static mcxmode write_mode = -1;
 
+static ofs     hi_g     =  -1;
+static ofs     lo_g     =  -1;
+static ofs     st_g     =  -1;
+
 
 static mcxstatus closeInit
 (  void
@@ -219,6 +237,9 @@ static mcxstatus closeInit
    ;  ccbound_num  =  0
    ;  canonical=  FALSE
    ;  make_symmetric =  TRUE
+   ;  hi_g     =  0;
+   ;  lo_g     =  0;
+   ;  st_g     =  1;
    ;  return STATUS_OK
 ;  }
 
@@ -266,6 +287,22 @@ static mcxstatus closeArgHandle
          case MY_OPT_WRITECOUNT
       :  write_mode = MY_OPT_WRITECOUNT
       ;  break
+      ;
+
+         case MY_OPT_WRITESIZECOUNTS
+      :  write_mode = MY_OPT_WRITESIZECOUNTS
+      ;  break
+      ;
+
+         case MY_OPT_LEVELS
+      :  {  unsigned long l, s, h
+         ;  if (3 != sscanf(val, "%lu/%lu/%lu", &l, &s, &h))
+            mcxDie(1, me, "cannot parse -levels low/step/high")
+         ;  lo_g = l
+         ;  hi_g = h
+         ;  st_g = s
+      ;  }
+         break
       ;
 
          case MY_OPT_WRITESIZES
@@ -402,6 +439,45 @@ static mcxstatus closeMain
       ;  mclgTFexec(mx, tfar)
    ;  }
 
+      if (hi_g)
+      {  int i
+      ;  mcxbool dedup = write_mode == MY_OPT_WRITESIZECOUNTS ? TRUE : FALSE
+
+      ;  for (i=lo_g; i<= hi_g; i+=st_g)
+         {  double cutoff = i
+         ;  dim prevsize = 0
+         ;  dim n_same   = 1, j
+
+         ;  mclxUnary(mx, fltxGQ, &cutoff)
+         ;  cc = clmComponents(mx, dom)
+
+         ;  fprintf(xfout->fp, "%2d:", i)
+
+         ;  if (dedup)
+            {  for (j=0;j<N_COLS(cc);j++)
+               {  dim thissize = cc->cols[j].n_ivps
+               ;  if (thissize == prevsize)
+                  n_same++
+               ;  else
+                  {  if (n_same > 1)
+                     fprintf(xfout->fp, "(%d)", n_same)
+                  ;  n_same = 1
+                  ;  fprintf(xfout->fp, " %lu", (ulong) thissize)
+               ;  }
+                  prevsize = thissize
+            ;  }
+               if (n_same > 1)
+               fprintf(xfout->fp, "(%d)", n_same)
+         ;  }
+            else
+            for (j=0;j<N_COLS(cc);j++)
+            fprintf(xfout->fp, " %lu", (ulong) cc->cols[j].n_ivps)
+
+         ;  fputc('\n', xfout->fp)
+      ;  }
+         return STATUS_OK
+   ;  }
+
       cc = make_symmetric ? clmComponents(mx, dom) : clmUGraphComponents(mx, dom)
 
                               /*
@@ -516,15 +592,32 @@ static mcxstatus closeMain
       else if (write_mode == MY_OPT_WRITECOUNT)
       fprintf(xfout->fp, "%lu\n", (ulong) N_COLS(ccbound))
 
-   ;  else if (write_mode == MY_OPT_WRITESIZES)
+   ;  else if (write_mode == MY_OPT_WRITESIZES || write_mode == MY_OPT_WRITESIZECOUNTS)
       {  dim j 
-      ;  for (j=0;j<N_COLS(ccbound);j++)
-         {  if (j)
-            fprintf(xfout->fp, " %lu", (ulong) ccbound->cols[j].n_ivps)
-         ;  else
-            fprintf(xfout->fp, "%lu", (ulong) ccbound->cols[j].n_ivps)
+      ;  mcxbool dedup = write_mode == MY_OPT_WRITESIZECOUNTS ? TRUE : FALSE
+         
+      ;  if (dedup)
+         {  dim prevsize = 0
+         ;  dim n_same   = 1
+         ;  for (j=0;j<N_COLS(ccbound);j++)
+            {  dim thissize = ccbound->cols[j].n_ivps
+            ;  if (thissize == prevsize)
+               n_same++
+            ;  else
+               {  if (n_same > 1)
+                  fprintf(xfout->fp, "(%d)", n_same)
+               ;  n_same = 1
+               ;  fprintf(xfout->fp, "%s%lu", j ? " " : "", (ulong) thissize)
+            ;  }
+               prevsize = thissize
+         ;  }
+            if (n_same > 1)
+            fprintf(xfout->fp, "(%d)", n_same)
       ;  }
-         fputc('\n', xfout->fp)
+         else
+         for (j=0;j<N_COLS(ccbound);j++)
+         fprintf(xfout->fp, "%s%lu", j ? " " : "", (ulong) ccbound->cols[j].n_ivps)
+      ;  fputc('\n', xfout->fp)
    ;  }
 
       if (xfmapout && map)

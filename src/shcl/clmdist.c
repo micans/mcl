@@ -549,7 +549,7 @@ static mcxstatus distMain
    ;  }
 
       if (i_am_vol)
-      {  double factor = n_comparisons ? n_comparisons / 100.0 : 1.0
+      {  double factor = (1+n_comparisons) / 100.0
       ;  mclxUnary(vol_scores, fltxScale, &factor)
       ;  mclxUnary(mxwotc, fltxScale, &factor)
 

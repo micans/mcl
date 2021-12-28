@@ -62,6 +62,7 @@ enum
 ,  MY_OPT_WRITESIZES
 ,  MY_OPT_WRITESIZECOUNTS
 ,  MY_OPT_LEVELS
+,  MY_OPT_SL
 ,  MY_OPT_WRITEGRAPH
 ,  MY_OPT_WRITEGRAPHC
 ,  MY_OPT_CCBOUND
@@ -123,6 +124,12 @@ mcxOptAnchor closeOptions[] =
    ,  MY_OPT_LEVELS
    ,  "low/step/high"
    ,  "NO-OP not implemented write results for each (edge weight cut-off) level"
+   }
+,  {  "--sl"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  MY_OPT_SL
+   ,  NULL
+   ,  "output single linkage tree"
    }
 ,  {  "--write-count"
    ,  MCX_OPT_DEFAULT
@@ -219,6 +226,42 @@ static ofs     hi_g     =  -1;
 static ofs     lo_g     =  -1;
 static ofs     st_g     =  -1;
 
+static mcxbool sgl_g    =  FALSE;      /* once there was a reason for the -1 initialisations,
+                                        * but TBH I forgot.
+                                       */
+
+
+static int mclv_merge_nodes
+(  mclv* v
+,  pnum x      /* first pnum is the one we should keep */
+,  pnum y
+)
+   {  dim i
+   ;  ofs  i_best = -1
+   ;  int found = 0
+   ;  pnum z
+   ;  if (x >= y)
+      mcxDie(1, me, "order error")
+
+   ;  for (i=0; i<v->n_ivps; i++)
+      {  pnum idx = v->ivps[i].idx
+      ;  if (idx == x || idx == y)
+         {  found++
+         ;  if (found == 1 && idx == y)   /* overwrite y with x */
+            v->ivps[i].idx = x
+      ;  }
+         else
+         {  if (found == 2)               /* overwrite previous */
+            v->ivps[i-1] = v->ivps[i]
+      ;  }
+      }
+   ;  if (found == 2)
+      v->n_ivps--
+
+   ;  return found
+;  }
+
+
 
 static mcxstatus closeInit
 (  void
@@ -303,6 +346,11 @@ static mcxstatus closeArgHandle
          ;  st_g = s
       ;  }
          break
+      ;
+
+         case MY_OPT_SL
+      :  sgl_g = TRUE
+      ;  break
       ;
 
          case MY_OPT_WRITESIZES
@@ -449,13 +497,13 @@ static mcxstatus closeMain
          ;  dim n_same   = 1, j
 
          ;  mclxUnary(mx, fltxGQ, &cutoff)
-         ;  cc = clmComponents(mx, dom)
+         ;  mclx* mycc = clmComponents(mx, dom)
 
          ;  fprintf(xfout->fp, "%2d:", i)
 
          ;  if (dedup)
-            {  for (j=0;j<N_COLS(cc);j++)
-               {  dim thissize = cc->cols[j].n_ivps
+            {  for (j=0;j<N_COLS(mycc);j++)
+               {  dim thissize = mycc->cols[j].n_ivps
                ;  if (thissize == prevsize)
                   n_same++
                ;  else
@@ -470,13 +518,34 @@ static mcxstatus closeMain
                fprintf(xfout->fp, "(%d)", n_same)
          ;  }
             else
-            for (j=0;j<N_COLS(cc);j++)
-            fprintf(xfout->fp, " %lu", (ulong) cc->cols[j].n_ivps)
+            for (j=0;j<N_COLS(mycc);j++)
+            fprintf(xfout->fp, " %lu", (ulong) mycc->cols[j].n_ivps)
 
          ;  fputc('\n', xfout->fp)
+         ;  mclxFree(&mycc)
       ;  }
          return STATUS_OK
    ;  }
+
+                          /* in this block we destroy mx by using it as scratch space for SL clustering */
+      if (sgl_g)
+      {  mclv* best_values = mclvCopy(mx->dom_cols, NULL)
+      ;  dim i, n_linked = 0
+      ;  for (i=0; i<N_COLS(mx); i++)
+         {  mclvSortDescVal(mx->cols+i)
+         ;  if (mx->cols[i].vid != best_values->ivps[i].idx)
+            mcxDie(1, me, "Vector identity check failed (%d)", (int) i)
+         ;  best_values->ivps[i].val = mx->cols[i].n_ivps ? mx->cols[i].ivps[0].val : -1.0
+      ;  }
+         mclvSortDescVal(best_values)
+
+      ;  while (n_linked + 1 < best_values->n_ivps)
+         {  pnum idx = best_values->ivps[n_linked].idx
+                  /* tbcont */
+      ;  }
+         return STATUS_OK
+   ;  }
+
 
       cc = make_symmetric ? clmComponents(mx, dom) : clmUGraphComponents(mx, dom)
 

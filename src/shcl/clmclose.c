@@ -628,11 +628,10 @@ static mcxstatus closeMain
       ;  mcxTell(me, "sorted")
       ;  e = 0
       ;  n_linked = 1
+
       ;  fprintf
          (  xfout->fp
-         ,  "0\t%s\t-\t-\t%d\t-\t-\t-\t-\n"
-         ,  tab ? mclTabGet(tab, edges[0].src, NULL) : "0"
-         ,  (int) edges[0].src
+         ,  "link\tx\ty\y\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\n"
          )
       ;  while (e<E)
          {  pnum s = edges[e].src
@@ -653,7 +652,7 @@ static mcxstatus closeMain
          ;  sprintf(dbuf, "%d", (int) d)
 
          ;  fprintf
-            (  xfout->fp, "%d\t%s\t%s\t%.3f\t%d\t%d\t%d\t%d\t%d\n"
+            (  xfout->fp, "%d\t%s\t%s\t%.3f\t%d\t%d\t%d\t%d\t%d\t%.2f\n"
             ,  (int) n_linked
             ,  tab ? mclTabGet(tab, s, NULL) : sbuf
             ,  tab ? mclTabGet(tab, d, NULL) : dbuf
@@ -662,6 +661,7 @@ static mcxstatus closeMain
             ,  (int) di
             ,  (int) sl->cols[si].n_ivps, (int) sl->cols[di].n_ivps
             ,  (int) sl->cols[si].n_ivps + sl->cols[di].n_ivps
+            ,  e * 100.0 / E
             )
                                           /* merge clusters */
          ;  mclvBinary(sl->cols+si, sl->cols+di, sl->cols+ni, fltMax)

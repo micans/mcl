@@ -241,7 +241,7 @@ mcxbool mclpSelectIdcs
 typedef struct
 {  pnum  src
 ;  pnum  dst
-;  pnum  val
+;  pval  val
 ;
 }  mclEdge;
 

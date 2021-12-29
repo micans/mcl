@@ -17,6 +17,7 @@
 #include "tingea/io.h"
 #include "tingea/err.h"
 #include "tingea/types.h"
+#include "tingea/alloc.h"
 #include "tingea/opt.h"
 #include "tingea/minmax.h"
 #include "tingea/compile.h"
@@ -477,6 +478,16 @@ static double mclv_check_ccbound
 ;  }
 
 
+static int edge_val_cmp
+(  const void* x
+,  const void* y
+)
+   {  const mcle* e = x
+   ;  const mcle* f = y
+   ;  return e->val < f->val ? 1 : e->val > f->val ? -1 : 0
+;  }
+
+
 static mcxstatus closeMain
 (  int          argc_unused      cpl__unused
 ,  const char*  argv_unused[]    cpl__unused
@@ -585,66 +596,87 @@ static mcxstatus closeMain
          return STATUS_OK
    ;  }
 
-                          /* in this block we destroy mx by using it as scratch space for SL clustering
-                           * All sorts of mclVector abuses happen due to value sorting
-                           * Let's assume we have a canonical domain.
-                          */
+                       /* in this block we use mx->cols[i].vid to encode the current cluster index.
+                        * Let's assume we have a canonical domain.
+                       */
       if (sgl_g)
-      {  mclv* best_values = mclvCopy(NULL, mx->dom_cols)
-      ;  dim i, n_linked = 0
+      {  dim i, e=0, E, N = mclxNrofEntries(mx), n_linked = 0
+      ;  mcle* edges = mcxAlloc(sizeof edges[0] * N, EXIT_ON_FAIL)
+      ;  mclx* sl
 
       ;  if (!mclxDomCanonical(mx))
          mcxDie(1, me, "I need canonical domains in link mode")
 
-      ;  mclxAdjustLoops(mx, mclxLoopCBremove, NULL)
+      ;  sl = mclxIdentity(mclvCopy(NULL, mx->dom_cols))
 
-      ;  for (i=0; i<N_COLS(mx); i++)
-         {  mclv* myv = mx->cols+i
-         ;  mclvSortDescVal(myv)
-         ;  if (myv->vid != best_values->ivps[i].idx)
-            mcxDie(1, me, "Vector identity check failed (%d)", (int) i)
-         ;  best_values->ivps[i].val = myv->n_ivps ? myv->ivps[0].val : -1.0
+      ;  for (i=0;i<N_COLS(mx);i++)
+         {  mclv* v = mx->cols+i
+         ;  dim j
+         ;  for (j=0;j<v->n_ivps;j++)
+            {  mclp* d = v->ivps+j
+            ;  if (d->idx > i)
+               {  mcle* edge = edges+(e++)
+               ;  edge->src = i
+               ;  edge->dst = d->idx
+               ;  edge->val = d->val
+            ;  }
+            }
       ;  }
-         mclvSortDescVal(best_values)
+         E = e
+      ;  mcxTell(me, "have %d edges ..", (int) E)
+      ;  qsort(edges, E, sizeof edges[0], edge_val_cmp)
+      ;  mcxTell(me, "sorted")
+      ;  e = 0
+      ;  n_linked = 1
+      ;  fprintf
+         (  xfout->fp
+         ,  "0\t%s\t-\t-\t%d\t-\t-\t-\t-\n"
+         ,  tab ? mclTabGet(tab, edges[0].src, NULL) : "0"
+         ,  (int) edges[0].src
+         )
+      ;  while (e<E)
+         {  pnum s = edges[e].src
+         ;  pnum d = edges[e].dst
+         ;  pval v = edges[e].val
+         ;  pnum si = sl->cols[s].vid     /* current cluster ID */
+         ;  pnum di = sl->cols[d].vid     /* current cluster ID */
+         ;  pnum ni = MCX_MIN(si, di)     /* new cluster index  */
+         ;  char sbuf[50]
+         ;  char dbuf[50]
+         ;  dim j
+         ;  e++
 
-      ;  while (1)
-         {  pnum y, x = best_values->ivps[0].idx
-         ;  pval g, f = best_values->ivps[0].val
-         ;  dim i
-         ;  if (f < 0)
-            {  fprintf(stderr, "No values left\n")
-            ;  break
+         ;  if (si == di)                 /* already linked / same cluster */
+            continue
+
+         ;  sprintf(sbuf, "%d", (int) s)
+         ;  sprintf(dbuf, "%d", (int) d)
+
+         ;  fprintf
+            (  xfout->fp, "%d\t%s\t%s\t%.3f\t%d\t%d\t%d\t%d\t%d\n"
+            ,  (int) n_linked
+            ,  tab ? mclTabGet(tab, s, NULL) : sbuf
+            ,  tab ? mclTabGet(tab, d, NULL) : dbuf
+            ,  (double) v
+            ,  (int) si
+            ,  (int) di
+            ,  (int) sl->cols[si].n_ivps, (int) sl->cols[di].n_ivps
+            ,  (int) sl->cols[si].n_ivps + sl->cols[di].n_ivps
+            )
+                                          /* merge clusters */
+         ;  mclvBinary(sl->cols+si, sl->cols+di, sl->cols+ni, fltMax)
+
+                                          /* bestow new membership */
+         ;  for (j=0; j<sl->cols[ni].n_ivps; j++)   
+            {  pnum x = sl->cols[ni].ivps[j].idx
+            ;  sl->cols[x].vid = ni
          ;  }
-         ;  if (!mx->cols[x].n_ivps)
-            {  fprintf(stderr, "No neighbour obtained from best values\n")
-            ;  break
-         ;  }
-
-            y = mx->cols[x].ivps[0].idx
-
-/* tbcont I'd like to know what edge was linked, not just the component
- * at a minimum the node.
-*/
-;fprintf(stdout, "linked %d %d (value %.4f)\n", (int) x, (int) y, f)
-         ;  for (i=0;i<N_COLS(mx);i++)
-            if (i != x && i != y)
-            mclv_merge_nodes(mx->cols+i, x, y)
-
-         ;  mclvSort(mx->cols+x, NULL)
-         ;  mclvRemoveIdx(mx->cols+x, y)
-         ;  mclvSort(mx->cols+y, NULL)
-         ;  mclvRemoveIdx(mx->cols+y, x)
-         ;  mclvBinary(mx->cols+x, mx->cols+y, mx->cols+x, fltMax)
-         ;  mclvSortDescVal(mx->cols+x)
-
-         ;  g = mx->cols[x].n_ivps ? mx->cols[x].ivps[0].val : -1.0
-
-         ;  update_best_values(best_values, g, x, y)
-         ;  n_linked++
+            if (++n_linked == N_COLS(sl))
+            break
       ;  }
-         return STATUS_OK
+         mcxIOclose(xfout)
+      ;  return STATUS_OK
    ;  }
-
 
       cc = make_symmetric ? clmComponents(mx, dom) : clmUGraphComponents(mx, dom)
 

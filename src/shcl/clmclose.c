@@ -542,7 +542,7 @@ static mcxstatus closeMain
 
       ;  fprintf
          (  xfout->fp
-         ,  "link\tx\ty\y\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\n"
+         ,  "link\tx\ty\txid\tyid\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\n"
          )
       ;  while (e<E)
          {  pnum s = edges[e].src
@@ -571,16 +571,18 @@ static mcxstatus closeMain
          ;  }
 
             fprintf
-            (  xfout->fp, "%d\t%s\t%s\t%.3f\t%d\t%d\t%d\t%d\t%d\t%.2f\t%.0f\n"
+            (  xfout->fp, "%d\t" "%s\t%s\t" "%d\t%d\t" "%.3f\t" "%d\t%d\t%d\t%d\t" "%.2f\t%.0f\n"
             ,  (int) n_linked
             ,  tab ? mclTabGet(tab, s, NULL) : sbuf
             ,  tab ? mclTabGet(tab, d, NULL) : dbuf
+            ,  (int) s
+            ,  (int) d
             ,  (double) v
             ,  (int) si
             ,  (int) di
-            ,  (int) sl->cols[si].n_ivps, (int) sl->cols[di].n_ivps
-            ,  (int) sl->cols[si].n_ivps + sl->cols[di].n_ivps
-            ,  e * 100.0 / E
+            ,  (int) (sl->cols[si].n_ivps, (int) sl->cols[di].n_ivps)
+            ,  (int) (sl->cols[si].n_ivps + sl->cols[di].n_ivps)
+            ,  (double) (e * 100.0 / E)
             ,  (0.5 + sumszsq / N_COLS(mx))
             )
                                           /* merge clusters */
@@ -725,14 +727,14 @@ static mcxstatus closeMain
                n_same++
             ;  else
                {  if (n_same > 1)
-                  fprintf(xfout->fp, "(%d)", n_same)
+                  fprintf(xfout->fp, "(%d)", (int) n_same)
                ;  n_same = 1
                ;  fprintf(xfout->fp, "%s%lu", j ? " " : "", (ulong) thissize)
             ;  }
                prevsize = thissize
          ;  }
             if (n_same > 1)
-            fprintf(xfout->fp, "(%d)", n_same)
+            fprintf(xfout->fp, "(%d)", (int) n_same)
       ;  }
          else
          for (j=0;j<N_COLS(ccbound);j++)

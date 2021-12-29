@@ -467,7 +467,8 @@ static mcxstatus distMain
                continue
          ;  }
 
-            if (mode_g == DIST_SPLITJOIN)
+           else
+           {if (mode_g == DIST_SPLITJOIN)
                clmSJDistance(c1, c2, meet12, meet21, &dist1i, &dist2i)
             ,  fprintf
                (  xfout->fp
@@ -538,6 +539,7 @@ static mcxstatus distMain
                fprintf(xfout->fp, "\ttag=%s", e)
             ;  fputc('\n', xfout->fp)
          ;  }
+           }
 
             mclxFree(&meet12)
          ;  mclxFree(&meet21)

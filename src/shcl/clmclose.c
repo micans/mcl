@@ -124,13 +124,13 @@ mcxOptAnchor closeOptions[] =
    ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
    ,  MY_OPT_LEVELS
    ,  "low/step/high"
-   ,  "NO-OP not implemented write results for each (edge weight cut-off) level"
+   ,  "write cluster size distribution for each (edge weight cut-off) level"
    }
 ,  {  "--sl"
    ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
    ,  MY_OPT_SL
    ,  NULL
-   ,  "output single linkage tree"
+   ,  "output single linkage tree (encoded as list of joins)"
    }
 ,  {  "--write-count"
    ,  MCX_OPT_DEFAULT
@@ -230,96 +230,6 @@ static ofs     st_g     =  -1;
 static mcxbool sgl_g    =  FALSE;      /* once there was a reason for the -1 initialisations,
                                         * but TBH I forgot.
                                        */
-
-                              /* remove best neighbour, shift next one in.
-                               * update v->val to be the next best value.
-                              */
-static pnum mclv_shift_node
-(  mclv* vx
-)
-   {  pnum y
-   ;  if (!vx->n_ivps)
-      return -1
-   ;  y = vx->ivps[0].idx
-   ;  memmove(vx->ivps, vx->ivps+1, sizeof(mclp) * (vx->n_ivps-1))
-   ;  vx->n_ivps--
-   ;  if (vx->n_ivps)
-      vx->val = vx->ivps[0].val
-   ;  else
-      vx->val = -1
-   ;  return y
-;  }
-
-
-static void mclv_purge_node
-(  mclv* vy
-,  pnum x
-,  pnum y
-)
-   {  ofs i
-
-   ;  for (i=0; i<vy->n_ivps; i++)
-      if (vy->ivps[i].idx == x)
-      break
-
-   ;  if (i < vy->n_ivps)
-      {  memmove(vy->ivps+i, vy->ivps+i+1, sizeof(mclp)*(vy->n_ivps-i-1))
-      ;  vy->n_ivps--
-   ;  }
-      else
-      mcxErr(me, "peculiar, (%d) not found reciprocally for (%d)", (int) y, (int) x)
-
-   ;  if (vy->n_ivps && i==0)
-      vy->val = vy->ivps[0].val
-;  }
-
-
-      /* potentially return number of stuff >= 0 */
-static int update_best_values
-(  mclv* bv
-,  pval  f
-,  pnum  x
-,  pnum  y
-)
-   {  dim i, ipivot = 0
-   ;  bv->ivps[0].val = f
-   ;  if (bv->ivps[0].idx != x)
-      mcxDie(1, me, "die on %d", (int) x)
-   ;  for (i=0; i+1<bv->n_ivps; i++)
-      {  if (bv->ivps[i].idx == y)
-         bv->ivps[i].val = -1.0
-   ;  }
-      mclvSortDescVal(bv)
-;  }
-
-
-static int mclv_merge_nodes
-(  mclv* v
-,  pnum x      /* first pnum is the one we should keep */
-,  pnum y
-)
-   {  dim i
-   ;  int found = 0
-   ;  pnum z
-
-   ;  for (i=0; i<v->n_ivps; i++)
-      {  pnum idx = v->ivps[i].idx
-      ;  if (idx == x || idx == y)
-         {  found++
-         ;  if (found == 1 && idx == y)   /* overwrite y with x */
-            v->ivps[i].idx = x
-      ;  }
-         else
-         {  if (found == 2)               /* overwrite previous */
-            v->ivps[i-1] = v->ivps[i]
-      ;  }
-      }
-   ;  if (found == 2)
-      v->n_ivps--
-
-   ;  return found
-;  }
-
 
 
 static mcxstatus closeInit
@@ -577,14 +487,14 @@ static mcxstatus closeMain
                   n_same++
                ;  else
                   {  if (n_same > 1)
-                     fprintf(xfout->fp, "(%d)", n_same)
+                     fprintf(xfout->fp, "(%d)", (int) n_same)
                   ;  n_same = 1
                   ;  fprintf(xfout->fp, " %lu", (ulong) thissize)
                ;  }
                   prevsize = thissize
             ;  }
                if (n_same > 1)
-               fprintf(xfout->fp, "(%d)", n_same)
+               fprintf(xfout->fp, "(%d)", (int) n_same)
          ;  }
             else
             for (j=0;j<N_COLS(mycc);j++)
@@ -602,6 +512,7 @@ static mcxstatus closeMain
       if (sgl_g)
       {  dim i, e=0, E, N = mclxNrofEntries(mx), n_linked = 0
       ;  mcle* edges = mcxAlloc(sizeof edges[0] * N, EXIT_ON_FAIL)
+      ;  double sumszsq = N_COLS(mx)
       ;  mclx* sl
 
       ;  if (!mclxDomCanonical(mx))
@@ -631,7 +542,7 @@ static mcxstatus closeMain
 
       ;  fprintf
          (  xfout->fp
-         ,  "link\tx\ty\y\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\n"
+         ,  "link\tx\ty\y\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\n"
          )
       ;  while (e<E)
          {  pnum s = edges[e].src
@@ -648,11 +559,19 @@ static mcxstatus closeMain
          ;  if (si == di)                 /* already linked / same cluster */
             continue
 
-         ;  sprintf(sbuf, "%d", (int) s)
-         ;  sprintf(dbuf, "%d", (int) d)
+         ;  snprintf(sbuf, 50, "%d", (int) s)
+         ;  snprintf(dbuf, 50, "%d", (int) d)
 
-         ;  fprintf
-            (  xfout->fp, "%d\t%s\t%s\t%.3f\t%d\t%d\t%d\t%d\t%d\t%.2f\n"
+         ;  {  dim sz1 = sl->cols[si].n_ivps
+            ;  dim sz2 = sl->cols[di].n_ivps
+            ;  sumszsq +=
+                  (sz1 + sz2) * 1.0 * (sz1 + sz2)
+               -  sz1 * 1.0 * sz1
+               -  sz2 * 1.0 * sz2
+         ;  }
+
+            fprintf
+            (  xfout->fp, "%d\t%s\t%s\t%.3f\t%d\t%d\t%d\t%d\t%d\t%.2f\t%.0f\n"
             ,  (int) n_linked
             ,  tab ? mclTabGet(tab, s, NULL) : sbuf
             ,  tab ? mclTabGet(tab, d, NULL) : dbuf
@@ -662,6 +581,7 @@ static mcxstatus closeMain
             ,  (int) sl->cols[si].n_ivps, (int) sl->cols[di].n_ivps
             ,  (int) sl->cols[si].n_ivps + sl->cols[di].n_ivps
             ,  e * 100.0 / E
+            ,  (0.5 + sumszsq / N_COLS(mx))
             )
                                           /* merge clusters */
          ;  mclvBinary(sl->cols+si, sl->cols+di, sl->cols+ni, fltMax)

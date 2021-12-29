@@ -430,7 +430,7 @@ static mcxstatus distMain
                {  if (i && j==jstart)
                   {  dim j2
                   ;  fputc(' ', stderr)
-                  ;  for (j2=2; j2<jstart;j2++) fputc('|', stderr)
+                  ;  for (j2=2; j2<jstart;j2++) fputc('.', stderr)
                   ;  fputc('\n', stderr)
                ;  }
                   fputc('.', stderr)

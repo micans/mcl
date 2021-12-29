@@ -230,6 +230,67 @@ static mcxbool sgl_g    =  FALSE;      /* once there was a reason for the -1 ini
                                         * but TBH I forgot.
                                        */
 
+                              /* remove best neighbour, shift next one in.
+                               * update v->val to be the next best value.
+                              */
+static pnum mclv_shift_node
+(  mclv* vx
+)
+   {  pnum y
+   ;  if (!vx->n_ivps)
+      return -1
+   ;  y = vx->ivps[0].idx
+   ;  memmove(vx->ivps, vx->ivps+1, sizeof(mclp) * (vx->n_ivps-1))
+   ;  vx->n_ivps--
+   ;  if (vx->n_ivps)
+      vx->val = vx->ivps[0].val
+   ;  else
+      vx->val = -1
+   ;  return y
+;  }
+
+
+static void mclv_purge_node
+(  mclv* vy
+,  pnum x
+,  pnum y
+)
+   {  ofs i
+
+   ;  for (i=0; i<vy->n_ivps; i++)
+      if (vy->ivps[i].idx == x)
+      break
+
+   ;  if (i < vy->n_ivps)
+      {  memmove(vy->ivps+i, vy->ivps+i+1, sizeof(mclp)*(vy->n_ivps-i-1))
+      ;  vy->n_ivps--
+   ;  }
+      else
+      mcxErr(me, "peculiar, (%d) not found reciprocally for (%d)", (int) y, (int) x)
+
+   ;  if (vy->n_ivps && i==0)
+      vy->val = vy->ivps[0].val
+;  }
+
+
+      /* potentially return number of stuff >= 0 */
+static int update_best_values
+(  mclv* bv
+,  pval  f
+,  pnum  x
+,  pnum  y
+)
+   {  dim i, ipivot = 0
+   ;  bv->ivps[0].val = f
+   ;  if (bv->ivps[0].idx != x)
+      mcxDie(1, me, "die on %d", (int) x)
+   ;  for (i=0; i+1<bv->n_ivps; i++)
+      {  if (bv->ivps[i].idx == y)
+         bv->ivps[i].val = -1.0
+   ;  }
+      mclvSortDescVal(bv)
+;  }
+
 
 static int mclv_merge_nodes
 (  mclv* v
@@ -237,11 +298,8 @@ static int mclv_merge_nodes
 ,  pnum y
 )
    {  dim i
-   ;  ofs  i_best = -1
    ;  int found = 0
    ;  pnum z
-   ;  if (x >= y)
-      mcxDie(1, me, "order error")
 
    ;  for (i=0; i<v->n_ivps; i++)
       {  pnum idx = v->ivps[i].idx
@@ -527,21 +585,62 @@ static mcxstatus closeMain
          return STATUS_OK
    ;  }
 
-                          /* in this block we destroy mx by using it as scratch space for SL clustering */
+                          /* in this block we destroy mx by using it as scratch space for SL clustering
+                           * All sorts of mclVector abuses happen due to value sorting
+                           * Let's assume we have a canonical domain.
+                          */
       if (sgl_g)
-      {  mclv* best_values = mclvCopy(mx->dom_cols, NULL)
+      {  mclv* best_values = mclvCopy(NULL, mx->dom_cols)
       ;  dim i, n_linked = 0
+
+      ;  if (!mclxDomCanonical(mx))
+         mcxDie(1, me, "I need canonical domains in link mode")
+
+      ;  mclxAdjustLoops(mx, mclxLoopCBremove, NULL)
+
       ;  for (i=0; i<N_COLS(mx); i++)
-         {  mclvSortDescVal(mx->cols+i)
-         ;  if (mx->cols[i].vid != best_values->ivps[i].idx)
+         {  mclv* myv = mx->cols+i
+         ;  mclvSortDescVal(myv)
+         ;  if (myv->vid != best_values->ivps[i].idx)
             mcxDie(1, me, "Vector identity check failed (%d)", (int) i)
-         ;  best_values->ivps[i].val = mx->cols[i].n_ivps ? mx->cols[i].ivps[0].val : -1.0
+         ;  best_values->ivps[i].val = myv->n_ivps ? myv->ivps[0].val : -1.0
       ;  }
          mclvSortDescVal(best_values)
 
-      ;  while (n_linked + 1 < best_values->n_ivps)
-         {  pnum idx = best_values->ivps[n_linked].idx
-                  /* tbcont */
+      ;  while (1)
+         {  pnum y, x = best_values->ivps[0].idx
+         ;  pval g, f = best_values->ivps[0].val
+         ;  dim i
+         ;  if (f < 0)
+            {  fprintf(stderr, "No values left\n")
+            ;  break
+         ;  }
+         ;  if (!mx->cols[x].n_ivps)
+            {  fprintf(stderr, "No neighbour obtained from best values\n")
+            ;  break
+         ;  }
+
+            y = mx->cols[x].ivps[0].idx
+
+/* tbcont I'd like to know what edge was linked, not just the component
+ * at a minimum the node.
+*/
+;fprintf(stdout, "linked %d %d (value %.4f)\n", (int) x, (int) y, f)
+         ;  for (i=0;i<N_COLS(mx);i++)
+            if (i != x && i != y)
+            mclv_merge_nodes(mx->cols+i, x, y)
+
+         ;  mclvSort(mx->cols+x, NULL)
+         ;  mclvRemoveIdx(mx->cols+x, y)
+         ;  mclvSort(mx->cols+y, NULL)
+         ;  mclvRemoveIdx(mx->cols+y, x)
+         ;  mclvBinary(mx->cols+x, mx->cols+y, mx->cols+x, fltMax)
+         ;  mclvSortDescVal(mx->cols+x)
+
+         ;  g = mx->cols[x].n_ivps ? mx->cols[x].ivps[0].val : -1.0
+
+         ;  update_best_values(best_values, g, x, y)
+         ;  n_linked++
       ;  }
          return STATUS_OK
    ;  }

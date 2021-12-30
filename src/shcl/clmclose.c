@@ -64,6 +64,7 @@ enum
 ,  MY_OPT_WRITESIZECOUNTS
 ,  MY_OPT_LEVELS
 ,  MY_OPT_SL
+,  MY_OPT_SLLIST
 ,  MY_OPT_WRITEGRAPH
 ,  MY_OPT_WRITEGRAPHC
 ,  MY_OPT_CCBOUND
@@ -162,6 +163,12 @@ mcxOptAnchor closeOptions[] =
    ,  "<fname>"
    ,  "read tab file"
    }
+,  {  "-write-sl-list"
+   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  MY_OPT_SLLIST
+   ,  "<fname>"
+   ,  "write list of join order with weights"
+   }
 ,  {  "-write-tab"
    ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
    ,  MY_OPT_TABOUT
@@ -230,6 +237,7 @@ static ofs     st_g     =  -1;
 static mcxbool sgl_g    =  FALSE;      /* once there was a reason for the -1 initialisations,
                                         * but TBH I forgot.
                                        */
+const char* fn_nodelist =  "nodes.list";
 
 
 static mcxstatus closeInit
@@ -319,6 +327,11 @@ static mcxstatus closeArgHandle
 
          case MY_OPT_SL
       :  sgl_g = TRUE
+      ;  break
+      ;
+
+         case MY_OPT_SLLIST
+      :  fn_nodelist = val
       ;  break
       ;
 
@@ -508,17 +521,20 @@ static mcxstatus closeMain
 
                        /* in this block we use mx->cols[i].vid to encode the current cluster index.
                         * Let's assume we have a canonical domain.
+                        * Make a function.
                        */
       if (sgl_g)
       {  dim i, e=0, E, N = mclxNrofEntries(mx), n_linked = 0
       ;  mcle* edges = mcxAlloc(sizeof edges[0] * N, EXIT_ON_FAIL)
       ;  double sumszsq = N_COLS(mx)
       ;  mclx* sl
+      ;  mcxIO* xflist = mcxIOnew(fn_nodelist, "w")
 
       ;  if (!mclxDomCanonical(mx))
          mcxDie(1, me, "I need canonical domains in link mode")
 
       ;  sl = mclxIdentity(mclvCopy(NULL, mx->dom_cols))
+      ;  mcxIOopen(xflist, EXIT_ON_FAIL)
 
       ;  for (i=0;i<N_COLS(mx);i++)
          {  mclv* v = mx->cols+i
@@ -568,20 +584,26 @@ static mcxstatus closeMain
                   (sz1 + sz2) * 1.0 * (sz1 + sz2)
                -  sz1 * 1.0 * sz1
                -  sz2 * 1.0 * sz2
+            ;  if (sz1 == 1) fprintf(xflist->fp, "%s\t%.3f\n", tab ? mclTabGet(tab, s, NULL) : sbuf, v)
+            ;  if (sz2 == 1) fprintf(xflist->fp, "%s\t%.3f\n", tab ? mclTabGet(tab, d, NULL) : dbuf, v)
          ;  }
 
             fprintf
-            (  xfout->fp, "%d\t" "%s\t%s\t" "%d\t%d\t" "%.3f\t" "%d\t%d\t%d\t%d\t" "%.2f\t%.0f\n"
+            (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.3f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\n"
             ,  (int) n_linked
             ,  tab ? mclTabGet(tab, s, NULL) : sbuf
             ,  tab ? mclTabGet(tab, d, NULL) : dbuf
+
             ,  (int) s
             ,  (int) d
             ,  (double) v
+
             ,  (int) si
             ,  (int) di
-            ,  (int) (sl->cols[si].n_ivps, (int) sl->cols[di].n_ivps)
+            ,  (int) sl->cols[si].n_ivps
+            ,  (int) sl->cols[di].n_ivps
             ,  (int) (sl->cols[si].n_ivps + sl->cols[di].n_ivps)
+
             ,  (double) (e * 100.0 / E)
             ,  (0.5 + sumszsq / N_COLS(mx))
             )
@@ -597,6 +619,7 @@ static mcxstatus closeMain
             break
       ;  }
          mcxIOclose(xfout)
+      ;  mcxIOclose(xflist)
       ;  return STATUS_OK
    ;  }
 

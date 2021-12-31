@@ -233,6 +233,7 @@ static mcxmode write_mode = -1;
 static ofs     hi_g     =  -1;
 static ofs     lo_g     =  -1;
 static ofs     st_g     =  -1;
+static const char* levels_pfx = NULL;
 
 static mcxbool sgl_g    =  FALSE;      /* once there was a reason for the -1 initialisations,
                                         * but TBH I forgot.
@@ -316,11 +317,17 @@ static mcxstatus closeArgHandle
 
          case MY_OPT_LEVELS
       :  {  unsigned long l, s, h
-         ;  if (3 != sscanf(val, "%lu/%lu/%lu", &l, &s, &h))
-            mcxDie(1, me, "cannot parse -levels low/step/high")
+         ;  static char cbuf[50] = { 0 }
+         ;  if
+            (  4 != sscanf(val, "%lu/%lu/%lu/%49s", &l, &s, &h, cbuf)
+            && 3 != sscanf(val, "%lu/%lu/%lu", &l, &s, &h)
+            )
+            mcxDie(1, me, "cannot parse -levels low/step/high or low/step/high/FILEPREFIX")
          ;  lo_g = l
          ;  hi_g = h
          ;  st_g = s
+         ;  if (cbuf[0])
+            levels_pfx = cbuf
       ;  }
          break
       ;
@@ -491,7 +498,17 @@ static mcxstatus closeMain
          ;  mclxUnary(mx, fltxGQ, &cutoff)
          ;  mclx* mycc = clmComponents(mx, dom)
 
-         ;  fprintf(xfout->fp, "%2d:", i)
+         ;  if (levels_pfx)
+            {  mcxTing* name = mcxTingPrint(NULL, "%s.l%d", levels_pfx, (int) i)
+            ;  mcxIO* xflevel = mcxIOnew(name->str, "w")
+            ;  mcxIOopen(xflevel, EXIT_ON_FAIL)
+            ;  mclxaWrite(mycc, xflevel, MCLXIO_VALUE_NONE, RETURN_ON_FAIL)
+            ;  mcxIOclose(xflevel)
+            ;  mcxIOfree(&xflevel)
+            ;  mcxTingFree(&name)
+         ;  }
+
+            fprintf(xfout->fp, "%2d:", i)
 
          ;  if (dedup)
             {  for (j=0;j<N_COLS(mycc);j++)

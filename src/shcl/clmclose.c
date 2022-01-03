@@ -63,6 +63,7 @@ enum
 ,  MY_OPT_WRITESIZES
 ,  MY_OPT_WRITESIZECOUNTS
 ,  MY_OPT_LEVELS
+,  MY_OPT_LEVELS_NORM
 ,  MY_OPT_SL
 ,  MY_OPT_SLLIST
 ,  MY_OPT_WRITEGRAPH
@@ -126,6 +127,12 @@ mcxOptAnchor closeOptions[] =
    ,  MY_OPT_LEVELS
    ,  "low/step/high"
    ,  "write cluster size distribution for each (edge weight cut-off) level"
+   }
+,  {  "-levels-norm"
+   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  MY_OPT_LEVELS_NORM
+   ,  "<num>"
+   ,  "divide each level defined by -levels by <num> to define cutoff"
    }
 ,  {  "--sl"
    ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
@@ -235,6 +242,7 @@ static ofs     lo_g     =  -1;
 static ofs     st_g     =  -1;
 static const char* levels_pfx = NULL;
 
+static double  norm_g   =  0.0;
 static mcxbool sgl_g    =  FALSE;      /* once there was a reason for the -1 initialisations,
                                         * but TBH I forgot.
                                        */
@@ -312,6 +320,11 @@ static mcxstatus closeArgHandle
 
          case MY_OPT_WRITESIZECOUNTS
       :  write_mode = MY_OPT_WRITESIZECOUNTS
+      ;  break
+      ;
+
+         case MY_OPT_LEVELS_NORM
+      :  norm_g = atof(val)
       ;  break
       ;
 
@@ -491,7 +504,7 @@ static mcxstatus closeMain
       ;  mcxbool dedup = write_mode == MY_OPT_WRITESIZECOUNTS ? TRUE : FALSE
 
       ;  for (i=lo_g; i<= hi_g; i+=st_g)
-         {  double cutoff = i
+         {  double cutoff = norm_g > 0.0 ? i / norm_g : 1.0 * i
          ;  dim prevsize = 0
          ;  dim n_same   = 1, j
 
@@ -635,8 +648,18 @@ static mcxstatus closeMain
             if (++n_linked == N_COLS(sl))
             break
       ;  }
+
          mcxIOclose(xfout)
-      ;  mcxIOclose(xflist)
+
+      ;  for (i=0;i<N_COLS(sl);i++)
+         {  mclv* v = sl->cols+i
+         ;  if (v->vid == i && v->n_ivps == 1)     /* singleton, never linked */
+            {  char ibuf[50]
+            ;  snprintf(ibuf, 50, "%d", (int) i)
+            ;  fprintf(xflist->fp, "%s\t0.0\n", tab ? mclTabGet(tab, i, NULL) : ibuf)
+         ;  }
+         }
+         mcxIOclose(xflist)
       ;  return STATUS_OK
    ;  }
 

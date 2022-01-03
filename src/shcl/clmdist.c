@@ -551,9 +551,8 @@ static mcxstatus distMain
    ;  }
 
       if (i_am_vol)
-      {  double factor = (1+n_comparisons) / 100.0
+      {  double factor = (1+n_comparisons) / 1000.0
       ;  mclxUnary(vol_scores, fltxScale, &factor)
-      ;  mclxUnary(mxceil, fltxScale, &factor)
 
       ;  if (clm_progress_g) fputc('\n', stderr)
 
@@ -561,7 +560,8 @@ static mcxstatus distMain
       ;  mcxIOclose(xfout)
 
       ;  if (mxceil)
-         {  mclxaWrite(mxceil, xfceil, 6, RETURN_ON_FAIL)
+         {  mclxUnary(mxceil, fltxScale, &factor)
+         ;  mclxaWrite(mxceil, xfceil, 6, RETURN_ON_FAIL)
          ;  mcxIOclose(xfceil)
       ;  }
       }

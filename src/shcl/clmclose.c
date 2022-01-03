@@ -614,12 +614,12 @@ static mcxstatus closeMain
                   (sz1 + sz2) * 1.0 * (sz1 + sz2)
                -  sz1 * 1.0 * sz1
                -  sz2 * 1.0 * sz2
-            ;  if (sz1 == 1) fprintf(xflist->fp, "%s\t%.3f\n", tab ? mclTabGet(tab, s, NULL) : sbuf, v)
-            ;  if (sz2 == 1) fprintf(xflist->fp, "%s\t%.3f\n", tab ? mclTabGet(tab, d, NULL) : dbuf, v)
+            ;  if (sz1 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, s, NULL) : sbuf, v)
+            ;  if (sz2 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, d, NULL) : dbuf, v)
          ;  }
 
             fprintf
-            (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.3f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\n"
+            (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.2f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\n"
             ,  (int) n_linked
             ,  tab ? mclTabGet(tab, s, NULL) : sbuf
             ,  tab ? mclTabGet(tab, d, NULL) : dbuf

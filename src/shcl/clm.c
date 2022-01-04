@@ -150,7 +150,7 @@ mcxOptAnchor clmSharedOptions[] =
    ,  MCX_OPT_DEFAULT
    ,  CLM_DISP_NOP
    ,  NULL
-   ,  "this option has no affect but changing the argument count"
+   ,  "this option has no effect but changing the argument count"
    }
 ,  {  "-h"
    ,  MCX_OPT_DEFAULT

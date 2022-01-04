@@ -125,8 +125,9 @@ mcxOptAnchor closeOptions[] =
 ,  {  "-levels"
    ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
    ,  MY_OPT_LEVELS
-   ,  "low/step/high"
-   ,  "write cluster size distribution for each (edge weight cut-off) level"
+   ,  "low/step/high[/prefix]"
+   ,  "write cluster size distribution for each (edge weight cut-off) level\n"
+      "                if prefix is specified, write each to file"
    }
 ,  {  "-levels-norm"
    ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
@@ -499,6 +500,15 @@ static mcxstatus closeMain
       ;  mclgTFexec(mx, tfar)
    ;  }
 
+      /* clm close has three main modes.
+       * - provide granularity info for different levels and optionally write clusterings
+       * - output single-linkage join-order and join-values
+       * - other modes: + different ways of outputting granularity info
+       *                + block and block complemement networks
+       *                + tab related things
+       *   The latter two are perhaps fairly exploratory and may be considered for purge
+      */
+
       if (hi_g)
       {  int i
       ;  mcxbool dedup = write_mode == MY_OPT_WRITESIZECOUNTS ? TRUE : FALSE
@@ -553,7 +563,7 @@ static mcxstatus closeMain
                         * Let's assume we have a canonical domain.
                         * Make a function.
                        */
-      if (sgl_g)
+      else if (sgl_g)
       {  dim i, e=0, E, N = mclxNrofEntries(mx), n_linked = 0
       ;  mcle* edges = mcxAlloc(sizeof edges[0] * N, EXIT_ON_FAIL)
       ;  double sumszsq = N_COLS(mx)

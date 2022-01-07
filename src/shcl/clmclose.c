@@ -522,7 +522,7 @@ static mcxstatus closeMain
          ;  mclx* mycc = clmComponents(mx, dom)
 
          ;  if (levels_pfx)
-            {  mcxTing* name = mcxTingPrint(NULL, "%s.l%d", levels_pfx, (int) i)
+            {  mcxTing* name = mcxTingPrint(NULL, "%s.L%d", levels_pfx, (int) i)
             ;  mcxIO* xflevel = mcxIOnew(name->str, "w")
             ;  mcxIOopen(xflevel, EXIT_ON_FAIL)
             ;  mclxaWrite(mycc, xflevel, MCLXIO_VALUE_NONE, RETURN_ON_FAIL)

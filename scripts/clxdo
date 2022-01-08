@@ -144,7 +144,7 @@ for mx in $@; do
    printf "%-39s " $mx
      mcxdump -imx $mx --no-values --dump-lines -o - \
    | perl -ane 'print (@F-1); print "\n";' \
-   | sort -nr | head -n $CLXDO_VAL1 | sort -n | tr '\n' ' '
+   | sort -nr | head -n $CLXDO_VAL1 | sort -rn | tr '\n' ' '
    echo
 done
       ;;

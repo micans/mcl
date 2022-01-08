@@ -418,7 +418,6 @@ static mcxstatus distMain
          ;  mclx* meet12, *meet21
          ;  double dist1d, dist2d
          ;  dim dist1i, dist2i
-         ;  dim n_volatile = 0
 
          ;  meet12 =  clmContingency(c1, c2)
          ;  meet21 =  mclxTranspose(meet12)
@@ -472,14 +471,13 @@ static mcxstatus distMain
                clmSJDistance(c1, c2, meet12, meet21, &dist1i, &dist2i)
             ,  fprintf
                (  xfout->fp
-               ,  "d=%lu\td1=%lu\td2=%lu\tnn=%ld\tc1=%ld\tc2=%ld\tv=%ld\tn1=%s\tn2=%s\t"
+               ,  "d=%lu\td1=%lu\td2=%lu\tnn=%ld\tc1=%ld\tc2=%ld\tn1=%s\tn2=%s\t"
                ,  (ulong) (dist1i + dist2i)
                ,  (ulong) dist1i
                ,  (ulong) dist2i
                ,  (long) N_ROWS(c1)
                ,  (long) N_COLS(c1)
                ,  (long) N_COLS(c2)
-               ,  (long) n_volatile
                ,  stptr1->level[i].fname->str
                ,  stptr2->level[j].fname->str
                )

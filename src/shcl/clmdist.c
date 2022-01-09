@@ -31,6 +31,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
 
 #include "clm.h"
 #include "report.h"
@@ -115,6 +116,7 @@ enum
 {  VOL_OPT_OUTPUT = CLM_DISP_UNUSED
 ,  VOL_OPT_IMX
 ,  VOL_OPT_RCL
+,  VOL_OPT_SKEW
 }  ;
 
 static mcxOptAnchor volOptions[] =
@@ -123,6 +125,12 @@ static mcxOptAnchor volOptions[] =
    ,  VOL_OPT_OUTPUT
    ,  "<fname>"
    ,  "output file name"
+   }
+,  {  "-skew"
+   ,  MCX_OPT_HASARG
+   ,  VOL_OPT_SKEW
+   ,  "<num>"
+   ,  "skew x in [0-1] as x^num"
    }
 ,  {  "-imx"
    ,  MCX_OPT_HASARG
@@ -210,6 +218,7 @@ static mcxbool mci_g    =  FALSE;
 static mcxbool wheel_g  =  FALSE;
 static mcxbool split_g  =  FALSE;
 static mcxbool sort_g   =  FALSE;
+static double skew_g    =  1.0;
 
 
 static mcxstatus distInit
@@ -240,6 +249,12 @@ static mcxstatus volArgHandle
    {  switch(optid)
       {  case VOL_OPT_OUTPUT
       :  mcxIOnewName(xfout, val)
+      ;  break
+      ;
+
+         case VOL_OPT_SKEW
+      :  skew_g = atof(val)
+;  fprintf(stderr, "skew %f\n", skew_g)
       ;  break
       ;
 
@@ -449,7 +464,7 @@ static mcxstatus distMain
                   ;  mclv* nbvec = NULL
                   ;  dim minsize = MCX_MIN(c1mem->n_ivps, c2mem->n_ivps)
                   ;  if (mxrcl)
-                     mclvMakeConstant(meet, 1.0 * meet->n_ivps / (1.0 * minsize))
+                     mclvMakeConstant(meet, pow(1.0 * meet->n_ivps / (1.0 * minsize), skew_g))
 
                   ;  for (m=0;m<meet->n_ivps;m++)
                      {  dim thenode = meet->ivps[m].idx

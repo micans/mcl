@@ -469,7 +469,7 @@ static mcxstatus distMain
                   ;  for (m=0;m<meet->n_ivps;m++)
                      {  dim thenode = meet->ivps[m].idx
                      ;  tivp = mclvGetIvp(vol_scores->cols+0, thenode, tivp)
-                     ;  tivp->val += 1.0 * meet->n_ivps / (1.0 * minsize)
+                     ;  tivp->val += pow(1.0 * meet->n_ivps / (1.0 * minsize),skew_g)
                      ;  if (mxrcl)
                         {  nbvec = mclxGetVector(mxrcl, thenode, EXIT_ON_FAIL, nbvec)
                         ;  mclvBinary(nbvec, meet, nbvec, flt_add_if_left)

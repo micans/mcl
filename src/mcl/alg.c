@@ -1294,7 +1294,7 @@ mcxstatus mclAlgorithmInit
             case ALG_OPT_REGULARIZED
          :  mpp->expansionVariant = 1
          ;  if (!mpp->mainLoopLength)        /* default 0; otherwise user set it */
-            mpp->mainLoopLength   = 30
+            mpp->mainLoopLength   = 50
          ;  break
          ;
 

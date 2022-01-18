@@ -560,7 +560,7 @@ static mcxstatus closeMain
    ;  }
 
                        /* in this block we use mx->cols[i].vid to encode the current cluster index.
-                        * Let's assume we have a canonical domain.
+                        * We require a canonical domain.
                         * Make a function.
                        */
       else if (sgl_g)
@@ -569,6 +569,7 @@ static mcxstatus closeMain
       ;  double sumszsq = N_COLS(mx)
       ;  mclx* sl
       ;  mcxIO* xflist = mcxIOnew(fn_nodelist, "w")
+      ;  dim* bimax = mcxNAlloc(N_COLS(mx), sizeof bimax[0], NULL, EXIT_ON_FAIL)
 
       ;  if (!mclxDomCanonical(mx))
          mcxDie(1, me, "I need canonical domains in link mode")
@@ -579,6 +580,7 @@ static mcxstatus closeMain
       ;  for (i=0;i<N_COLS(mx);i++)
          {  mclv* v = mx->cols+i
          ;  dim j
+         ;  bimax[i] = 0
          ;  for (j=0;j<v->n_ivps;j++)
             {  mclp* d = v->ivps+j
             ;  if (d->idx > i)
@@ -598,7 +600,7 @@ static mcxstatus closeMain
 
       ;  fprintf
          (  xfout->fp
-         ,  "link\tx\ty\txid\tyid\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\n"
+         ,  "link\tx\ty\txid\tyid\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\tbimax\n"
          )
       ;  while (e<E)
          {  pnum s = edges[e].src
@@ -620,16 +622,28 @@ static mcxstatus closeMain
 
          ;  {  dim sz1 = sl->cols[si].n_ivps
             ;  dim sz2 = sl->cols[di].n_ivps
+            ;  dim bmx = MCX_MAX(bimax[si], bimax[di])
+            ;  dim bi1 = bimax[si]
+            ;  dim bi2 = bimax[di]
+
             ;  sumszsq +=
                   (sz1 + sz2) * 1.0 * (sz1 + sz2)
                -  sz1 * 1.0 * sz1
                -  sz2 * 1.0 * sz2
+
+            ;  bimax[ni] = MCX_MAX(bmx, MCX_MIN(sz1, sz2))
+
             ;  if (sz1 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, s, NULL) : sbuf, v)
             ;  if (sz2 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, d, NULL) : dbuf, v)
          ;  }
+                       /* "link x y"
+                          "xid yid val"
+                          "xcid ycid xcsz ycsz xycsz"
+                          "nedge ctr bimax"
+                        */
 
             fprintf
-            (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.2f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\n"
+            (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.2f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\n"
             ,  (int) n_linked
             ,  tab ? mclTabGet(tab, s, NULL) : sbuf
             ,  tab ? mclTabGet(tab, d, NULL) : dbuf
@@ -646,6 +660,7 @@ static mcxstatus closeMain
 
             ,  (double) (e * 100.0 / E)
             ,  (0.5 + sumszsq / N_COLS(mx))
+            ,  (long unsigned) bimax[ni]
             )
                                           /* merge clusters */
          ;  mclvBinary(sl->cols+si, sl->cols+di, sl->cols+ni, fltMax)

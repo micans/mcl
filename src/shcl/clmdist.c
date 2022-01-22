@@ -340,7 +340,7 @@ static mcxstatus distArgHandle
 ;  }
 
 
-double flt_add_if_left
+static double flt_add_if_left
 (  pval lft
 ,  pval rgt
 )

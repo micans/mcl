@@ -298,3 +298,65 @@ double clmCoverage
 ;  }
 
 
+
+/* fixme duplicate with src/shcl/clmdist.c */
+
+static double flt_add_if_left
+(  pval lft
+,  pval rgt
+)
+   {  return lft ?  lft + rgt : 0.0
+;  }
+
+
+double clmModularity
+(  const mclx* mx
+,  const mclx* cls
+)
+   { 	dim i, j
+	;	mclv* vsums = mclxColSums(mx, MCL_VECTOR_COMPLETE)
+   ;  mclv* clintern = NULL, *cldegreesum = NULL
+   ;  
+	;	double Q = 0.0
+	;	double E = mclvSum(vsums)
+
+   ;  if (!E)
+      return 0.0
+
+	;	for (i=0; i<N_COLS(cls); i++)
+		{	const mclv* cl = cls->cols+i
+      ;  mclv* nb = NULL
+		;	clintern = mclvCopy(clintern, cl)
+      ;  mclvMakeCharacteristic(clintern)    /* later we need to subtract the sum of this */
+
+      ;  for (j=0; j<clintern->n_ivps; j++)
+         {  nb = mclxGetVector(mx, clintern->ivps[j].idx, EXIT_ON_FAIL, nb)
+         ;  mclvBinary(clintern, nb, clintern, flt_add_if_left)
+      ;  }
+
+         cldegreesum = mcldMeet(vsums, cl, cldegreesum)
+
+      ;  Q += (  ( mclvSum(clintern)-clintern->n_ivps ) / E
+               -  pow(0.5 * mclvSum(cldegreesum) / E, 2.0)
+              )
+		;	
+      }
+      mclvFree(&vsums)
+   ;  mclvFree(&clintern)
+   ;  mclvFree(&cldegreesum)
+   ;  return Q
+;  }
+
+
+
+/* 
+
+   internal to x           across full network
+        v                      v
+      [ E(x)    ( sum_v_in_x (sum(edge(v))))^2 ]
+sum   [ ----  - ( -----------------------  )   ]
+      [  E      (          2E              )   ]
+cls x
+
+*/
+

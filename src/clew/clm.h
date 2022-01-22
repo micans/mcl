@@ -26,6 +26,7 @@ typedef struct
 {  double   efficiency
 ;  double   massfrac
 ;  double   areafrac
+;  double   modularity
 ;
 }  clmPerformanceTable   ;
 

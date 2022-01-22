@@ -360,7 +360,7 @@ void clmGranularityPrint
 )
    {  fprintf
       (  fp
-      ,  "clusters=%lu max=%lu %s"
+      ,  "ncl=%lu max=%lu %s"
          " ctr=%.1f avg=%.1f min=%lu DGI=%lu TWI=%lu TWL=%lu"
          " sgl=%lu qrt=%lu"
 
@@ -386,8 +386,9 @@ void clmPerformancePrint
 )
    {  fprintf
       (  fp
-      ,  "efficiency=%.5f massfrac=%.5f areafrac=%.5f %s"
+      ,  "eff=%.5f mod=%.5f mf=%.5f af=%.5f %s"
       ,  pf->efficiency
+      ,  pf->modularity
       ,  pf->massfrac
       ,  pf->areafrac
       ,  info ? info : ""
@@ -625,6 +626,7 @@ mcxstatus clmPerformance
    ;  pf->massfrac   =  xscore.n_hits ? xscore.sum_i / xscore.n_hits : -1.0
    ;  pf->efficiency =  xscore.n_hits ? xscore.cov / xscore.n_hits : -1.0
    ;  pf->areafrac   =  mxArea ? clArea / mxArea : -1.0
+   ;  pf->modularity =  clmModularity(mx, cl)
 
    ;  return STATUS_OK
 ;  }

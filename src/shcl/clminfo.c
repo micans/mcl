@@ -344,7 +344,7 @@ static mcxstatus infoMain
             {  clmGranularityTable tbl
             ;  clmPerformanceTable pftable
             ;  mcxTing* linfo = mcxTingNew(ginfo->str)
-            ;  mcxTingPrintAfter(linfo, " source=%s", xfcl->fn->str)
+            ;  mcxTingPrintAfter(linfo, " src=%s", xfcl->fn->str)
             ;  if (st.n_level > 1)
                mcxTingPrintAfter(linfo, ":%03d", (int) (j+1))
 

@@ -569,8 +569,12 @@ static mcxstatus closeMain
       ;  double sumszsq = N_COLS(mx)
       ;  mclx* sl
       ;  mcxIO* xflist = mcxIOnew(fn_nodelist, "w")
-      ;  dim* bimax = mcxNAlloc(N_COLS(mx), sizeof bimax[0], NULL, EXIT_ON_FAIL)
-
+      ;  dim* lss = mcxNAlloc(N_COLS(mx), sizeof lss[0], NULL, EXIT_ON_FAIL)
+                    /* Largest Sub-Split below or at this node;
+                     * > max(min(szleft, szright))
+                     * > over all nodes in the subtree rooted by this node
+                     * Useful for descend decisions.
+                    */
       ;  if (!mclxDomCanonical(mx))
          mcxDie(1, me, "I need canonical domains in link mode")
 
@@ -580,7 +584,7 @@ static mcxstatus closeMain
       ;  for (i=0;i<N_COLS(mx);i++)
          {  mclv* v = mx->cols+i
          ;  dim j
-         ;  bimax[i] = 0
+         ;  lss[i] = 0
          ;  for (j=0;j<v->n_ivps;j++)
             {  mclp* d = v->ivps+j
             ;  if (d->idx > i)
@@ -600,7 +604,7 @@ static mcxstatus closeMain
 
       ;  fprintf
          (  xfout->fp
-         ,  "link\tx\ty\txid\tyid\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\tbimax\n"
+         ,  "link\tx\ty\txid\tyid\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\tlss\n"
          )
       ;  while (e<E)
          {  pnum s = edges[e].src
@@ -622,16 +626,16 @@ static mcxstatus closeMain
 
          ;  {  dim sz1 = sl->cols[si].n_ivps
             ;  dim sz2 = sl->cols[di].n_ivps
-            ;  dim bmx = MCX_MAX(bimax[si], bimax[di])
-            ;  dim bi1 = bimax[si]
-            ;  dim bi2 = bimax[di]
+            ;  dim lss_sub = MCX_MAX(lss[si], lss[di])
+            ;  dim bi1 = lss[si]
+            ;  dim bi2 = lss[di]
 
             ;  sumszsq +=
                   (sz1 + sz2) * 1.0 * (sz1 + sz2)
                -  sz1 * 1.0 * sz1
                -  sz2 * 1.0 * sz2
 
-            ;  bimax[ni] = MCX_MAX(bmx, MCX_MIN(sz1, sz2))
+            ;  lss[ni] = MCX_MAX(lss_sub, MCX_MIN(sz1, sz2))
 
             ;  if (sz1 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, s, NULL) : sbuf, v)
             ;  if (sz2 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, d, NULL) : dbuf, v)
@@ -639,7 +643,7 @@ static mcxstatus closeMain
                        /* "link x y"
                           "xid yid val"
                           "xcid ycid xcsz ycsz xycsz"
-                          "nedge ctr bimax"
+                          "nedge ctr lss"
                         */
 
             fprintf
@@ -660,7 +664,7 @@ static mcxstatus closeMain
 
             ,  (double) (e * 100.0 / E)
             ,  (0.5 + sumszsq / N_COLS(mx))
-            ,  (long unsigned) bimax[ni]
+            ,  (long unsigned) lss[ni]
             )
                                           /* merge clusters */
          ;  mclvBinary(sl->cols+si, sl->cols+di, sl->cols+ni, fltMax)

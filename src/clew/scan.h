@@ -184,6 +184,11 @@ void clmXScanDomainSet
 )  ;
 
 
+double clmModularity
+(  const mclx* mx
+,  const mclx* cls
+)  ;
+
 
 #endif
 

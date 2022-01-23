@@ -336,8 +336,14 @@ double clmModularity
 
          cldegreesum = mcldMeet(vsums, cl, cldegreesum)
 
+                     /* We store edges in two directions.
+                        In the first part, the factor two cancels.
+                        In the second part, the 2E is accounted for
+                        mclvSum
+                     */
+
       ;  Q += (  ( mclvSum(clintern)-clintern->n_ivps ) / E
-               -  pow(0.5 * mclvSum(cldegreesum) / E, 2.0)
+               -  pow(mclvSum(cldegreesum) / E, 2.0)
               )
 		;	
       }

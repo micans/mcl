@@ -336,10 +336,11 @@ double clmModularity
 
          cldegreesum = mcldMeet(vsums, cl, cldegreesum)
 
-                     /* We store edges in two directions.
-                        In the first part, the factor two cancels.
-                        In the second part, the 2E is accounted for
-                        mclvSum
+                     /* We store edges in two directions, so our E
+                        is twice that in the formula below.
+                        In the first fraction, the factor two cancels.
+                        In the second fraction, the numerator is not affected,
+                        the formula denominator (2E) is the same as our E.
                      */
 
       ;  Q += (  ( mclvSum(clintern)-clintern->n_ivps ) / E
@@ -355,14 +356,18 @@ double clmModularity
 
 
 
-/* 
+/*    Modularity formula:
 
-   internal to x           across full network
-        v                      v
-      [ E(x)    ( sum_v_in_x (sum(edge(v))))^2 ]
-sum   [ ----  - ( -----------------------  )   ]
-      [  E      (          2E              )   ]
-cls x
+  *1 E(x) Sum of edge weights internal to cluster x
+  *2 Sum of edge weights for nodes in cluster x, across full network
+  *3
+  *4 E Sum of edge weights in graph
+
+       *1        *2
+SUM   [ E(x)    ( sum_v_in_x (sum(edge(v))))^2 ]
+      [ ----  - ( -----------------------  )   ]
+cl x  [  E      (          2E              )   ]
+       *3        *4
 
 */
 

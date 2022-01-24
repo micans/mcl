@@ -325,7 +325,7 @@ double clmModularity
 
 	;	for (i=0; i<N_COLS(cls); i++)
 		{	const mclv* cl = cls->cols+i
-      ;  mclv* nb = NULL
+      ;  const mclv* nb = NULL
 		;	clintern = mclvCopy(clintern, cl)
       ;  mclvMakeCharacteristic(clintern)    /* later we need to subtract the sum of this */
 

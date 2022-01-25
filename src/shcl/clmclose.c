@@ -432,6 +432,13 @@ static int edge_val_cmp
 ;  }
 
 
+struct annot
+{  dim lss
+;  dim nsg
+;
+}  ;
+
+
 static mcxstatus closeMain
 (  int          argc_unused      cpl__unused
 ,  const char*  argv_unused[]    cpl__unused
@@ -569,8 +576,9 @@ static mcxstatus closeMain
       ;  double sumszsq = N_COLS(mx)
       ;  mclx* sl
       ;  mcxIO* xflist = mcxIOnew(fn_nodelist, "w")
-      ;  dim* lss = mcxNAlloc(N_COLS(mx), sizeof lss[0], NULL, EXIT_ON_FAIL)
-                    /* Largest Sub-Split below or at this node;
+      ;  struct annot* ant = mcxNAlloc(N_COLS(mx), sizeof ant[0], NULL, EXIT_ON_FAIL)
+
+                    /* annot.lss: Largest Sub-Split below or at this node;
                      * > max(min(szleft, szright))
                      * > over all nodes in the subtree rooted by this node
                      * Useful for descend decisions.
@@ -584,7 +592,8 @@ static mcxstatus closeMain
       ;  for (i=0;i<N_COLS(mx);i++)
          {  mclv* v = mx->cols+i
          ;  dim j
-         ;  lss[i] = 0
+         ;  ant[i].lss = 0
+         ;  ant[i].nsg = 0
          ;  for (j=0;j<v->n_ivps;j++)
             {  mclp* d = v->ivps+j
             ;  if (d->idx > i)
@@ -604,7 +613,7 @@ static mcxstatus closeMain
 
       ;  fprintf
          (  xfout->fp
-         ,  "link\tx\ty\txid\tyid\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\tlss\n"
+         ,  "link\tx\ty\txid\tyid\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\tlss\tnsg\n"
          )
       ;  while (e<E)
          {  pnum s = edges[e].src
@@ -626,16 +635,16 @@ static mcxstatus closeMain
 
          ;  {  dim sz1 = sl->cols[si].n_ivps
             ;  dim sz2 = sl->cols[di].n_ivps
-            ;  dim lss_sub = MCX_MAX(lss[si], lss[di])
-            ;  dim bi1 = lss[si]
-            ;  dim bi2 = lss[di]
+            ;  dim lss_sub = MCX_MAX(ant[si].lss, ant[di].lss)
+            ;  dim sgl_sub = ant[si].nsg + ant[di].nsg
 
             ;  sumszsq +=
                   (sz1 + sz2) * 1.0 * (sz1 + sz2)
                -  sz1 * 1.0 * sz1
                -  sz2 * 1.0 * sz2
 
-            ;  lss[ni] = MCX_MAX(lss_sub, MCX_MIN(sz1, sz2))
+            ;  ant[ni].lss = MCX_MAX(lss_sub, MCX_MIN(sz1, sz2))
+            ;  ant[ni].nsg = sgl_sub + ((sz1 == 1) ^ (sz2 == 1))
 
             ;  if (sz1 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, s, NULL) : sbuf, v)
             ;  if (sz2 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, d, NULL) : dbuf, v)
@@ -647,7 +656,7 @@ static mcxstatus closeMain
                         */
 
             fprintf
-            (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.2f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\n"
+            (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.2f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\n"
             ,  (int) n_linked
             ,  tab ? mclTabGet(tab, s, NULL) : sbuf
             ,  tab ? mclTabGet(tab, d, NULL) : dbuf
@@ -664,7 +673,8 @@ static mcxstatus closeMain
 
             ,  (double) (e * 100.0 / E)
             ,  (0.5 + sumszsq / N_COLS(mx))
-            ,  (long unsigned) lss[ni]
+            ,  (long unsigned) ant[ni].lss
+            ,  (long unsigned) ant[ni].nsg
             )
                                           /* merge clusters */
          ;  mclvBinary(sl->cols+si, sl->cols+di, sl->cols+ni, fltMax)

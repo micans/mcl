@@ -21,7 +21,7 @@ BEGIN {
   $::L=1;
 }
 next if $. == 1;
-my ($i, $x, $y, $xid, $yid, $val, $xcid, $ycid, $xcsz, $ycsz, $ignore) = @F;
+my ($i, $x, $y, $xid, $yid, $val, $xcid, $ycid, $xcsz, $ycsz, $xycsz, $nedge, $ctr, $lss, $nsg) = @F;
 
 
 my ($n1, $n2) = ($xcid, $ycid);
@@ -39,6 +39,7 @@ if ($xcsz == 1) {
   ,     bob => ""
   ,  csizes => []
   , lss => 0
+  , nsg => 0
   } ;
 }
 if ($ycsz == 1) {
@@ -51,6 +52,7 @@ if ($ycsz == 1) {
   ,     bob => ""
   ,  csizes => []
   , lss => 0
+  , nsg => 0
   } ;
 }
 
@@ -73,6 +75,7 @@ my $name2 = $::cid2node{$n2};
    ,    bob  => $name2
    ,  csizes => [ $::nodes{$name1}{size}, $::nodes{$name2}{size}]
    , lss => max( $::nodes{$name1}{lss}, $::nodes{$name2}{lss}, min($::nodes{$name1}{size}, $::nodes{$name2}{size}))
+   , nsg => $nsg
    } ;
 
 $::cid2node{$n1} = $upname;
@@ -93,6 +96,7 @@ END {
     my @desc = @{$::nodes{$name}{csizes}};
     my $ann  = $::nodes{$name}{ann};
     my $bob  = $::nodes{$name}{bob};
+    my $nsg  = sprintf("%.3f", $::nodes{$name}{nsg} / $::nodes{$name}{size});
 
     local $" = ' ';
     if ($::nodes{$name}{lss} >= $::min) {
@@ -100,7 +104,7 @@ END {
       push @stack, $bob;
     }
     else {
-      print "$size\t@{$::nodes{$name}{items}}\n";
+      print "$size\t$nsg\t@{$::nodes{$name}{items}}\n";
     }
   }
 }

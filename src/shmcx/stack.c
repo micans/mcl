@@ -109,6 +109,7 @@ int zsList
       for (card=stacktop_g; n-- && card!=NULL; card=card->prev)
       zgInfo(card->glob)
 
+   ;  fprintf(stderr, "--\n")
    ;  return 1
 ;  }
 

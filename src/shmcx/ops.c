@@ -97,7 +97,6 @@ int      opThreads            (  void  )  ;
 int      opRepeat             (  void  )  ;
 int      opIfelse             (  void  )  ;
 int      opDo                 (  void  )  ;
-int      opTypes              (  void  )  ;
 int      opWhile              (  void  )  ;
 int      opEq                 (  void  )  ;
 int      opLt                 (  void  )  ;

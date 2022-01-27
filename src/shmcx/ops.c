@@ -91,7 +91,7 @@ int      opLoadFile           (  void  )  ;
 int      opMakeCharacteristic (  void  )  ;
 int      opMakeStochastic     (  void  )  ;
 int      opQuit               (  void  )  ;
-int      opDong               (  void  )  ;
+int      opVb                 (  void  )  ;
 int      opRowDimension       (  void  )  ;
 int      opThreads            (  void  )  ;
 int      opRepeat             (  void  )  ;
@@ -220,8 +220,8 @@ opHook opHookDir[] =
    ,  "<o1> <o2>"
    ,  "<o2> <o1>"
    }
-,  {  opDong
-   ,  TOKEN_DONG
+,  {  opVb
+   ,  TOKEN_VB
    ,  "set verbosity level"
    ,  "[<i>]"
    ,  "*"
@@ -906,7 +906,7 @@ int opDup
 ;  }
 
 
-int opDong
+int opVb
 (  void
 )
    {  const int   *ip
@@ -925,7 +925,8 @@ int opDong
 
    ;  if (!vb) /* used as toggle */
       {  v_g = v_g ? 0 : 1
-      ;  fprintf(stdout, v_g ? "talkative\n" : "silent\n")
+      ;  if (v_g)
+         fprintf(stdout, "talkative\n")
    ;  }
       else
       {  v_g = 1

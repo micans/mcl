@@ -14,16 +14,17 @@ export MCLXIOVERBOSITY=2
    # This generates many clusterings at different levels of granularity.
    # -dae triggers degree-adjustment with the specified exponent.
    #
-if (( $(ls | grep -c out.falkner.mci) < 3 * 14 )); then
-   echo "1) Generating clusterings"
-   for i in 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.5 3.0 4.0 5.0 6.0; do
-      mcl falkner.mci -q x -V all -I $i
-      mcl falkner.mci -q x -V all -I $i -dae  1 -aa .dad
-      mcl falkner.mci -q x -V all -I $i -dae  2 -aa .dae
-   done
-else
-   echo "1) Clusterings already present"
-fi
+echo "1) Generating clusterings"
+cached=0
+for i in 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.5 3.0 4.0 5.0 6.0; do
+   cline1="mcl falkner.mci -q x -V all -I $i"
+   cline2="mcl falkner.mci -q x -V all -I $i -dae  1 -aa .dad"
+   cline3="mcl falkner.mci -q x -V all -I $i -dae  2 -aa .dae"
+   ( [[ ! -f $($cline1 -az) ]] && $cline1 ) || (( ++cached ))
+   ( [[ ! -f $($cline2 -az) ]] && $cline2 ) || (( ++cached ))
+   ( [[ ! -f $($cline3 -az) ]] && $cline3 ) || (( ++cached ))
+done
+echo "Clustering done ($cached cached)"
 
 
    # Output f.rcl contains the consensus information for nodes co-clustering,

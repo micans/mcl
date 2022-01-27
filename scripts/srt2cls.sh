@@ -9,6 +9,10 @@
 # Subsequently we need to add a cluster with this dummy node to the seurat
 # clustering when we encode it in an mcl matrix file.
 
+# We do not in all cases maintain cluster label correspondence; one of the
+# seurat algorithms labels the clusters starting at 1, this will be shifted to 0.
+
+
 set -euo pipefail
 
 fn=${1:?Please supply seurat cluster text file}

@@ -56,6 +56,7 @@ extern unsigned n_threads_g;
 
 #define     TOKEN_LIST               "list"
 #define     TOKEN_TELL               "tell"
+#define     TOKEN_TYPE               "type"
 #define     TOKEN_OPLIST             "ops"
 #define     TOKEN_HELP               "help"
 #define     TOKEN_INFO               "info"

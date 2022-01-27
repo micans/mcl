@@ -82,6 +82,7 @@ int      opSet                (  void  )  ;
 int      opTut                (  void  )  ;
 int      opInfo               (  void  )  ;
 int      opTell               (  void  )  ;
+int      opType               (  void  )  ;
 int      opSearch             (  void  )  ;
 int      opIdentity           (  void  )  ;
 int      opNew                (  void  )  ;
@@ -531,6 +532,12 @@ opHook opHookDir[] =
    ,  "print info for top <i> objects"
    ,  "<i>"
    ,  "*"
+   }
+,  {  opType
+   ,  TOKEN_TYPE
+   ,  "print type of top object: 'mx', 'int', 'null'"
+   ,  "*"
+   ,  "<s>"
    }
 ,  {  opInfo
    ,  TOKEN_INFO
@@ -1082,6 +1089,31 @@ int opSize
       zmNotSupported1(TOKEN_DIV, typeo)
 
    ;  return 1
+;  }
+
+
+int opType
+(  void
+)
+   {  int ok = zsHaveNargs(1) ? 1 : 0
+   ;  const char* ret = "null"
+
+   ;  if (ok)
+      {  zgglob_p o1 = zsGetGlob(0)
+      ;  int tp = zgGetType(o1)
+
+      ;  if (tp == UTYPE_MX)
+         ret = "mx"
+      ;  else if (tp == UTYPE_INT)
+         ret = "int"
+      ;  else if (tp == UTYPE_STR)
+         ret = "str"
+      ;  else if (tp == UTYPE_DBL)
+         ret = "dbl"
+      ;  else
+         ret = "unsupported"
+   ;  }
+      return zgPush(UTYPE_STR, mcxTingNew(ret))
 ;  }
 
 

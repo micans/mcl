@@ -123,23 +123,23 @@ mcxOptAnchor closeOptions[] =
    ,  "output list of component sizes"
    }
 ,  {  "-levels"
-   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  MCX_OPT_HASARG
    ,  MY_OPT_LEVELS
    ,  "low/step/high[/prefix]"
    ,  "write cluster size distribution for each (edge weight cut-off) level\n"
       "                if prefix is specified, write each to file"
    }
 ,  {  "-levels-norm"
-   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  MCX_OPT_HASARG
    ,  MY_OPT_LEVELS_NORM
    ,  "<num>"
    ,  "divide each level defined by -levels by <num> to define cutoff"
    }
 ,  {  "--sl"
-   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  MCX_OPT_DEFAULT
    ,  MY_OPT_SL
    ,  NULL
-   ,  "output single linkage tree (encoded as list of joins)"
+   ,  "output single linkage tree encoded as list of joins"
    }
 ,  {  "--write-count"
    ,  MCX_OPT_DEFAULT
@@ -172,7 +172,7 @@ mcxOptAnchor closeOptions[] =
    ,  "read tab file"
    }
 ,  {  "-write-sl-list"
-   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  MCX_OPT_HASARG
    ,  MY_OPT_SLLIST
    ,  "<fname>"
    ,  "write list of join order with weights"

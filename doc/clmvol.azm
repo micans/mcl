@@ -19,19 +19,22 @@
 
 \disclaim_clm{vol}
 
+
 \sec{synopsis}{SYNOPSIS}
 \par{
    \clm{vol}
    \synoptopt{-o}{fname}{output file}
+   \synoptopt{-imx}{fname}{read network}
+   \synoptopt{-write-rcl}{fname}{write rcl network}
    <cl file>+
    }
 
 \sec{description}{DESCRIPTION}
 
 \par{
-   \clm{vol} computes a score for each node, which at a minimum is equal to one.
+   \clm{vol} computes a score for each node, which is expressed as a promille.
    The output is in the form of a matrix containing a single column.  The score
-   correlates with what is deemed to be volatile behaviour.  For all pairs of
+   inversely correlates with what is deemed to be volatile behaviour.  For all pairs of
    clusterings the set of all intersections is computed, and these  are
    considered in turn.
    }
@@ -48,6 +51,10 @@
 \'begin{itemize}{\mcx_itemopts}
 
 \item{\defopt{-o}{fname}{output file}}
+
+\item{\defopt{-imx}{fname}{read network}}
+
+\item{\defopt{-write-rcl}{fname}{write rcl network}}
 
 \end{itemize}
 

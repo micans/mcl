@@ -46,6 +46,7 @@
 \'def{mclcm}{\bf{mclcm}}
 \'def{mcx}{\bf{mcx}}
 \'def{mcxi}{\bf{mcxi}}
+\'def{script#1}{\bf{\1}}
 
 \set{{modes}{vw}}{}{
    {clm}       {\bf{clm}}

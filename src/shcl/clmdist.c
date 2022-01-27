@@ -126,8 +126,8 @@ static mcxOptAnchor volOptions[] =
    ,  "<fname>"
    ,  "output file name"
    }
-,  {  "-skew"
-   ,  MCX_OPT_HASARG
+,  {  "-rcl-skew"
+   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
    ,  VOL_OPT_SKEW
    ,  "<num>"
    ,  "skew x in [0-1] as x^num"

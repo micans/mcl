@@ -1,6 +1,10 @@
 #!/bin/bash
 
-set -euo pipefail
+   # ucl - Unrestricted Contingency Linkage
+   # A lowest common denominator approach to consensus clustering;
+   # this just creates a graph based on (i,j) cluster co-occurrences.
+   # It can be used e.g. to compare, as a baseline, to
+   # the rcl approach (restricted contigency linkage).
 
    # Given a set of input clusterings (everything but the first argument),
    # construct the matrix with a contribution of 1 for the edge (i,j) each time
@@ -15,6 +19,9 @@ set -euo pipefail
    # This script can be used to compare consensus clustering methods (such as
    # rcl) with the very simplistic approach implemented here.
    #
+
+set -euo pipefail
+
 matrix=${1?Need <mxfile> <clsfile>+}
 shift 1
 
@@ -33,6 +40,7 @@ ncluster=${#clusters[*]}
    # hdm : hadamard product
    # .x dim pop just checks whether this is a network and not a clustering,
    # it will complain and exit if src/dst dimensions are not the same.
+   # 'type' returns null if the stack is exhausted.
    # 
 mcxi <<EOC
 0 vb

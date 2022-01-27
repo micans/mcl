@@ -49,6 +49,7 @@
 #include "stream.h"
 #include "vector.h"
 #include "iface.h"
+#include "io.h"
 
 #include "tingea/compile.h"
 #include "tingea/types.h"
@@ -938,6 +939,10 @@ mclx* mclxIOstreamIn
    ;  unsigned long n_ite = 0
    ;  mclx* mx = NULL
 
+   ;  mcxbool  iovb     =  mclxIOgetQMode("MCLXIOVERBOSITY")
+   ;  mcxbool  progress =  iovb && mcxLogGet(MCX_LOG_GAUGE | MCX_LOG_IO)
+
+
    ;  if (mirror && !symmetric)
       {  mcxErr(me, "mirror mode needs symmetric mode (shared-tab-logic)")
       ;  if (ON_FAIL == EXIT_ON_FAIL)
@@ -1011,10 +1016,12 @@ mclx* mclxIOstreamIn
       ;  iface.x =  0
       ;  iface.y =  0
 
-      ;  if (n_ite % 20000 == 0)
-         fputc('.', stderr)               /* fixme conditional to sth */
-      ;  if (n_ite % 1000000 == 0)
-         fprintf(stderr, " %ldM\n", (long) (n_ite / 1000000))
+      ;  if (progress)
+         {  if (n_ite % 20000 == 0)
+            fputc('.', stderr)               /* fixme conditional to sth */
+         ;  if (n_ite % 1000000 == 0)
+            fprintf(stderr, " %ldM\n", (long) (n_ite / 1000000))
+      ;  }
 
                         /* 
                          * -  the read routines largely manage iface, including

@@ -1094,10 +1094,10 @@ int opSize
 int opType
 (  void
 )
-   {  int ok = zsHaveNargs(1) ? 1 : 0
+   {  int empty = zsEmpty()
    ;  const char* ret = "null"
 
-   ;  if (ok)
+   ;  if (!empty)
       {  zgglob_p o1 = zsGetGlob(0)
       ;  int tp = zgGetType(o1)
 

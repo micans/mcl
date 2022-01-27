@@ -24,12 +24,13 @@ shift 1
 clusters=("${@/#/\/}")
 ncluster=${#clusters[*]}
 
+
    # Below, project onto matrix (=network) using
    # hadamard product in the loop.
-   # lm  load matrix
-   # tp  transpose
-   # hdm hadamard product
-   # 1444 is a sentinel to check end of loop with 'type'
+   # lm  : load matrix
+   # ch  : make characteristic (all entries set to 1)
+   # tp  : transpose
+   # hdm : hadamard product
    # .x dim pop just checks whether this is a network and not a clustering,
    # it will complain and exit if src/dst dimensions are not the same.
    # 
@@ -37,7 +38,7 @@ mcxi <<EOC
 0 vb
 /$matrix lm ch dup .x def .sum def
    .x dim pop
-   1444 ${clusters[@]}
+   ${clusters[@]}
    { type /str eq }
    { lm tp mul .x hdm .sum add .sum def }
    while
@@ -45,5 +46,5 @@ mcxi <<EOC
    /out.ucl wm
 EOC
 
-echo done
+echo $? done
 

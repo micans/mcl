@@ -185,8 +185,20 @@ if [[ ! -z $RESOLUTION ]]; then
    done
    for r in $RESOLUTION; do
       file="$rclfile.mix$r.cls"
-      printf "%-15s" $file; echo $(mcx query -imx $file | cut -f 2 | tail -n +2)
+      printf "%-15s: " $file; echo $(mcx query -imx $file | cut -f 2 | tail -n +2 | head -n 15)
    done
-fi
+   commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
 
+cat <<EOM
+
+The following outputs were made.
+One cluster-per line files:
+   $(eval echo $rclfile.mix.{$commalist}.labels)
+LABEL<TAB>CLUSID files:
+   $(eval echo $rclfile.mix.{$commalist}.txt)
+mcl-edge matrix/cluster files:
+   $(eval echo $rclfile.mix.{$commalist}.cls)
+EOM
+
+fi
 

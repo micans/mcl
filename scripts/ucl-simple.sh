@@ -12,9 +12,20 @@
    # the edges present in the network itself (the first argument).
    # The output is normalised to a scale of [0-1000].
 
+   # The output can be inspected with
+   #     clm close -imx out.ucl -levels /lo/step/hi
+   # to look at clusters resulting from thresholding at different levels.
+   # or a single linkage join order can be computed with
+   #     clm close -imx out.ucl --sl [-tab TABFILE] -o ucl.join-order -write-sl-list ucl.node-vals
+   # This script is equivalent with step 2) in the script
+   # rcl-example.sh. Both this script and step2) produce linkage
+   # matrices encoding consensus clustering, computed in different ways.
+   # Steps 3)-7) from rcl-example.sh can be followed to produce
+   # balanced resolution-based clusterings derived from the output of this script.
+
    # mcxi understands a simple stack language with some primitive
    # facilities for matrix manipulations in the mcl framework.
-   # A useful thing about it is it can handle very large matrices
+   # A useful thing about it is that it can handle very large matrices
    # with millions of nodes as well as mcl can.
    # This script can be used to compare consensus clustering methods (such as
    # rcl) with the very simplistic approach implemented here.
@@ -26,7 +37,8 @@ matrix=${1?Need <mxfile> <clsfile>+}
 shift 1
 
    # prepend a slash to each input cluster file,
-   # this is how mcxi expects strings.
+   # this is how mcxi expects strings. Much love to bash syntax.
+   # No spaces in file names please.
    #
 clusters=("${@/#/\/}")
 ncluster=${#clusters[*]}

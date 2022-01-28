@@ -106,6 +106,7 @@ enum
 ,  MY_OPT_STREAM_NEGLOG10
 ,  MY_OPT_EXPECT_VALUES
 ,  MY_OPT_IMAGE
+,  MY_OPT_SORT_BY_SIZE
 ,  MY_OPT_TRANSPOSE
 ,  MY_OPT_CLEANUP
 ,  MY_OPT_NW
@@ -154,6 +155,13 @@ mcxOptAnchor options[] =
    ,  MY_OPT_NW
    ,  NULL
    ,  "exit after loading of matrix"
+   }
+,  {  "--sort-by-size"
+   ,  MCX_OPT_DEFAULT
+   ,  MY_OPT_SORT_BY_SIZE
+   ,  NULL
+   ,  "sort loaded result columns largest first (useful for clusterings)\n"
+      "   ! WARNING only use if row labels/indices are not important"
    }
 ,  {  "--expect-values"
    ,  MCX_OPT_DEFAULT
@@ -538,6 +546,7 @@ int main
    ;  mcxbool mirror    =  FALSE       /* this means edges should be undirected */
    ;  mcxbool transpose =  FALSE
    ;  mcxbool cleanup   =  FALSE
+   ;  mcxbool sortbysize=  FALSE
    ;  mcxbool dowrite   =  TRUE
    ;  mcxbits scrub     =  0
    ;  mcxbool write_binary = FALSE
@@ -587,6 +596,11 @@ int main
 
             case MY_OPT_CLEANUP
          :  cleanup = TRUE
+         ;  break
+         ;
+
+            case MY_OPT_SORT_BY_SIZE
+         :  sortbysize = TRUE
          ;  break
          ;
 
@@ -936,6 +950,9 @@ int main
 
    ;  if (symmetric && !mclxIsGraph(mx))
       mcxErr(me, "error detected, symmetric on but domains differ (continuing)")
+
+   ;  if (sortbysize)
+      mclxColumnsRealign(mx, mclvSizeRevCmp)
 
    ;  if (transpose || symfunc)
       {  mclx* tp = mclxTranspose(mx)

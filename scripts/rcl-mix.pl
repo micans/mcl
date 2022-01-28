@@ -19,6 +19,7 @@ BEGIN {
   %::nodes = ();
   %::cid2node = ();
   $::L=1;
+  %::topoftree = ();
 }
 next if $. == 1;
 my ($i, $x, $y, $xid, $yid, $val, $xcid, $ycid, $xcsz, $ycsz, $xycsz, $nedge, $ctr, $lss, $nsg) = @F;
@@ -56,8 +57,8 @@ if ($ycsz == 1) {
   } ;
 }
 
-my $name1 = $::cid2node{$n1};
-my $name2 = $::cid2node{$n2};
+my $node1 = $::cid2node{$n1};
+my $node2 = $::cid2node{$n2};
 
 
 # Keep track of the maximum size of the smaller of any pair of nodes below the current node that are
@@ -69,26 +70,32 @@ my $name2 = $::cid2node{$n2};
    $::nodes{$upname} =
    {   name  => $upname
    ,   parent => undef
-   ,   size  => $::nodes{$name1}{size} + $::nodes{$name2}{size}
-   ,   items => [ @{$::nodes{$name1}{items}}, @{$::nodes{$name2}{items}} ]
-   ,    ann  => $name1
-   ,    bob  => $name2
-   ,  csizes => [ $::nodes{$name1}{size}, $::nodes{$name2}{size}]
-   , lss => max( $::nodes{$name1}{lss}, $::nodes{$name2}{lss}, min($::nodes{$name1}{size}, $::nodes{$name2}{size}))
+   ,   size  => $::nodes{$node1}{size} + $::nodes{$node2}{size}
+   ,   items => [ @{$::nodes{$node1}{items}}, @{$::nodes{$node2}{items}} ]
+   ,    ann  => $node1
+   ,    bob  => $node2
+   ,  csizes => [ $::nodes{$node1}{size}, $::nodes{$node2}{size}]
+   , lss => max( $::nodes{$node1}{lss}, $::nodes{$node2}{lss}, min($::nodes{$node1}{size}, $::nodes{$node2}{size}))
    , nsg => $nsg
    } ;
 
 $::cid2node{$n1} = $upname;
 $::cid2node{$n2} = $upname;
 
+delete($::topoftree{$node1});
+delete($::topoftree{$node2});
+
+$::topoftree{$upname} = 1;
 $::L++;
-$::upname = $upname;
 
 local $" = ' ';
 
 
 END {
-  my @stack = $::upname;
+  my @stack = ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree );
+  # my $nstack = @stack;
+  # print STDERR "---- $nstack connected components\n";
+
   while (@stack) {
     my $name = pop @stack;
 

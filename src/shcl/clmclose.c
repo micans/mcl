@@ -652,7 +652,7 @@ static mcxstatus closeMain
                        /* "link x y"
                           "xid yid val"
                           "xcid ycid xcsz ycsz xycsz"
-                          "nedge ctr lss"
+                          "nedge ctr lss nsg"
                         */
 
             fprintf
@@ -688,17 +688,41 @@ static mcxstatus closeMain
             break
       ;  }
 
-         mcxIOclose(xfout)
-
-      ;  for (i=0;i<N_COLS(sl);i++)
+         for (i=0;i<N_COLS(sl);i++)
          {  mclv* v = sl->cols+i
+         ;  int n_singleton = 0
          ;  if (v->vid == i && v->n_ivps == 1)     /* singleton, never linked */
             {  char ibuf[50]
             ;  snprintf(ibuf, 50, "%d", (int) i)
             ;  fprintf(xflist->fp, "%s\t0.0\n", tab ? mclTabGet(tab, i, NULL) : ibuf)
+            ;  fprintf
+               (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.2f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\n"
+               ,  (int) n_linked++
+               ,  tab ? mclTabGet(tab, i, NULL) : ibuf
+               ,  tab ? mclTabGet(tab, i, NULL) : ibuf
+
+               ,  (int) i
+               ,  (int) i
+               ,  1000.0
+
+               ,  (int) i
+               ,  (int) i
+               ,  (int) 1
+               ,  (int) 1
+               ,  (int) 1
+
+               ,  (double) (e * 100.0 / E)
+               ,  (0.5 + sumszsq / N_COLS(mx))
+               ,  (long unsigned) 0
+               ,  (long unsigned) 0
+               )
+            ;  n_singleton++
          ;  }
-         }
+            if (n_singleton)
+            mcxTell(me, "%d singletons in data", (int) n_singleton)
+      ;  }
          mcxIOclose(xflist)
+      ;  mcxIOclose(xfout)
       ;  return STATUS_OK
    ;  }
 

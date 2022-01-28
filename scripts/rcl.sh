@@ -3,11 +3,12 @@
 set -euo pipefail
 
 matrixfile=
-rclfile=
 tabfile=
-ucl=false
+pfx=
 LEVELS=
 RESOLUTION=
+
+do_ucl=false
 
 while getopts :m:n:t:l:r:Uh opt
 do
@@ -16,7 +17,7 @@ do
       matrixfile=$OPTARG
       ;;
     n)
-      rclfile=$OPTARG
+      pfx=$OPTARG
       ;;
     r)
       RESOLUTION=$OPTARG
@@ -28,7 +29,7 @@ do
       tabfile=$OPTARG
       ;;
     U)
-      ucl=true
+      do_ucl=true
       ;;
     h)
       cat <<EOU
@@ -36,29 +37,28 @@ Options described below. Below 'networks', 'clusterings' and 'matrix' are files
 in mcl matrix format. Use srt2cls.sh to convert seurat clusterings to mcl format.
 Suggested usage:
 1) compute the rcl object with
-
-      rcl.sh -m <network> -t <tab> -n <rcl-file> [-U] <LIST-OF-CLUSTER-FILE-NAMES>
+      rcl.sh -n NAME -m <network> -t <tab> [-U] <LIST-OF-CLUSTER-FILE-NAMES>
+   NAME will be used as a prefix for various outputs; think of it as a project tag.
+   NAME is used in 2) and 3) to retrieve the right objects.
 
 2) gain an understanding of the dynamic range of the clusters present in the tree
    encoded in the rcl object by computing cluster sizes of thresholded trees
-
-      rcl.sh -n <rcl-file> -l <LOW/STEP/HIGH>
-
+      rcl.sh -n NAME -l <LOW/STEP/HIGH>
    e.g. -l 200/100/600
    Note that the edge weight range in the rcl objects is [0-1000].
 
 3) derive resolution-based balanced clusterings from the rcl object.
 
-      rcl.sh -n <rcl-file> -r "N1 N2 N3 .."
+      rcl.sh -n NAME -r "N1 N2 N3 .."
 
    e.g. -r "500 1000 1500 2000 2500"
-   The largest clusters obtained will be roughly near the resolution
-   in that they cannot be split into smaller clusters at least that size
+   The largest clusters obtained will be roughly near the resolution in that
+   they cannot be split into smaller clusters at least that size.
 
 Options:
 -m  <file>   Input network/matrix file
 -t  <file>   Tab file with index - label mapping, format INDEX<TAB>LABEL
--n  <file>   Name for rcl/ucl object
+-n  NAME     NAME will be used as prefix for various objects
 -U           Compute the Unrestricted Contingency Linkage object
 -l  LOW/STEP/HIGH    e.g. 200/100/600 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
@@ -73,26 +73,33 @@ EOU
 done
 
 
-if [[ -z $rclfile ]]; then
-   rclfile=rcl
-   if $ucl; then rclfile=ucl; fi
+if [[ -z $pfx ]]; then
+   echo "Please specify -n NAME to tag this analysis"
 fi
+
+rclfile=$pfx.rcl
 
 if [[ -z $matrixfile && ! -f $rclfile ]]; then
    echo "Please supply network and clusterings to compute rcl object (see -h)"
    false
 fi
-if [[ -z $tabfile && ! -f $rclfile.tab ]]; then
+if [[ -z $tabfile && ! -f $pfx.tab ]]; then
    echo "Please supply the tab file mapping indexes to labels (-t)"
    false
 fi
 
-if [[ ! -f $rclfile.tab ]]; then
-   cp $tabfile $rclfile.tab
+if [[ ! -f $pfx.tab ]]; then
+   if ! ln $tabfile $pfx.tab 2> /dev/null; then
+     cp $tabfile $pfx.tab
+   else
+     echo "hard link"
+   fi
 fi
 
 
 if [[ ! -f $rclfile ]]; then
+
+   export MCLXIOFORMAT=8
 
    shift $(($OPTIND-1))
    if (( $# < 2 )); then
@@ -100,7 +107,7 @@ if [[ ! -f $rclfile ]]; then
       false
    fi
 
-   if $ucl; then
+   if $do_ucl; then
 
       # prepend a slash to each input cluster file,
       # this is how mcxi expects strings. Much love to bash syntax.
@@ -135,11 +142,11 @@ EOC
 
    else
       echo "-- Computing RCL object"
-      clm vol --progress -imx $matrixfile -write-rcl $rclfile -o $rclfile.vol "$@"
+      clm vol --progress -imx $matrixfile -write-rcl $rclfile -o $pfx.vol "$@"
    fi
 
    echo "-- Computing single linkage join order for network $rclfile"
-   clm close --sl -imx $rclfile -tab $rclfile.tab -o $rclfile.join-order -write-sl-list $rclfile.node-values
+   clm close --sl -imx $rclfile -tab $pfx.tab -o $pfx.join-order -write-sl-list $pfx.node-values
 
 else
    echo "-- $rclfile exists, querying its dimensions"
@@ -153,10 +160,12 @@ else
 fi
 
 
+export MCLXIOFORMAT=1
+
 
 if [[ ! -z $LEVELS ]]; then
    echo "-- cluster sizes resulting from simple thresholding with levels $LEVELS"
-   clm close -imx $rclfile -levels $LEVELS
+   clm close -imx $rclfile -levels $LEVELS | cut -b 1-100
 fi
 
    # From the tree, compute a balanced clustering according to a
@@ -176,15 +185,15 @@ if [[ ! -z $RESOLUTION ]]; then
    echo "-- computing balanced clusterings with resolution parameters $RESOLUTION"
    export MCLXIOVERBOSITY=2
    for r in $RESOLUTION; do
-      prefix="$rclfile.mix$r"
+      prefix="$pfx.res$r"
                             # this sort orders largest clusters first.
-      rcl-mix.pl $r $rclfile.join-order | sort -nr > $prefix.info
+      rcl-mix.pl $r $pfx.join-order | sort -nr > $prefix.info
       cut -f 3 $prefix.info | mcxload -235-ai - -o $prefix.cls
-      mcxdump -icl $prefix.cls -tabr $rclfile.tab -o $prefix.labels
-      mcxdump -imx $prefix.cls -tabr $rclfile.tab --no-values --transpose -o $prefix.txt
+      mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
+      mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
    done
    for r in $RESOLUTION; do
-      file="$rclfile.mix$r.cls"
+      file="$pfx.res$r.cls"
       printf "%-15s: " $file; echo $(mcx query -imx $file | cut -f 2 | tail -n +2 | head -n 15)
    done
    commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
@@ -193,11 +202,11 @@ cat <<EOM
 
 The following outputs were made.
 One cluster-per line files:
-   $(eval echo $rclfile.mix.{$commalist}.labels)
+   $(eval echo $pfx.res.{$commalist}.labels)
 LABEL<TAB>CLUSID files:
-   $(eval echo $rclfile.mix.{$commalist}.txt)
+   $(eval echo $pfx.res.{$commalist}.txt)
 mcl-edge matrix/cluster files:
-   $(eval echo $rclfile.mix.{$commalist}.cls)
+   $(eval echo $pfx.res.{$commalist}.cls)
 EOM
 
 fi

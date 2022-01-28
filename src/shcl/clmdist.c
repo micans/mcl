@@ -574,7 +574,7 @@ static mcxstatus distMain
 
       ;  if (mxrcl)
          {  mclxUnary(mxrcl, fltxScale, &factor)
-         ;  mclxaWrite(mxrcl, xfrcl, 6, RETURN_ON_FAIL)
+         ;  mclxWrite(mxrcl, xfrcl, 6, RETURN_ON_FAIL)
          ;  mcxIOclose(xfrcl)
       ;  }
       }

@@ -13,7 +13,7 @@ RESOLUTION=
 
 do_ucl=false
 
-while getopts :m:n:t:l:r:Uh opt
+while getopts :m:n:t:l:r:UhH opt
 do
     case "$opt" in
     m)
@@ -35,6 +35,28 @@ do
       do_ucl=true
       ;;
     h)
+      cat <<EOU
+1) compute the rcl object with
+      rcl.sh -n NAME -m <network> -t <tabfile> [-U] <LIST-OF-CLUSTER-FILE-NAMES>
+   NAME will be used as a prefix for various outputs; think of it as a project tag.
+
+2) derive resolution-based balanced clusterings from the rcl object.
+      rcl.sh -n NAME -r "N1 N2 N3 .."
+      e.g. -r "500 1000 1500 2000 2500"
+
+Options:
+-m  <file>   Input network/matrix file
+-t  <file>   Tab file with index - label mapping, format INDEX<TAB>LABEL
+-n  NAME     NAME will be used as prefix for various objects
+-U           Compute the Unrestricted Contingency Linkage object
+-l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
+-r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
+
+Use -H to output expanded help.
+EOU
+       exit
+      ;;
+    H)
       cat <<EOU | less
 Options described below. Below 'networks', 'clusterings' and 'matrix' are files
 in mcl matrix format. Networks can be loaded from label data with mcxload.  Use

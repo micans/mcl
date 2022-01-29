@@ -100,6 +100,7 @@ mclProcParam* mclProcParamNew
    ;  mpp->vec_attr        =  NULL
 
    ;  mpp->mainInflation   =  2
+   ;  mpp->suffix_i_dgt    =  0
    ;  mpp->mainLoopLength  =  10000
    ;  mpp->initInflation   =  2
    ;  mpp->initLoopLength  =  0

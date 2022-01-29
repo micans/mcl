@@ -52,7 +52,7 @@ Options:
 -l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
 
-Use -H to output expanded help.
+Use -H to output a slightly longer description.
 EOU
        exit
       ;;
@@ -189,8 +189,7 @@ else
       echo "Suggest removing $rclfile"
    fi
    if [[ -z $LEVELS && -z $RESOLUTION ]]; then
-      echo "Suggest using -l LOW/STEP/HIGH e.g. -l 200/50/700 (scale 0-1000)"
-      echo "or -r \"N1 N2 N3 ..\" to compute resolution clusters, e.g. -r \"500 1000 1500 2000 2500\""
+      echo "Suggest -n $pfx -r \"N1 N2 N3 ..\" to compute resolution clusters, e.g. -r \"500 1000 1500 2000 2500\""
    fi
 fi
 

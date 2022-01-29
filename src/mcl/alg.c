@@ -93,6 +93,7 @@ enum
 ,  ALG_OPT_SORT
 ,  ALG_OPT_UNCHECKED
 ,  ALG_OPT_DIGITS
+,  ALG_OPT_I3
 ,  ALG_OPT_SETENV
                         ,  ALG_OPT_BINARY
 ,  ALG_OPT_ABC          =  ALG_OPT_BINARY + 2
@@ -311,6 +312,12 @@ mcxOptAnchor mclAlgOptions[] =
    ,  ALG_OPT_SORT
    ,  "<mode>"
    ,  "order clustering by one of lex|size|revsize|none"
+   }
+,  {  "--i3"
+   ,  MCX_OPT_DEFAULT
+   ,  ALG_OPT_I3
+   ,  NULL
+   ,  "use three digits to encode inflation"
    }
 ,  {  "-q"
    ,  MCX_OPT_HASARG
@@ -908,7 +915,7 @@ static void make_output_name
    {  mcxTing* name = mcxTingEmpty(NULL, 40)
    ;  mclProcParam* mpp = mlp->mpp
 
-   ;  mcxTingPrintAfter(suf, "I%.1f", (double) mpp->mainInflation)
+   ;  mcxTingPrintAfter(suf, "I%.1f", (double) mpp->mainInflation * pow(10, mpp->suffix_i_dgt))
 
    ;  if (mpp->initLoopLength)
          mcxTingPrintAfter(suf, "l%d", (int) mpp->initLoopLength)
@@ -1204,6 +1211,11 @@ mcxstatus mclAlgorithmInit
          :  f = atof(opt->val)
          ;  mlp->degree_adjust_exp = atof(opt->val)
          ;  BIT_ON(mlp->modes, ALG_DO_DEGREE_ADJUST)
+         ;  break
+         ;
+
+            case ALG_OPT_I3
+         :  mpp->suffix_i_dgt = 1
          ;  break
          ;
 

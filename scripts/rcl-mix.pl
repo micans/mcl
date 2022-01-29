@@ -1,21 +1,32 @@
 #!/usr/bin/perl -an
 
-# Reads the output of clm close in --sl mode.
+# Only reads STDIN, which should be the output of clm close in --sl mode.
+# Requires a prefix for file output and a list of resolution sizes.
 #
-# Then proceeds to descend each node in the tree, as long as it finds two
-# independent components below the node that are both of size >= script-argument
-#
-# Use e.g. rcl-mix.pl 200 sl.join-order  | sort -nr | cut -f 2 | mcxload -235-ai - -o res200.cls
-# This will reverse sort on cluster size (larger clusters first).
+# For decreasing resolution sizes, descends each node in the tree, as long as it
+# finds two independent components below the node that are both of size >= resolution.
+# Once it cannot descend further for a given resolution size, it outputs the clustering,
+# then proceeds with the next resolution size.
+
+# Use e.g.
+#     rcl-mix.pl pfx 50 100 200 < sl.join-order
+#     mcxload -235-ai pfx50.clusters -o pfx50.cls
 
 
 use strict;
 use warnings;
 use List::Util qw(min max);
+use Scalar::Util qw(looks_like_number);
 
 
 BEGIN {
-  $::min = shift || die "Need min max";
+  $::prefix = shift || die "Need prefix for file names";
+  die "Need at least one resolution parameter\n" unless @ARGV; 
+  @::resolution = sort { $b <=> $a } @ARGV;
+  @ARGV = ();
+  for my $r (@::resolution) {
+     die "Resolution check: strange number $r\n" unless looks_like_number($r);
+  }
   %::nodes = ();
   %::cid2node = ();
   $::L=1;
@@ -79,6 +90,8 @@ my $node2 = $::cid2node{$n2};
    , nsg => $nsg
    } ;
 
+# print STDERR "$::nodes{$upname}{lss} $lss\n";
+
 $::cid2node{$n1} = $upname;
 $::cid2node{$n2} = $upname;
 
@@ -88,31 +101,43 @@ delete($::topoftree{$node2});
 $::topoftree{$upname} = 1;
 $::L++;
 
-local $" = ' ';
-
 
 END {
-  my @stack = ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree );
-  # my $nstack = @stack;
-  # print STDERR "---- $nstack connected components\n";
+  my @inputstack = ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree );
+  my @printstack = ();
 
-  while (@stack) {
-    my $name = pop @stack;
+  for my $res (@::resolution) {
 
-    my $size = $::nodes{$name}{size};
-    my @desc = @{$::nodes{$name}{csizes}};
-    my $ann  = $::nodes{$name}{ann};
-    my $bob  = $::nodes{$name}{bob};
-    my $nsg  = sprintf("%.3f", $::nodes{$name}{nsg} / $::nodes{$name}{size});
+    print STDERR "Processing resolution $res\n";
 
+    while (@inputstack) {
+
+      my $name = pop @inputstack;
+      my $ann  = $::nodes{$name}{ann};
+      my $bob  = $::nodes{$name}{bob};
+
+      if ($::nodes{$name}{lss} >= $res) {
+        push @inputstack, $ann;
+        push @inputstack, $bob;
+      }
+      else {
+        push @printstack, $name;
+      }
+    }
+
+    my $fname = "$::prefix.res$res.info";
+    open(OUT, ">$fname") || die "Cannot write to $fname";
     local $" = ' ';
-    if ($::nodes{$name}{lss} >= $::min) {
-      push @stack, $ann;
-      push @stack, $bob;
+
+    for my $name ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @printstack ) {
+      my $size = $::nodes{$name}{size};
+      my $nsg  = sprintf("%.3f", $::nodes{$name}{nsg} / $::nodes{$name}{size});
+      print OUT "$size\t$nsg\t@{$::nodes{$name}{items}}\n";
     }
-    else {
-      print "$size\t$nsg\t@{$::nodes{$name}{items}}\n";
-    }
+
+    close(OUT);
+    @inputstack = @printstack;
+    @printstack = ();
   }
 }
 

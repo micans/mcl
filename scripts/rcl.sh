@@ -128,7 +128,7 @@ fi
 if [[ ! -f $pfx.tab ]]; then
    if ! ln $tabfile $pfx.tab 2> /dev/null; then
      cp $tabfile $pfx.tab
-   else
+   fi
 fi
 
 
@@ -220,31 +220,35 @@ fi
 if [[ ! -z $RESOLUTION ]]; then
    echo "-- computing balanced clusterings with resolution parameters $RESOLUTION"
    export MCLXIOVERBOSITY=2
+
+   rcl-mix.pl $pfx $RESOLUTION < $pfx.join-order
+   echo "-- saving resolution cluster files and displaying size of the 20 largest clusters"
+
+                                       # To help space the granularity output.
+   export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution
+
    for r in $RESOLUTION; do
-      echo -n "$r .. "
+      rfile=$pfx.res$r.info
+      if [[ ! -f $rfile ]]; then
+         echo "Expected file $rfile not found"
+         false
+      fi
       prefix="$pfx.res$r"
-                            # this sort orders largest clusters first.
-      rcl-mix.pl $r $pfx.join-order | sort -nr > $prefix.info
-      cut -f 3 $prefix.info | mcxload -235-ai - -o $prefix.cls
+      cut -f 3 $rfile | mcxload -235-ai - -o $prefix.cls
       mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
       mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
-   done
-   echo "done"
-   for r in $RESOLUTION; do
-      file="$pfx.res$r.cls"
-      # printf "%-15s: " $file; echo $(mcx query -imx $file | cut -f 2 | tail -n +2 | head -n 15)
-      clxdo gra_largest 20 $file
+      clxdo gra_largest 20 $prefix.cls
    done
    commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
 
 cat <<EOM
 
 The following outputs were made.
-One cluster-per line files:
+One cluster-per line files with labels:
    $(eval echo $pfx.res.{$commalist}.labels)
 LABEL<TAB>CLUSID files:
    $(eval echo $pfx.res.{$commalist}.txt)
-mcl-edge matrix/cluster files:
+mcl-edge matrix/cluster files (suitable input e.g. for 'clm dist'):
    $(eval echo $pfx.res.{$commalist}.cls)
 EOM
 

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# RCL - Restricted Contingency Linkage - consensus clustering.
+# See github.com/micans/mcl
+
 set -euo pipefail
 
 matrixfile=
@@ -32,35 +35,46 @@ do
       do_ucl=true
       ;;
     h)
-      cat <<EOU
+      cat <<EOU | less
 Options described below. Below 'networks', 'clusterings' and 'matrix' are files
-in mcl matrix format. Use srt2cls.sh to convert seurat clusterings to mcl format.
+in mcl matrix format. Networks can be loaded from label data with mcxload.  Use
+srt2cls.sh to convert seurat clusterings to mcl format.  Both will need a label
+index 'tab' file, this can be created with srt2tab.sh.  Note that to maintain
+index correspondence with Seurat's 1-based indexing, srt2cls.sh and srt2tab.sh
+introduce a dummy node in the mcl representations for index 0.
+
 Suggested usage:
 1) compute the rcl object with
       rcl.sh -n NAME -m <network> -t <tab> [-U] <LIST-OF-CLUSTER-FILE-NAMES>
    NAME will be used as a prefix for various outputs; think of it as a project tag.
-   NAME is used in 2) and 3) to retrieve the right objects.
+   NAME is used in 2) to retrieve the right objects.
 
-2) gain an understanding of the dynamic range of the clusters present in the tree
+2) derive resolution-based balanced clusterings from the rcl object.
+      rcl.sh -n NAME -r "N1 N2 N3 .."
+      e.g. -r "500 1000 1500 2000 2500"
+   The largest clusters obtained will be above the resolution limit in that
+   there is no sub-split into smaller clusters at least that size.  Cluster
+   sizes can be below the resolution limit as such clusters may need to be
+   split off in order to allow another allowable split to happen.
+
+Optionally:
+3) Investigate in more detail the dynamic range of the clusters present in the tree
    encoded in the rcl object by computing cluster sizes of thresholded trees
       rcl.sh -n NAME -l <LOW/STEP/HIGH>
-   e.g. -l 200/100/600
+      e.g. -l 200/50/700
    Note that the edge weight range in the rcl objects is [0-1000].
-
-3) derive resolution-based balanced clusterings from the rcl object.
-
-      rcl.sh -n NAME -r "N1 N2 N3 .."
-
-   e.g. -r "500 1000 1500 2000 2500"
-   The largest clusters obtained will be roughly near the resolution in that
-   they cannot be split into smaller clusters at least that size.
+   From the output you may wish to zoom in
+      e.g. -l 450/10/550
+   if the cluster sizes in that range are what you are after.
+   To save a bunch of such clusterings, use e.g.
+      rcl.sh -n NAME -l 470/10/530/pfx
 
 Options:
 -m  <file>   Input network/matrix file
 -t  <file>   Tab file with index - label mapping, format INDEX<TAB>LABEL
 -n  NAME     NAME will be used as prefix for various objects
 -U           Compute the Unrestricted Contingency Linkage object
--l  LOW/STEP/HIGH    e.g. 200/100/600 to show threshold cluster sizes
+-l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
 EOU
       exit
@@ -74,7 +88,8 @@ done
 
 
 if [[ -z $pfx ]]; then
-   echo "Please specify -n NAME to tag this analysis"
+   echo "Please specify -n NAME to tag this analysis (see -h)"
+   false
 fi
 
 rclfile=$pfx.rcl
@@ -92,8 +107,6 @@ if [[ ! -f $pfx.tab ]]; then
    if ! ln $tabfile $pfx.tab 2> /dev/null; then
      cp $tabfile $pfx.tab
    else
-     echo "hard link"
-   fi
 fi
 
 
@@ -154,7 +167,7 @@ else
       echo "Suggest removing $rclfile"
    fi
    if [[ -z $LEVELS && -z $RESOLUTION ]]; then
-      echo "Suggest using -l LOW/STEP/HIGH e.g. -l 200/100/600 (scale 0-1000)"
+      echo "Suggest using -l LOW/STEP/HIGH e.g. -l 200/50/700 (scale 0-1000)"
       echo "or -r \"N1 N2 N3 ..\" to compute resolution clusters, e.g. -r \"500 1000 1500 2000 2500\""
    fi
 fi
@@ -165,6 +178,7 @@ export MCLXIOFORMAT=1
 
 if [[ ! -z $LEVELS ]]; then
    echo "-- cluster sizes resulting from simple thresholding with levels $LEVELS"
+   echo "-- (output may be truncated)"
    clm close -imx $rclfile -levels $LEVELS | cut -b 1-100
 fi
 
@@ -185,6 +199,7 @@ if [[ ! -z $RESOLUTION ]]; then
    echo "-- computing balanced clusterings with resolution parameters $RESOLUTION"
    export MCLXIOVERBOSITY=2
    for r in $RESOLUTION; do
+      echo -n "$r .. "
       prefix="$pfx.res$r"
                             # this sort orders largest clusters first.
       rcl-mix.pl $r $pfx.join-order | sort -nr > $prefix.info
@@ -192,9 +207,11 @@ if [[ ! -z $RESOLUTION ]]; then
       mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
       mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
    done
+   echo "done"
    for r in $RESOLUTION; do
       file="$pfx.res$r.cls"
-      printf "%-15s: " $file; echo $(mcx query -imx $file | cut -f 2 | tail -n +2 | head -n 15)
+      # printf "%-15s: " $file; echo $(mcx query -imx $file | cut -f 2 | tail -n +2 | head -n 15)
+      clxdo gra_largest 20 $file
    done
    commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
 

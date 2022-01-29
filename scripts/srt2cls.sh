@@ -34,7 +34,7 @@ dummyclsid="srtdummyclsid"
 mcxload --transpose --stream-split \
   -abc <(cat $fn; echo -e "dummy\t$dummyclsid") \
   -strict-tabc $nodetab \
-  -strict-tabr tmp.$fn.clstab \
+  -strict-tabr .tmp.$fn.clstab \
   -o $fn.cls
 
 rm .tmp.$fn.clstab

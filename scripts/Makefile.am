@@ -3,11 +3,11 @@
 
 include $(top_srcdir)/include/include.am
 
-this = minimcl docme mcxplotlines.R clsdiam.sh rcl-mix.pl
+this = minimcl docme mcxplotlines.R clsdiam.sh srt2cls.sh srt2tab.sh
 
 noinst_SCRIPTS = packed-example.sh packed-example2.sh
 
-dist_bin_SCRIPTS = clxdo
+dist_bin_SCRIPTS = clxdo rcl-mix.pl
 
 EXTRA_DIST = $(this) $(noinst_SCRIPTS)
 

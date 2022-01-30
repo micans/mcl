@@ -3,8 +3,8 @@
 set -euo pipefail
 
 UCL=""
-name=frcl
-if [[ ! -z ${MCLX_USEUCL+x} ]]; then UCL=-U; name=fucl; fi
+name=rcl
+if [[ ! -z ${MCLX_USEUCL+x} ]]; then UCL=-U; name=ucl; fi
 
 if [[ ! -f falkner.mci || ! -f falkner.tab ]]; then
    echo "Please copy graphs/falkner.mci and graphs/falkner.tab from the mcl source to here"

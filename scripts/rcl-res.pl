@@ -1,5 +1,7 @@
 #!/usr/bin/perl -an
 
+# Compute resolution-based clusterings from a single linkage tree (see below).
+#
 # Only reads STDIN, which should be the output of clm close in --sl mode.  That
 # output encodes the single-linkage join order of a tree.  The script further
 # requires a prefix for file output and a list of resolution sizes.

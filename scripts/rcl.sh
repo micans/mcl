@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RCL - Restricted Contingency Linkage - consensus clustering.
-# See github.com/micans/mcl
+# See github.com/micans/mcl and -h (or -H).
 
 set -euo pipefail
 
@@ -198,7 +198,7 @@ fi
 
 if [[ -z $LEVELS && -z $RESOLUTION ]]; then
   echo "-- suggest rcl.sh -n $pfx -r \"N1 N2 N3 ..\" to compute resolution clusters"
-  echo "-- e.g. rcl.sh -n $pfx -r \"400 800 1200 2000 3000\""
+  echo "-- e.g. rcl.sh -n $pfx -r \"500 1000 1500 2000 2500\""
   echo "-- vary N according to preference and data set size"
 fi
 

@@ -8,12 +8,15 @@
 #  GPL along with MCL, in the file COPYING.
 
 #  Add tab-completion to this script with
-#function _clxdo_complete()
-#{  local tag="${COMP_WORDS[1]}"
-#   COMPREPLY=( $(clxdo -h | cut -f 2 -d ' ' | grep "$tag") )
-#}
-#complete -F _clxdo_complete clxdo
-
+# function _clxdo_complete()
+# {  local tag="${COMP_WORDS[1]}"
+#    if [[ $COMP_CWORD == 1 ]]; then
+#      COMPREPLY=( $(clxdo -h | cut -f 2 -d ' ' | grep "$tag") )
+#    else
+#      COMPREPLY=( $(ls ${COMP_WORDS[-1]}*) )
+#    fi
+# }
+# complete -F _clxdo_complete clxdo
 
 
 mode=$1

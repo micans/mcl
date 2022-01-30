@@ -12,8 +12,9 @@ LEVELS=
 RESOLUTION=
 
 do_ucl=false
+do_gralog=false
 
-while getopts :m:n:t:l:r:UhH opt
+while getopts :m:n:t:l:r:UShH opt
 do
     case "$opt" in
     m)
@@ -31,26 +32,30 @@ do
     t)
       tabfile=$OPTARG
       ;;
+    S)
+      do_gralog=true
+      ;;
     U)
       do_ucl=true
       ;;
     h)
       cat <<EOU
 1) compute the rcl object with
-      rcl.sh -n NAME -m <network> -t <tabfile> [-U] <LIST-OF-CLUSTER-FILE-NAMES>
+      rcl.sh -n NAME -m <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
    NAME will be used as a prefix for various outputs; think of it as a project tag.
 
 2) derive resolution-based clusterings from the rcl object.
-      rcl.sh -n NAME -r "N1 N2 N3 .."
+      rcl.sh [-S] -n NAME -r "N1 N2 N3 .."
       e.g. -r "500 1000 1500 2000 2500"
 
 Options:
 -m  <file>   Input network/matrix file
 -t  <file>   Tab file with index - label mapping, format INDEX<TAB>LABEL
 -n  NAME     NAME will be used as prefix for various objects
--U           Compute the Unrestricted Contingency Linkage object
 -l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
+-S           Output cluster size distribution information (use in (2))
+-U           Compute the Unrestricted Contingency Linkage object (use in (1))
 
 Use -H to output a slightly longer description.
 EOU
@@ -67,7 +72,7 @@ introduce a dummy node in the mcl representations for index 0.
 
 Suggested usage:
 1) compute the rcl object with
-      rcl.sh -n NAME -m <network> -t <tab> [-U] <LIST-OF-CLUSTER-FILE-NAMES>
+      rcl.sh -n NAME -m <network> -t <tab> <LIST-OF-CLUSTER-FILE-NAMES>
    NAME will be used as a prefix for various outputs; think of it as a project tag.
    NAME is used in 2) to retrieve the right objects.
 
@@ -95,9 +100,10 @@ Options:
 -m  <file>   Input network/matrix file
 -t  <file>   Tab file with index - label mapping, format INDEX<TAB>LABEL
 -n  NAME     NAME will be used as prefix for various objects
--U           Compute the Unrestricted Contingency Linkage object
 -l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
+-S           Output cluster size distribution information (use in (2))
+-U           Compute the Unrestricted Contingency Linkage object (use in (1))
 EOU
       exit
       ;;
@@ -223,7 +229,7 @@ if [[ ! -z $RESOLUTION ]]; then
    rcl-mix.pl $pfx $RESOLUTION < $pfx.join-order
    echo "-- saving resolution cluster files"
    echo "-- displaying size of the 20 largest clusters"
-   echo "-- summarising cluster size distribution on a log scale"
+   if $do_gralog; then echo "-- summarising cluster size distribution on a log scale"; fi
 
                                        # To help space the granularity output.
    export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution
@@ -239,8 +245,7 @@ if [[ ! -z $RESOLUTION ]]; then
       mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
       mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
       clxdo grabig 20 $prefix.cls
-      clxdo gralog $prefix.cls
-      echo "()"
+      if $do_gralog; then clxdo gralog $prefix.cls; echo "()"; fi
    done
    commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
 

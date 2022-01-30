@@ -148,11 +148,11 @@ END {
   $line1 = "    ";
   $line1 .= sprintf("%4d", $_) for map { /(\S+)\s+(\S+)/; $2 } @pct;
   for (my $i=0; $i<1+@counts/2;$i++) {
-    $line2 .= '-' x 7 . $i;
+    $line2 .= '---:---' . $i;
   }
   $line1 .= ' ' x (length($line2) - length($line1));
   print "$line1  percentage of nodes in clusters\n";
-  print "$line2  of size <= 10^i\n";
+  print "$line2  of size <= 10^i and 10^(i+0.5)\n";
 }
 EOF
 )

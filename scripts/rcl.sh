@@ -49,8 +49,8 @@ do
       e.g. -r "500 1000 1500 2000 2500"
 
 Options:
--m  <file>   Input network/matrix file
--t  <file>   Tab file with index - label mapping, format INDEX<TAB>LABEL
+-m  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
+-t  <file>   Tab file with index - label mapping (obtain e.g. with mcxload)
 -n  NAME     NAME will be used as prefix for various objects
 -l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
@@ -97,8 +97,8 @@ Optionally:
       rcl.sh -n NAME -l 470/10/530/pfx
 
 Options:
--m  <file>   Input network/matrix file
--t  <file>   Tab file with index - label mapping, format INDEX<TAB>LABEL
+-m  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
+-t  <file>   Tab file with index - label mapping (obtain e.g. with mcxload)
 -n  NAME     NAME will be used as prefix for various objects
 -l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings

@@ -4,10 +4,11 @@
 # output encodes the single-linkage join order of a tree.  The script further
 # requires a prefix for file output and a list of resolution sizes.
 #
-# A cluster for a given resolution size R is either at least of size R and
-# has no sub-split in the tree into two components each of size at least R,
-# or it is smaller than R and was split off in order to allow another
-# such split to happen.
+# A cluster for a given resolution size R corresponds to a node in the tree
+# where the cluster is all associated leaf nodes below. This cluster is either
+# at least of size R and has no sub-split in the tree into two components each
+# of size at least R, or it is smaller than R and was split off in order to
+# allow another such split to happen elsewhere.
 #
 # For decreasing resolution sizes, the code descends each node in the tree, as
 # long as it finds two independent components below the node that are both of

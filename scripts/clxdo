@@ -136,19 +136,17 @@ for mx in $@; do
    | perl -ane 'print (@F-1); print "\n";' \
    | sort -n | perl -an <(cat <<'EOF'
 BEGIN { @counts = (); $sum = 0; }
-chomp; my $index = int(0.1 + log($_)/log(10**0.5));
+chomp; my $index = int(0.99 + log($_)/log(10**0.5));
 $counts[$index] += $_; $sum += $_;
 END {
   my @pct = ();
+  my $line1 = "    ";
   for (my $i=0; $i<@counts; $i++) {
-    my $t = 10**(0.5*$i);
     $psum += $counts[$i];
-    push @pct, sprintf("%6.0f %3.0f\n", $t, 100.0 * $psum / $sum);
+    $line1 .= sprintf("%4.0f", 100.0 * $psum / $sum);
   }
-  $line1 = "    ";
-  $line1 .= sprintf("%4d", $_) for map { /(\S+)\s+(\S+)/; $2 } @pct;
   for (my $i=0; $i<1+@counts/2;$i++) {
-    $line2 .= '---:---' . $i;
+    $line2 .= '-------' . $i;
   }
   $line1 .= ' ' x (length($line2) - length($line1));
   print "$line1  percentage of nodes in clusters\n";

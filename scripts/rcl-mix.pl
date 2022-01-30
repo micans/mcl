@@ -21,19 +21,21 @@ use Scalar::Util qw(looks_like_number);
 
 BEGIN {
   $::prefix = shift || die "Need prefix for file names";
-  die "Need at least one resolution parameter\n" unless @ARGV; 
-  @::resolution = sort { $b <=> $a } @ARGV;
-  @ARGV = ();
-  for my $r (@::resolution) {
+  die "Need at least one resolution parameter\n" unless @ARGV;
+  for my $r (@ARGV) {
      die "Resolution check: strange number $r\n" unless looks_like_number($r);
   }
+  @::resolution = sort { $b <=> $a } @ARGV;
+  @ARGV = ();
   %::nodes = ();
   %::cid2node = ();
   $::L=1;
   %::topoftree = ();
+  print STDERR "-- constructing tree ..\n";
 }
 next if $. == 1;
 my ($i, $x, $y, $xid, $yid, $val, $xcid, $ycid, $xcsz, $ycsz, $xycsz, $nedge, $ctr, $lss, $nsg) = @F;
+print STDERR '.' if $. % 1000 == 1;
 
 
 my ($n1, $n2) = ($xcid, $ycid);
@@ -68,8 +70,8 @@ if ($ycsz == 1) {
   } ;
 }
 
-my $node1 = $::cid2node{$n1};
-my $node2 = $::cid2node{$n2};
+my $node1 = $::cid2node{$n1};     # n1 n2 are xcid ycid; these were assigned and updated
+my $node2 = $::cid2node{$n2};     # along join order for descendant nodes by clm close.
 
 
 # Keep track of the maximum size of the smaller of any pair of nodes below the current node that are
@@ -90,7 +92,8 @@ my $node2 = $::cid2node{$n2};
    , nsg => $nsg
    } ;
 
-# print STDERR "$::nodes{$upname}{lss} $lss\n";
+# clm close outputs a line with n1 == n2 for all singleton nodes.
+print STDERR "LSS error check failed ($n1 $n2)\n" if $::nodes{$upname}{lss} != $lss && $n1 ne $n2;
 
 $::cid2node{$n1} = $upname;
 $::cid2node{$n2} = $upname;
@@ -103,6 +106,7 @@ $::L++;
 
 
 END {
+  print STDERR "\n";
   my @inputstack = ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree );
   my @printstack = ();
 

@@ -40,7 +40,7 @@ do
       rcl.sh -n NAME -m <network> -t <tabfile> [-U] <LIST-OF-CLUSTER-FILE-NAMES>
    NAME will be used as a prefix for various outputs; think of it as a project tag.
 
-2) derive resolution-based balanced clusterings from the rcl object.
+2) derive resolution-based clusterings from the rcl object.
       rcl.sh -n NAME -r "N1 N2 N3 .."
       e.g. -r "500 1000 1500 2000 2500"
 
@@ -71,7 +71,7 @@ Suggested usage:
    NAME will be used as a prefix for various outputs; think of it as a project tag.
    NAME is used in 2) to retrieve the right objects.
 
-2) derive resolution-based balanced clusterings from the rcl object.
+2) derive resolution-based clusterings from the rcl object.
       rcl.sh -n NAME -r "N1 N2 N3 .."
       e.g. -r "500 1000 1500 2000 2500"
    The largest clusters obtained will be above the resolution limit in that
@@ -217,11 +217,13 @@ fi
    #
 
 if [[ ! -z $RESOLUTION ]]; then
-   echo "-- computing balanced clusterings with resolution parameters $RESOLUTION"
+   echo "-- computing clusterings with resolution parameters $RESOLUTION"
    export MCLXIOVERBOSITY=2
 
    rcl-mix.pl $pfx $RESOLUTION < $pfx.join-order
-   echo "-- saving resolution cluster files and displaying size of the 20 largest clusters"
+   echo "-- saving resolution cluster files"
+   echo "-- displaying size of the 20 largest clusters"
+   echo "-- summarising cluster size distribution on a log scale"
 
                                        # To help space the granularity output.
    export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution
@@ -236,7 +238,9 @@ if [[ ! -z $RESOLUTION ]]; then
       cut -f 3 $rfile | mcxload -235-ai - -o $prefix.cls
       mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
       mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
-      clxdo gra_largest 20 $prefix.cls
+      clxdo grabig 20 $prefix.cls
+      clxdo gralog $prefix.cls
+      echo "()"
    done
    commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
 
@@ -244,11 +248,11 @@ cat <<EOM
 
 The following outputs were made.
 One cluster-per line files with labels:
-   $(eval echo $pfx.res.{$commalist}.labels)
+   $(eval echo $pfx.res{$commalist}.labels)
 LABEL<TAB>CLUSID files:
-   $(eval echo $pfx.res.{$commalist}.txt)
+   $(eval echo $pfx.res{$commalist}.txt)
 mcl-edge matrix/cluster files (suitable input e.g. for 'clm dist'):
-   $(eval echo $pfx.res.{$commalist}.cls)
+   $(eval echo $pfx.res{$commalist}.cls)
 EOM
 
 fi

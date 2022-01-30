@@ -1,12 +1,19 @@
 #!/usr/bin/perl -an
 
-# Only reads STDIN, which should be the output of clm close in --sl mode.
-# Requires a prefix for file output and a list of resolution sizes.
+# Only reads STDIN, which should be the output of clm close in --sl mode.  That
+# output encodes the single-linkage join order of a tree.  The script further
+# requires a prefix for file output and a list of resolution sizes.
 #
-# For decreasing resolution sizes, descends each node in the tree, as long as it
-# finds two independent components below the node that are both of size >= resolution.
-# Once it cannot descend further for a given resolution size, it outputs the clustering,
-# then proceeds with the next resolution size.
+# A cluster for a given resolution size R is either at least of size R and
+# has no sub-split in the tree into two components each of size at least R,
+# or it is smaller than R and was split off in order to allow another
+# such split to happen.
+#
+# For decreasing resolution sizes, the code descends each node in the tree, as
+# long as it finds two independent components below the node that are both of
+# size >= resolution.  For each resolution size the internal nodes that encode
+# the clustering for that resolution are marked.  After this stage, the
+# clusterings for the different resolutions are output.
 
 # rcl.sh incorporates rcl-res.pl, see there for comprehensive usage example.
 # Use e.g.
@@ -157,7 +164,7 @@ END {
     for my $name ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @$clsstack ) {
 
       my $size = $::nodes{$name}{size};
-      my @nodestack = $name;
+      my @nodestack = ( $name );
       my @items = ();
       while (@nodestack) {
         my $nodename = pop(@nodestack);
@@ -168,6 +175,7 @@ END {
           push @nodestack, ($::nodes{$nodename}{ann}, $::nodes{$nodename}{bob});
         }
       }
+      @items = sort { $a <=> $b } @items;
       $::nodes{$name}{items} = \@items unless defined($::nodes{$name}{items});
 
       my $nitems = @items;

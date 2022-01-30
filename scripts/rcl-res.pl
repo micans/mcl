@@ -150,7 +150,7 @@ END {
     @clusterstack = ();
   }
 
-  print STDERR "\n-- collecting clusters for resolution";
+  print STDERR "\n-- collecting clusters  for resolution";
     # when collecting items, proceed from fine-grained to coarser clusterings,
     # so with low resolution first.
     #

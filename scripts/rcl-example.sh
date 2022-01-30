@@ -30,7 +30,7 @@ for i in 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.5 3.0 4.0 5.0 6.0; do
 done
 echo "Clustering done ($cached cached)"
 
-rcl.sh $UCL -m falkner.mci -t falkner.tab -n $name out.falkner.mci*
+rcl.sh -n $name $UCL -m falkner.mci -t falkner.tab out.falkner.mci*
 
 rcl.sh -n $name -l 200/100/600
 

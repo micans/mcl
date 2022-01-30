@@ -7,7 +7,7 @@ this = minimcl docme mcxplotlines.R clsdiam.sh srt2cls.sh srt2tab.sh
 
 noinst_SCRIPTS = packed-example.sh packed-example2.sh
 
-dist_bin_SCRIPTS = clxdo rcl-mix.pl rcl.sh
+dist_bin_SCRIPTS = clxdo rcl-res.pl rcl.sh
 
 EXTRA_DIST = $(this) $(noinst_SCRIPTS)
 

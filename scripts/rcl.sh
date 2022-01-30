@@ -45,7 +45,7 @@ do
    NAME will be used as a prefix for various outputs; think of it as a project tag.
 
 2) derive resolution-based clusterings from the rcl object.
-      rcl.sh [-S] -n NAME -r "N1 N2 N3 .."
+      rcl.sh -n NAME [-S] -r "N1 N2 N3 .."
       e.g. -r "500 1000 1500 2000 2500"
 
 Options:
@@ -77,7 +77,7 @@ Suggested usage:
    NAME is used in 2) to retrieve the right objects.
 
 2) derive resolution-based clusterings from the rcl object.
-      rcl.sh -n NAME -r "N1 N2 N3 .."
+      rcl.sh -n NAME [-S] -r "N1 N2 N3 .."
       e.g. -r "500 1000 1500 2000 2500"
    The largest clusters obtained will be above the resolution limit in that
    there is no sub-split into smaller clusters at least that size.  Cluster
@@ -226,7 +226,7 @@ if [[ ! -z $RESOLUTION ]]; then
    echo "-- computing clusterings with resolution parameters $RESOLUTION"
    export MCLXIOVERBOSITY=2
 
-   rcl-mix.pl $pfx $RESOLUTION < $pfx.join-order
+   rcl-res.pl $pfx $RESOLUTION < $pfx.join-order
    echo "-- saving resolution cluster files"
    echo "-- displaying size of the 20 largest clusters"
    if $do_gralog; then echo "-- summarising cluster size distribution on a log scale"; fi

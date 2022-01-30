@@ -8,8 +8,9 @@
 # Once it cannot descend further for a given resolution size, it outputs the clustering,
 # then proceeds with the next resolution size.
 
+# rcl.sh incorporates rcl-res.pl, see there for comprehensive usage example.
 # Use e.g.
-#     rcl-mix.pl pfx 50 100 200 < sl.join-order
+#     rcl-res.pl pfx 50 100 200 < sl.join-order
 #     mcxload -235-ai pfx50.clusters -o pfx50.cls
 
 

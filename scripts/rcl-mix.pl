@@ -25,7 +25,7 @@ BEGIN {
   for my $r (@ARGV) {
      die "Resolution check: strange number $r\n" unless looks_like_number($r);
   }
-  @::resolution = sort { $b <=> $a } @ARGV;
+  @::resolution = sort { $a <=> $b } @ARGV;
   @ARGV = ();
   %::nodes = ();
   %::cid2node = ();
@@ -84,7 +84,6 @@ my $node2 = $::cid2node{$n2};     # along join order for descendant nodes by clm
    {   name  => $upname
    ,   parent => undef
    ,   size  => $::nodes{$node1}{size} + $::nodes{$node2}{size}
-   ,   items => [ @{$::nodes{$node1}{items}}, @{$::nodes{$node2}{items}} ]
    ,    ann  => $node1
    ,    bob  => $node2
    ,  csizes => [ $::nodes{$node1}{size}, $::nodes{$node2}{size}]
@@ -106,13 +105,19 @@ $::L++;
 
 
 END {
-  print STDERR "\n";
+  print STDERR "\n" if $. >= 1000;
   my @inputstack = ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree );
-  my @printstack = ();
+  my @clusterstack = ();
+  my %resolutionstack = ();
 
-  for my $res (@::resolution) {
-
-    print STDERR "Processing resolution $res\n";
+  print STDERR "-- computing tree nodes for resolution";
+    # Start from top of tree(s), so we find the larger-size-resolution nodes
+    # first.  inputstack is a set of nodes for which we know that they are
+    # higher (or equal) in the tree relative to the nodes that answer our
+    # resolution request.  At a resolution step, we can use the answer obtained
+    # for the previous step as the new inputstack.
+    #
+  for my $res (sort { $b <=> $a } @::resolution) { print STDERR " .. $res";
 
     while (@inputstack) {
 
@@ -125,24 +130,54 @@ END {
         push @inputstack, $bob;
       }
       else {
-        push @printstack, $name;
+        push @clusterstack, $name;
       }
     }
 
+      # make copy, as we re-use clusterstack as inputstack.
+      #
+    $resolutionstack{$res} = [ @clusterstack ];
+    @inputstack = @clusterstack;
+    @clusterstack = ();
+  }
+
+  print STDERR "\n-- collecting clusters for resolution";
+    # when collecting items, proceed from fine-grained to coarser clusterings,
+    # so with low resolution first.
+    #
+  for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
+
+    my $clsstack = $resolutionstack{$res};
+
+    local $" = ' ';
     my $fname = "$::prefix.res$res.info";
     open(OUT, ">$fname") || die "Cannot write to $fname";
-    local $" = ' ';
 
-    for my $name ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @printstack ) {
+    for my $name ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @$clsstack ) {
+
       my $size = $::nodes{$name}{size};
-      my $nsg  = sprintf("%.3f", $::nodes{$name}{nsg} / $::nodes{$name}{size});
-      print OUT "$size\t$nsg\t@{$::nodes{$name}{items}}\n";
-    }
+      my @nodestack = $name;
+      my @items = ();
+      while (@nodestack) {
+        my $nodename = pop(@nodestack);
+        if (defined($::nodes{$nodename}{items})) {
+          push @items, @{$::nodes{$nodename}{items}};
+        }
+        else {
+          push @nodestack, ($::nodes{$nodename}{ann}, $::nodes{$nodename}{bob});
+        }
+      }
+      $::nodes{$name}{items} = \@items unless defined($::nodes{$name}{items});
 
+      my $nitems = @items;
+      print STDERR "Error res $res size difference $size / $nitems\n" unless $nitems == $size;
+
+      my $nsg  = sprintf("%.3f", $::nodes{$name}{nsg} / $::nodes{$name}{size});
+      print OUT "$size\t$nsg\t@items\n";
+    }
     close(OUT);
-    @inputstack = @printstack;
-    @printstack = ();
   }
+  print STDERR "\n";
 }
 
 

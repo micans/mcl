@@ -12,6 +12,8 @@
       practice has stopped. The mcl source tree contains a script that
       will download both cimfomfa and mcl tar archives and compile both.
 
+   *  Various modes and programs were removed in a clean-up.
+
    *  Fixed bug in mcxarray in the case of NAs in data. The wrong N was used.
       Additionally in the presence of NAs the spearman correlation coefficient
       uses the ranks from the vectors pre-removal of the join NA set. There is
@@ -24,6 +26,27 @@
    *  Fixed bug in mcxload -etc / -235 and derived options, where --stream-mirror
       would cause a crash.  Achieve the intended effect e.g. with '-ri max'
       instead.
+
+   *  clm vol can compute an rcl (Restricted Contigency Linkage) object,
+      encoding consensus clustering values.
+
+   *  clm close can compute the single linkage tree of a network with --sl.
+      The output is an ordered list of join events that represent the tree.
+      Main intended use is to apply it to the rcl object described just above.
+
+   *  rcl-res.pl is a script that reads a single linkage tree from the
+      clm close join order output in --sl mode. It accepts resolution parameters
+      as argument and will compute balanced flat clusterings from the tree
+      that are adjacent in cluster size to the resolutions specified.
+
+   *  rcl.sh implements the full RCL - Restricted Contingency Linkage -
+      method of consensus clustering, using clm vol, clm close, and rcl-res.pl
+
+   *  The volatility measure reported by clm vol has had its scale reversed
+      to be compatible with rcl scores.
+      Low values are the more volatile. Output values are in promilles, a scale
+      of 0-1000, where 1000 means a node is always consistently clustered across
+      all clusterings considered.
 
    *  Added --degree-adjust option to mcl; this adjusts edge weight A(i,j)
       inversely proportional to deg(i)+deg(j), i.e. it decreases similarity

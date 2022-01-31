@@ -11,6 +11,7 @@ Makefile
 *.gz
 *.html
 Makefile.in
+aclocal.m4
 /config*
 /doc/stamp.*
 /slate
@@ -29,6 +30,7 @@ Makefile.in
 /src/shmx/mcxminusmeet
 /src/shmx/mcxmm
 /src/shmx/mcxmetric
+/src/impala/version.c
 /src/shmcl/mcl
 /src/shmcl/mclcm
 /src/shcl/mclgrep

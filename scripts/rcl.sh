@@ -230,10 +230,14 @@ if [[ ! -z $RESOLUTION ]]; then
    rcl-res.pl $pfx $RESOLUTION < $pfx.join-order
    echo "-- saving resolution cluster files"
    echo "-- displaying size of the 20 largest clusters"
-   if $do_gralog; then echo "-- summarising cluster size distribution on a log scale"; fi
-
+   if $do_gralog; then echo "-- summarising cluster size distribution on a log scale";
+   else                echo "-- (use in addition to these parameters -S for size distribution summary)"; fi
+   echo "-- in parentheses N identical clusters with prev level among 30 largest clusters"
                                        # To help space the granularity output.
    export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution
+
+   res_prev=""
+   file_prev=""
 
    for r in $RESOLUTION; do
       rfile=$pfx.res$r.info
@@ -245,8 +249,15 @@ if [[ ! -z $RESOLUTION ]]; then
       cut -f 4 $rfile | mcxload -235-ai - -o $prefix.cls
       mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
       mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
+      nshared="--"
+      if [[ -n $res_prev ]]; then
+         nshared=$(grep -Fcwf <(head -n 30 $rfile | cut -f 1) <(head -n 30 $file_prev | cut -f  1))
+      fi
+      export CLXDO_GRABIG_TAG="($(printf "%2s" $nshared)) "
       clxdo grabig 20 $prefix.cls
       if $do_gralog; then clxdo gralog $prefix.cls; echo "()"; fi
+      res_prev=$r
+      file_prev=$rfile
    done
    commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
 
@@ -257,7 +268,7 @@ One cluster-per line files with labels:
    $(eval echo $pfx.res{$commalist}.labels)
 LABEL<TAB>CLUSID files:
    $(eval echo $pfx.res{$commalist}.txt)
-mcl-edge matrix/cluster files (suitable input e.g. for 'clm dist'):
+mcl-edge matrix/cluster files (suitable input e.g. for 'clm dist' and others):
    $(eval echo $pfx.res{$commalist}.cls)
 EOM
 

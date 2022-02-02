@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#  (C) Copyright 2005-2021 Stijn van Dongen
+#  (C) Copyright 2005-2022 Stijn van Dongen
 #
 #  This file is part of MCL.  You can redistribute and/or modify MCL under the
 #  terms of the GNU General Public License; either version 3 of the License or
@@ -106,7 +106,10 @@ done
 ((width+=2))
 thewidth=${CLXDO_WIDTH-$width}
 for mx in $@; do
-   printf %-$thewidth''s' ' $mx
+   printf %-$thewidth''s $mx
+   if [[ -n ${CLXDO_GRABIG_TAG-""} ]]; then
+     printf "$CLXDO_GRABIG_TAG"
+   fi
      mcxdump -imx $mx --no-values --dump-lines -o - \
    | perl -ane 'print (@F-1); print "\n";' \
    | sort -nr | head -n $CLXDO_VAL1 | sort -rn | tr '\n' ' '

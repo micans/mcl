@@ -193,7 +193,7 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
     print STDERR "Error res $res size difference $size / $nitems\n" unless $nitems == $size;
  
     my $nsg  = sprintf("%.3f", $::nodes{$name}{nsg} / $::nodes{$name}{size});
-    print OUT "$size\t$nsg\t@items\n";
+    print OUT "$name\t$size\t$nsg\t@items\n";
   }
   close(OUT);
 }

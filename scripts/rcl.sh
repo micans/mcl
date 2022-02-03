@@ -228,11 +228,11 @@ if [[ ! -z $RESOLUTION ]]; then
    export MCLXIOVERBOSITY=2
 
    rcl-res.pl $pfx $RESOLUTION < $pfx.join-order
-   echo "-- saving resolution cluster files"
+   echo "-- saving resolution cluster files and"
    echo "-- displaying size of the 20 largest clusters"
    if $do_gralog; then echo "-- summarising cluster size distribution on a log scale";
    else                echo "-- (use in addition to these parameters -S for size distribution summary)"; fi
-   echo "-- in parentheses N identical clusters with prev level among 30 largest clusters"
+   echo "-- in parentheses N identical clusters with previous level among 30 largest clusters"
                                        # To help space the granularity output.
    export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution
 
@@ -251,7 +251,7 @@ if [[ ! -z $RESOLUTION ]]; then
       mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
       nshared="--"
       if [[ -n $res_prev ]]; then
-         nshared=$(grep -Fcwf <(head -n 30 $rfile | cut -f 1) <(head -n 30 $file_prev | cut -f  1))
+         nshared=$(grep -Fcwf <(head -n 30 $rfile | cut -f 1) <(head -n 30 $file_prev | cut -f  1) || true)
       fi
       export CLXDO_GRABIG_TAG="($(printf "%2s" $nshared)) "
       clxdo grabig 20 $prefix.cls

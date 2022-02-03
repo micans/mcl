@@ -34,7 +34,7 @@ for my $r (@ARGV) {
 }
 @::resolution = sort { $a <=> $b } @ARGV;
 $::reslimit = $::resolution[0];
-$::resdisplaylimit = defined($ENV{RCL_RES_DISPLAY_LIMIT}) ? $ENV{RCL_RES_DISPLAY_LIMIT} : $::resolution[0];
+$::resdisplaylimit = defined($ENV{RCL_RES_PLOT_LIMIT}) ? $ENV{RCL_RES_PLOT_LIMIT} : $::resolution[0];
 
 @ARGV = ();
 %::nodes = ();

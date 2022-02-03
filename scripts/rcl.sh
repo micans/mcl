@@ -13,8 +13,9 @@ RESOLUTION=
 
 do_ucl=false
 do_gralog=false
+do_force=false
 
-while getopts :m:n:t:l:r:UShH opt
+while getopts :m:n:t:l:r:UShFH opt
 do
     case "$opt" in
     m)
@@ -31,6 +32,9 @@ do
       ;;
     t)
       tabfile=$OPTARG
+      ;;
+    F)
+      do_force=true
       ;;
     S)
       do_gralog=true
@@ -138,7 +142,7 @@ if [[ ! -f $pfx.tab ]]; then
 fi
 
 
-if [[ ! -f $rclfile ]]; then
+if $do_force || [[ ! -f $rclfile ]]; then
 
    export MCLXIOFORMAT=8
 
@@ -225,9 +229,12 @@ fi
 
 if [[ ! -z $RESOLUTION ]]; then
    echo "-- computing clusterings with resolution parameters $RESOLUTION"
+
    export MCLXIOVERBOSITY=2
+   export RCL_RES_PLOT_LIMIT=${RCL_RES_PLOT_LIMIT-500}
 
    rcl-res.pl $pfx $RESOLUTION < $pfx.join-order
+
    echo "-- saving resolution cluster files and"
    echo "-- displaying size of the 20 largest clusters"
    if $do_gralog; then echo "-- summarising cluster size distribution on a log scale";
@@ -260,6 +267,14 @@ if [[ ! -z $RESOLUTION ]]; then
       file_prev=$rfile
    done
    commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
+
+   if [[ -f $pfx.digraph ]]; then
+      if ! dot -Tpng <  $pfx.digraph  > $pfx.cls.png; then
+        echo "-- Attempt to visualise hierachy with dot failed"
+      else
+        echo "-- Hierarchy visualised in $pfx.cls.png with display limit $RCL_RES_PLOT_LIMIT"
+      fi
+   fi
 
 cat <<EOM
 

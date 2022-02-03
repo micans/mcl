@@ -33,6 +33,9 @@ for my $r (@ARGV) {
   die "Resolution check: strange number $r\n" unless looks_like_number($r);
 }
 @::resolution = sort { $a <=> $b } @ARGV;
+$::reslimit = $::resolution[0];
+$::resdisplaylimit = defined($ENV{RCL_RES_DISPLAY_LIMIT}) ? $ENV{RCL_RES_DISPLAY_LIMIT} : $::resolution[0];
+
 @ARGV = ();
 %::nodes = ();
 %::cid2node = ();
@@ -57,15 +60,15 @@ while (<>) {
       && looks_like_number($lss) && looks_like_number($nsg);
    print STDERR '.' if $. % 1000 == 1;
 
-   my ($n1, $n2) = ($xcid, $ycid);
-   ($n1, $n2)    = ($ycid, $xcid) if $ycid < $xcid;
+   my ($id1, $id2) = ($xcid, $ycid);
+   ($id1, $id2)    = ($ycid, $xcid) if $ycid < $xcid;
 
-   my $upname    = "L$::L.$n1";
+   my $upname    = "L$::L" . "_$id1" . "_$xycsz";
 
    if ($xcsz == 1) {
-     $::cid2node{$xcid} = "L0.$xcid";
-     $::nodes{"L0.$xcid"} =
-     {    name => "L0.$xcid"
+     $::cid2node{$xcid} = "L0_$xcid";
+     $::nodes{"L0_$xcid"} =
+     {    name => "L0_$xcid"
      ,    size =>  1
      ,   items => [ $xid ]
      ,     ann => ""
@@ -76,8 +79,8 @@ while (<>) {
      } ;
    }
    if ($ycsz == 1) {
-     $::cid2node{$ycid} = "L0.$ycid";
-     $::nodes{"L0.$ycid"} =
+     $::cid2node{$ycid} = "L0_$ycid";
+     $::nodes{"L0_$ycid"} =
      {    name => "L0.$ycid"
      ,    size =>  1
      ,   items => [ $yid ]
@@ -89,8 +92,8 @@ while (<>) {
      } ;
    }
 
-   my $node1 = $::cid2node{$n1};     # n1 n2 are xcid ycid; these were assigned and updated
-   my $node2 = $::cid2node{$n2};     # along join order for descendant nodes by clm close.
+   my $node1 = $::cid2node{$id1};     # id1 id2 are xcid ycid; these were assigned and updated
+   my $node2 = $::cid2node{$id2};     # along join order for descendant nodes by clm close.
 
 
    # Keep track of the maximum size of the smaller of any pair of nodes below the current node that are
@@ -110,11 +113,11 @@ while (<>) {
       , nsg => $nsg
       } ;
 
-   # clm close outputs a line with n1 == n2 for all singleton nodes.
-   print STDERR "LSS error check failed ($n1 $n2)\n" if $::nodes{$upname}{lss} != $lss && $n1 ne $n2;
+   # clm close outputs a line with id1 == id2 for all singleton nodes.
+   print STDERR "LSS error check failed ($id1 $id2)\n" if $::nodes{$upname}{lss} != $lss && $id1 ne $id2;
 
-   $::cid2node{$n1} = $upname;
-   $::cid2node{$n2} = $upname;
+   $::cid2node{$id1} = $upname;
+   $::cid2node{$id2} = $upname;
 
    delete($::topoftree{$node1});
    delete($::topoftree{$node2});
@@ -164,6 +167,9 @@ print STDERR "\n-- collecting clusters for resolution";
  # when collecting items, proceed from fine-grained to coarser clusterings,
  # so with low resolution first.
  #
+my %digraph = ();   # collect links for dot plot
+my %digraph_printname = ();
+
 for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
 
   my $clsstack = $resolutionstack{$res};
@@ -181,6 +187,9 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
       my $nodename = pop(@nodestack);
       if (defined($::nodes{$nodename}{items})) {
         push @items, @{$::nodes{$nodename}{items}};
+        if ($nodename ne $name && $::nodes{$nodename}{size} >= $::reslimit) {
+          $digraph{$name}{$nodename} = 1;
+        }
       }
       else {
         push @nodestack, ($::nodes{$nodename}{ann}, $::nodes{$nodename}{bob});
@@ -188,6 +197,7 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
     }
     @items = sort { $a <=> $b } @items;
     $::nodes{$name}{items} = \@items unless defined($::nodes{$name}{items});
+    $digraph_printname{$name} = "$size" if $size >= $::resdisplaylimit;
  
     my $nitems = @items;
     print STDERR "Error res $res size difference $size / $nitems\n" unless $nitems == $size;
@@ -197,6 +207,31 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
   }
   close(OUT);
 }
+
+open(DIGRAPH, ">$::prefix.digraph") || die "Cannot open $::prefix.digraph for writing";
+print DIGRAPH <<EOT;
+digraph g {
+  forcelabels = true;
+EOT
+
+for my $n (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_printname ) {
+  my $size = $::nodes{$n}{size};
+  my $sum  = 0;
+  my $missing = "0";
+  if (defined($digraph{$n})) {
+    $sum += $::nodes{$_}{size} for keys %{$digraph{$n}};
+    $missing = sprintf("%d", 100 * ($size - $sum) / $size);
+  }
+  print DIGRAPH qq{  $n [label="$digraph_printname{$n}", xlabel="[$missing]"];\n};
+}
+for my $n1 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_printname ) {
+  for my $n2 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$digraph{$n1}} ) {
+    print DIGRAPH "  $n1 -> $n2;\n" if $::nodes{$n2}{size} >= $::resdisplaylimit;
+  }
+}
+print DIGRAPH "}\n";
+close(DIGRAPH);
+
 print STDERR "\n";
 
 

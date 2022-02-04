@@ -14,7 +14,10 @@
 # long as it finds two independent components below the node that are both of
 # size >= resolution.  For each resolution size the internal nodes that encode
 # the clustering for that resolution are marked.  After this stage, the
-# clusterings for the different resolutions are output.
+# clusterings for the different resolutions are output, going back up the tree
+# from small resolution / fine-grained clusters to larger resolution /
+# coarse-grained clusters, and merging or copying clusters from the previous
+# stage.
 
 # rcl.sh incorporates rcl-res.pl, see there for comprehensive usage example.
 # Use e.g.
@@ -240,5 +243,4 @@ print DIGRAPH "}\n";
 close(DIGRAPH);
 
 print STDERR "\n";
-
 

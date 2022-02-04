@@ -1,7 +1,17 @@
 #!/bin/bash
 
-# RCL - Restricted Contingency Linkage - consensus clustering.
-# See github.com/micans/mcl and -h (or -H).
+#    _ _  __|_ _. __|_ _  _|   _ _  _ _|_. _  _  _  _    |. _ |  _  _  _
+#   | (/__\ | | |(_ | (/_(_|  (_(_)| | | |(_|(/_| |(_\/  ||| ||<(_|(_|(/_
+#  _ _  _  _ _  _  _    _  |_ . _  _ _  ___|| . _ _ |/  _|    __|_ __|_. _  _
+# (_(_)| |_\(/_| |_\|_|_\  | ||(/_| (_|| (_| ||(_(_||  (_||_|_\ | (/_| || |(_|
+#                                                                           _|
+#   R C L (consensus hierarchical) clustering
+#
+# RCL is implemented using programs/tools that are shipped with mcl.
+# It can be run on any set of clusterings from any method or program,
+# but the network and clusterings have to be supplied in mcl matrix format.
+#
+# See github.com/micans/mcl#rcl and this script -h (or -H). Peace.
 
 set -euo pipefail
 
@@ -41,7 +51,7 @@ Help_2='
 HELP_2b='
  In graphs/ in the mcl source distribution, you can run a small test case:
    rcl.sh -n TINY -m rcltiny.mci -t rcltiny.tab rcltiny.cls[123]
-   RCL_RES_PLOT_LIMIT=2 rcl.sh -n TINY -r "1 2 3 4"'
+   RCL_RES_PLOT_LIMIT=1 rcl.sh -n TINY -r "1 2 3 4"'
 
 HELP_3='
 Optionally:
@@ -54,9 +64,10 @@ Optionally:
       e.g. -l 450/10/550
    if the cluster sizes in that range are what you are after.
    To save a bunch of such clusterings, use e.g.
-      rcl.sh -n NAME -l 470/10/530/pfx'
+      rcl.sh -n NAME -l 470/10/530/NAME'
 
-Help_options='Options:
+Help_options='
+Options:
 -m  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
 -t  <file>   Tab file with index - label mapping (obtain e.g. with mcxload)
 -n  NAME     NAME will be used as prefix for various objects
@@ -102,9 +113,7 @@ do
     h)
       cat <<EOU
 $Help_1
-
 $Help_2
-
 $Help_options
 
 Use -H to output a longer description
@@ -297,7 +306,7 @@ if [[ ! -z $RESOLUTION ]]; then
       if ! dot -Tpng <  $pfx.digraph  > $pfx.cls.png; then
         echo "-- Attempt to visualise hierachy with dot failed"
       else
-        echo "-- Hierarchy visualised in $pfx.cls.png with display limit $RCL_RES_PLOT_LIMIT"
+        echo "-- Hierarchy visualised in $pfx.cls.png with display limit $RCL_RES_PLOT_LIMIT (RCL_RES_PLOT_LIMIT)"
       fi
    fi
 

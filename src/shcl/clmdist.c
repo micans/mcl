@@ -373,6 +373,7 @@ static mcxstatus distMain
    ;  double  one       =  1.00
    ;  dim n_comparisons =  0
    ;  dim n_todo_total  =  0
+   ;  dim n_clusterings =  0
    ;  dim n_thisjob     =  0
    ;  dim job_milestone =  0
    ;  mcxIO* xfin       =  mcxIOnew("-", "r")
@@ -446,9 +447,12 @@ static mcxstatus distMain
       consecutive_g ? stptr1->n_level -1
       : split_g ? stptr1->n_level * stptr2->n_level
       : (stptr1->n_level * (stptr1->n_level-1)) / 2
+   ;  n_clusterings = 
+      split_g ? stptr1->n_level + stptr2->n_level
+      : stptr1->n_level
 
    ;  if (clm_progress_g && job_i == 0)
-      mcxTell(me, "starting %d comparisons", (int) n_todo_total)
+      mcxTell(me, "starting %d comparisons on %d clusterings", (int) n_todo_total, (int) n_clusterings)
 
    ;  for (i=0;i<stptr1->n_level;i++)
       {  mclx* c1       =  stptr1->level[i].mx

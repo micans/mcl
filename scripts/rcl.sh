@@ -10,16 +10,73 @@ tabfile=
 pfx=
 LEVELS=
 RESOLUTION=
+cpu=1
 
 do_ucl=false
 do_gralog=false
 do_force=false
 
-while getopts :m:n:t:l:r:UShFH opt
+
+HELP_intro="
+Options described below. Below 'networks', 'clusterings' and 'matrix' are files
+in mcl matrix format. Networks can be loaded from label data with mcxload.  Use
+srt2cls.sh to convert seurat clusterings to mcl format.  Both will need a label
+index 'tab' file, this can be created with srt2tab.sh.  Note that to maintain
+index correspondence with Seurat's 1-based indexing, srt2cls.sh and srt2tab.sh
+introduce a dummy node in the mcl representations for index 0."
+
+Help_1='
+1) compute the rcl object with
+      rcl.sh -n NAME -m <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
+   NAME will be used as a prefix for various outputs; think of it as a project tag.'
+HELP_1b='
+   NAME is used in 2) to retrieve the right objects.'
+
+Help_2='
+2) derive resolution-based clusterings from the rcl object.
+      rcl.sh -n NAME [-S] -r "N1 N2 N3 .."
+      e.g. -r "50 100 200 400 1000 2000"
+   A logarithmic scale such as above is suggested.'
+
+HELP_2b='
+ In graphs/ in the mcl source distribution, you can run a small test case:
+   rcl.sh -n TINY -m rcltiny.mci -t rcltiny.tab rcltiny.cls[123]
+   RCL_RES_PLOT_LIMIT=2 rcl.sh -n TINY -r "1 2 3 4"'
+
+HELP_3='
+Optionally:
+3) Investigate in more detail the dynamic range of the clusters present in the tree
+   encoded in the rcl object by computing cluster sizes of thresholded trees
+      rcl.sh -n NAME -l <LOW/STEP/HIGH>
+      e.g. -l 200/50/700
+   Note that the edge weight range in the rcl objects is [0-1000].
+   From the output you may wish to zoom in
+      e.g. -l 450/10/550
+   if the cluster sizes in that range are what you are after.
+   To save a bunch of such clusterings, use e.g.
+      rcl.sh -n NAME -l 470/10/530/pfx'
+
+Help_options='Options:
+-m  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
+-t  <file>   Tab file with index - label mapping (obtain e.g. with mcxload)
+-n  NAME     NAME will be used as prefix for various objects
+-l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
+-r  "N1 N2 N3 .."    e.g. "50 100 200 400" to compute resolution clusterings
+-p  <num>    Parallel/CPU, use this many CPUs for parallel RCL compute   
+-S           Output cluster size distribution information (use in (2))
+-U           Compute the Unrestricted Contingency Linkage object (use in (1))
+-F           Force computation, ignore existing RCL object
+-H           Expanded help, opened in less'
+
+
+while getopts :m:n:t:l:r:p:UShFH opt
 do
     case "$opt" in
     m)
       matrixfile=$OPTARG
+      ;;
+    p)
+      cpu=$OPTARG
       ;;
     n)
       pfx=$OPTARG
@@ -44,71 +101,27 @@ do
       ;;
     h)
       cat <<EOU
-1) compute the rcl object with
-      rcl.sh -n NAME -m <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
-   NAME will be used as a prefix for various outputs; think of it as a project tag.
+$Help_1
 
-2) derive resolution-based clusterings from the rcl object.
-      rcl.sh -n NAME [-S] -r "N1 N2 N3 .."
-      e.g. -r "500 1000 1500 2000 2500"
+$Help_2
 
-Options:
--m  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
--t  <file>   Tab file with index - label mapping (obtain e.g. with mcxload)
--n  NAME     NAME will be used as prefix for various objects
--l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
--r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
--S           Output cluster size distribution information (use in (2))
--U           Compute the Unrestricted Contingency Linkage object (use in (1))
+$Help_options
 
-Use -H to output a slightly longer description.
+Use -H to output a longer description
 EOU
        exit
       ;;
     H)
-      cat <<EOU | less
-Options described below. Below 'networks', 'clusterings' and 'matrix' are files
-in mcl matrix format. Networks can be loaded from label data with mcxload.  Use
-srt2cls.sh to convert seurat clusterings to mcl format.  Both will need a label
-index 'tab' file, this can be created with srt2tab.sh.  Note that to maintain
-index correspondence with Seurat's 1-based indexing, srt2cls.sh and srt2tab.sh
-introduce a dummy node in the mcl representations for index 0.
+   {  cat <<EOU
+$HELP_intro
 
-Suggested usage:
-1) compute the rcl object with
-      rcl.sh -n NAME -m <network> -t <tab> <LIST-OF-CLUSTER-FILE-NAMES>
-   NAME will be used as a prefix for various outputs; think of it as a project tag.
-   NAME is used in 2) to retrieve the right objects.
-
-2) derive resolution-based clusterings from the rcl object.
-      rcl.sh -n NAME [-S] -r "N1 N2 N3 .."
-      e.g. -r "500 1000 1500 2000 2500"
-   The largest clusters obtained will be above the resolution limit in that
-   there is no sub-split into smaller clusters at least that size.  Cluster
-   sizes can be below the resolution limit as such clusters may need to be
-   split off in order to allow another allowable split to happen.
-
-Optionally:
-3) Investigate in more detail the dynamic range of the clusters present in the tree
-   encoded in the rcl object by computing cluster sizes of thresholded trees
-      rcl.sh -n NAME -l <LOW/STEP/HIGH>
-      e.g. -l 200/50/700
-   Note that the edge weight range in the rcl objects is [0-1000].
-   From the output you may wish to zoom in
-      e.g. -l 450/10/550
-   if the cluster sizes in that range are what you are after.
-   To save a bunch of such clusterings, use e.g.
-      rcl.sh -n NAME -l 470/10/530/pfx
-
-Options:
--m  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
--t  <file>   Tab file with index - label mapping (obtain e.g. with mcxload)
--n  NAME     NAME will be used as prefix for various objects
--l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
--r  "N1 N2 N3 .."    e.g. "500 1000 1500 2000 2500" to compute resolution clusterings
--S           Output cluster size distribution information (use in (2))
--U           Compute the Unrestricted Contingency Linkage object (use in (1))
+Suggested usage:$Help_1$HELP_1b
+$Help_2
+$HELP_2b
+$HELP_3
+$Help_options
 EOU
+   } | less
       exit
       ;;
     :) echo "Flag $OPTARG needs argument"
@@ -187,7 +200,19 @@ EOC
 
    else
       echo "-- Computing RCL object"
-      clm vol --progress -imx $matrixfile -write-rcl $rclfile -o $pfx.vol "$@"
+      if (( cpu == 1 )); then
+        clm vol --progress -imx $matrixfile -write-rcl $rclfile -o $pfx.vol "$@"
+      else
+        maxp=$((cpu-1))
+        list=$(eval "echo {0..$maxp}")
+        echo "-- All $cpu processes are chasing .,=+<>()-"
+        for id in $list; do
+          clm vol --progress -imx $matrixfile -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "$@" &
+        done
+        wait
+        clxdo mxsum $(eval echo "$pfx.R{0..$maxp}") > $rclfile
+        echo "-- Components summed in $rclfile"
+      fi
    fi
 
    echo "-- Computing single linkage join order for network $rclfile"
@@ -202,7 +227,7 @@ fi
 
 if [[ -z $LEVELS && -z $RESOLUTION ]]; then
   echo "-- suggest rcl.sh -n $pfx -r \"N1 N2 N3 ..\" to compute resolution clusters"
-  echo "-- e.g. rcl.sh -n $pfx -r \"500 1000 1500 2000 2500\""
+  echo "-- suggest log scale, e.g. rcl.sh -n $pfx -r \"50 100 200 400 1000\""
   echo "-- vary N according to preference and data set size"
 fi
 
@@ -288,4 +313,5 @@ mcl-edge matrix/cluster files (suitable input e.g. for 'clm dist' and others):
 EOM
 
 fi
+
 

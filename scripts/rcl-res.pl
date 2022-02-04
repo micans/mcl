@@ -41,7 +41,7 @@ $::resdisplaylimit = defined($ENV{RCL_RES_PLOT_LIMIT}) ? $ENV{RCL_RES_PLOT_LIMIT
 %::cid2node = ();
 $::L=1;
 %::topoftree = ();
-print STDERR "-- constructing tree ..\n";
+print STDERR "-- constructing tree:\n";
 
 my $header = <>;
 chomp $header;
@@ -65,6 +65,7 @@ while (<>) {
 
    my $upname    = "L$::L" . "_$id1" . "_$xycsz";
 
+                      # singletons have to be introduced into our tree/node listing
    if ($xcsz == 1) {
      $::cid2node{$xcid} = "L0_$xcid";
      $::nodes{"L0_$xcid"} =
@@ -129,7 +130,7 @@ while (<>) {
 
 print STDERR "\n" if $. >= 1000;
 my @inputstack = ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree );
-my @clusterstack = ();
+my @clustering = ();
 my %resolutionstack = ();
 
 print STDERR "-- computing tree nodes for resolution";
@@ -152,15 +153,15 @@ for my $res (sort { $b <=> $a } @::resolution) { print STDERR " .. $res";
       push @inputstack, $bob;
     }
     else {
-      push @clusterstack, $name;
+      push @clustering, $name;
     }
   }
 
-   # make copy, as we re-use clusterstack as inputstack.
+   # make copy, as we re-use clustering as inputstack.
    #
-  $resolutionstack{$res} = [ @clusterstack ];
-  @inputstack = @clusterstack;
-  @clusterstack = ();
+  $resolutionstack{$res} = [ @clustering ];
+  @inputstack = @clustering;
+  @clustering = ();
 }
 
 print STDERR "\n-- collecting clusters for resolution";
@@ -183,10 +184,16 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
     my $size = $::nodes{$name}{size};
     my @nodestack = ( $name );
     my @items = ();
+
     while (@nodestack) {
+
       my $nodename = pop(@nodestack);
+          # Below items are either cached from a previous more fine-grained clustering
+          # or they are leaf nodes
       if (defined($::nodes{$nodename}{items})) {
+
         push @items, @{$::nodes{$nodename}{items}};
+
         if ($nodename ne $name && $::nodes{$nodename}{size} >= $::reslimit) {
           $digraph{$name}{$nodename} = 1;
         }

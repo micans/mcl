@@ -82,6 +82,15 @@ static double mclx_choose_sum
 ;  }
 
 
+static double flt_decrement
+(  pval     flt
+,  void*    unused
+)
+	{	return flt -1
+;  }
+
+
+
 enum
 {  DIST_SPLITJOIN 
 ,  DIST_VARINF
@@ -104,7 +113,6 @@ enum
 ,  DIST_OPT_MODE
 ,  DIST_OPT_INDEX
 ,  DIST_OPT_CHAIN
-,  DIST_OPT_WHEEL
 ,  DIST_OPT_SORT
 ,  DIST_OPT_NORMALISE
 ,  DIST_OPT_MCI
@@ -116,6 +124,7 @@ enum
 {  VOL_OPT_OUTPUT = CLM_DISP_UNUSED
 ,  VOL_OPT_IMX
 ,  VOL_OPT_RCL
+,  VOL_OPT_GI
 ,  VOL_OPT_SKEW
 }  ;
 
@@ -131,6 +140,12 @@ static mcxOptAnchor volOptions[] =
    ,  VOL_OPT_SKEW
    ,  "<num>"
    ,  "skew x in [0-1] as x^num"
+   }
+,  {  "-gi"
+   ,  MCX_OPT_HASARG
+   ,  VOL_OPT_GI
+   ,  "i/N"
+   ,  "compute job i out of N jobs total"
    }
 ,  {  "-imx"
    ,  MCX_OPT_HASARG
@@ -185,12 +200,6 @@ static mcxOptAnchor distOptions[] =
    ,  NULL
    ,  "only compare consecutive clusterings"
    }
-,  {  "--one-to-many"
-   ,  MCX_OPT_DEFAULT
-   ,  DIST_OPT_WHEEL
-   ,  NULL
-   ,  "compare first clustering against all the rest"
-   }
 ,  {  "--sort"
    ,  MCX_OPT_DEFAULT
    ,  DIST_OPT_SORT
@@ -215,10 +224,11 @@ static int mode_g       =  -1;
 static mcxbool i_am_vol =  FALSE;   /* node faithfulness */
 static mcxbool consecutive_g = FALSE;
 static mcxbool mci_g    =  FALSE;
-static mcxbool wheel_g  =  FALSE;
 static mcxbool split_g  =  FALSE;
 static mcxbool sort_g   =  FALSE;
 static double skew_g    =  1.0;
+static unsigned job_N   =  0;
+static unsigned job_i   =  0;
 
 
 static mcxstatus distInit
@@ -254,12 +264,21 @@ static mcxstatus volArgHandle
 
          case VOL_OPT_SKEW
       :  skew_g = atof(val)
-;  fprintf(stderr, "skew %f\n", skew_g)
       ;  break
       ;
 
          case VOL_OPT_RCL
       :  mcxIOnewName(xfrcl, val)
+      ;  break
+      ;
+
+         case VOL_OPT_GI
+      :  if
+         (  2 != sscanf(val, "%u/%u", &job_i, &job_N)
+         || job_N == 0
+         || job_i >= job_N
+         )
+         mcxDie(1, me, "unable to parse [%s] as i/N, i<N", val)
       ;  break
       ;
 
@@ -288,11 +307,6 @@ static mcxstatus distArgHandle
 
          case DIST_OPT_DIGITS
       :  digits = atoi(val)
-      ;  break
-      ;
-
-         case DIST_OPT_WHEEL
-      :  wheel_g = TRUE
       ;  break
       ;
 
@@ -358,6 +372,9 @@ static mcxstatus distMain
    ;  mclx* mxrcl       =  NULL
    ;  double  one       =  1.00
    ;  dim n_comparisons =  0
+   ;  dim n_todo_total  =  0
+   ;  dim n_thisjob     =  0
+   ;  dim job_milestone =  0
    ;  mcxIO* xfin       =  mcxIOnew("-", "r")
    ;  mcxbits bits      =  MCLX_PRODUCE_PARTITION | MCLX_REQUIRE_DOMSTACK
 
@@ -412,7 +429,7 @@ static mcxstatus distMain
 
    ;  mcxIOfree(&xfdebug)
 
-   ;  if (sort_g)
+   ;  if (sort_g)                     /* fixme only works for single stack */
       mclxCatSortCoarseFirst(&st)
 
    ;  if (i_am_vol && st.n_level)
@@ -425,6 +442,14 @@ static mcxstatus distMain
 
    ;  if (mci_g)     /* tbcont idea is to output mcl matrix with distances */
 
+   ;  n_todo_total =
+      consecutive_g ? stptr1->n_level -1
+      : split_g ? stptr1->n_level * stptr2->n_level
+      : (stptr1->n_level * (stptr1->n_level-1)) / 2
+
+   ;  if (clm_progress_g && job_i == 0)
+      mcxTell(me, "starting %d comparisons", (int) n_todo_total)
+
    ;  for (i=0;i<stptr1->n_level;i++)
       {  mclx* c1       =  stptr1->level[i].mx
       ;  int j, jstart  =  split_g ? 0 : i+ 1
@@ -433,27 +458,38 @@ static mcxstatus distMain
          ;  mclx* meet12, *meet21
          ;  double dist1d, dist2d
          ;  dim dist1i, dist2i
+         ;  dim mod_id = job_N ? n_comparisons % job_N : 0
 
+         ;  n_comparisons++
+         ;  if (job_N && mod_id != job_i)
+            continue
+
+         ;  n_thisjob++
          ;  meet12 =  clmContingency(c1, c2)
          ;  meet21 =  mclxTranspose(meet12)
-         ;  n_comparisons++
 
          ;  if (i_am_vol)
             {  dim k
             ;  if (clm_progress_g)
-               {  if (i && j==jstart)
-                  {  dim j2
-                  ;  fputc(' ', stderr)
-                  ;  for (j2=2; j2<jstart;j2++) fputc('.', stderr)
-                  ;  fputc('\n', stderr)
+               {  if (!job_N)
+                  {  if (i && j==jstart)
+                     fputc('\n', stderr)
+                  ;  fputc('.', stderr)
                ;  }
-                  fputc('.', stderr)
+                  else    /* bit of nonsense, but I crave signs of progress */
+                  {  dim mile = (n_thisjob * job_N * 10.0 -1.0) / (n_todo_total + job_N)
+                  ;  if (mile > job_milestone)
+                     {  fputc(" .,=+<>()-"[mile % 10], stderr)
+                     ;  job_milestone = mile
+                  ;  }
+                  }
             ;  }
                for (k=0;k<N_COLS(meet12);k++)
                {  dim l
                ;  mclv* ct = meet12->cols+k
                ;  mclv* c1mem = c1->cols+k
                ;  mclv* c2mem = NULL
+
                ;  for (l=0;l<ct->n_ivps;l++)
                   {  ofs c2id = ct->ivps[l].idx
                   ;  double meet_sz = ct->ivps[l].val
@@ -559,21 +595,24 @@ static mcxstatus distMain
          ;  if (consecutive_g)
             break
       ;  }
-         if (wheel_g)
-         break
-   ;  }
+      }
 
-      if (i_am_vol)
-      {  double factor = (1+n_comparisons) / 1000.0
+    ; if (clm_progress_g && job_i == 0)
+      mcxTell(me, "[%d]", (int) n_comparisons)
+
+    ; if (i_am_vol && n_comparisons)
+      {  double factor = n_comparisons / 1000.0
+		;  mclxUnary(vol_scores, flt_decrement, NULL)
       ;  mclxUnary(vol_scores, fltxScale, &factor)
 
-      ;  if (clm_progress_g) fputc('\n', stderr)
+      ;  if (clm_progress_g && !job_N) fputc('\n', stderr)
 
       ;  mclxaWrite(vol_scores, xfout, 4, RETURN_ON_FAIL)
       ;  mcxIOclose(xfout)
 
       ;  if (mxrcl)
-         {  mclxUnary(mxrcl, fltxScale, &factor)
+         {  mclxUnary(mxrcl, flt_decrement, NULL)
+         ;  mclxUnary(mxrcl, fltxScale, &factor)
          ;  mclxWrite(mxrcl, xfrcl, 6, RETURN_ON_FAIL)
          ;  mcxIOclose(xfrcl)
       ;  }

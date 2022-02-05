@@ -5,13 +5,14 @@
 #  _ _  _  _ _  _  _    _  |_ . _  _ _  ___|| . _ _ |/  _|    __|_ __|_. _  _
 # (_(_)| |_\(/_| |_\|_|_\  | ||(/_| (_|| (_| ||(_(_||  (_||_|_\ | (/_| || |(_|
 #                                                                           _|
-#   R C L (consensus hierarchical) clustering
+#  R C L : Restricted Contingency Linkage clustering
 #
-# RCL is implemented using programs/tools that are shipped with mcl.
-# It can be run on any set of clusterings from any method or program,
-# but the network and clusterings have to be supplied in mcl matrix format.
+# RCL is implemented using programs/tools that are shipped with mcl.  It can be
+# run on any set of clusterings from any method or program, but (in this
+# implementation) the network and clusterings have to be supplied in mcl matrix
+# format.
 #
-# See github.com/micans/mcl#rcl and this script -h (or -H). Peace.
+# See github.com/micans/mcl#rcl and this script -h (or -H).
 
 set -euo pipefail
 
@@ -22,8 +23,8 @@ LEVELS=
 RESOLUTION=
 cpu=1
 
-do_ucl=false
-do_gralog=false
+do_ucl=false          # unrestricted contingency clustering, classic approach
+do_gralog=false       # granularity report on log scale
 do_force=false
 
 

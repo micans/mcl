@@ -124,6 +124,7 @@ enum
 {  VOL_OPT_OUTPUT = CLM_DISP_UNUSED
 ,  VOL_OPT_IMX
 ,  VOL_OPT_RCL
+,  VOL_OPT_SELF
 ,  VOL_OPT_GI
 ,  VOL_OPT_SKEW
 }  ;
@@ -140,6 +141,12 @@ static mcxOptAnchor volOptions[] =
    ,  VOL_OPT_SKEW
    ,  "<num>"
    ,  "skew x in [0-1] as x^num"
+   }
+,  {  "--self"
+   ,  MCX_OPT_DEFAULT
+   ,  VOL_OPT_SELF
+   ,  NULL
+   ,  "include self-compares (for rcl use)"
    }
 ,  {  "-gi"
    ,  MCX_OPT_HASARG
@@ -225,6 +232,7 @@ static mcxbool i_am_vol =  FALSE;   /* node faithfulness */
 static mcxbool consecutive_g = FALSE;
 static mcxbool mci_g    =  FALSE;
 static mcxbool split_g  =  FALSE;
+static mcxbool self_g   =  FALSE;
 static mcxbool sort_g   =  FALSE;
 static double skew_g    =  1.0;
 static unsigned job_N   =  0;
@@ -259,6 +267,11 @@ static mcxstatus volArgHandle
    {  switch(optid)
       {  case VOL_OPT_OUTPUT
       :  mcxIOnewName(xfout, val)
+      ;  break
+      ;
+
+         case VOL_OPT_SELF
+      :  self_g = TRUE
       ;  break
       ;
 
@@ -446,9 +459,11 @@ static mcxstatus distMain
    ;  n_todo_total =
       consecutive_g ? stptr1->n_level -1
       : split_g ? stptr1->n_level * stptr2->n_level
+      : self_g ? stptr1->n_level + (stptr1->n_level * (stptr1->n_level-1)) / 2
       : (stptr1->n_level * (stptr1->n_level-1)) / 2
    ;  n_clusterings = 
       split_g ? stptr1->n_level + stptr2->n_level
+      : consecutive_g ? stptr1->n_level -1
       : stptr1->n_level
 
    ;  if (clm_progress_g && job_i == 0)
@@ -456,7 +471,7 @@ static mcxstatus distMain
 
    ;  for (i=0;i<stptr1->n_level;i++)
       {  mclx* c1       =  stptr1->level[i].mx
-      ;  int j, jstart  =  split_g ? 0 : i+ 1
+      ;  int j, jstart  =  split_g ? 0 : i+ (self_g ? 0 : 1)
       ;  for (j=jstart; j<stptr2->n_level;j++)     /* note stptr2 changes if split_g */
          {  mclx* c2  =  stptr2->level[j].mx
          ;  mclx* meet12, *meet21

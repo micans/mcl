@@ -7,8 +7,8 @@
 #                                                                           _|
 #  R C L : Restricted Contingency Linkage clustering
 #
-# RCL is implemented using programs/tools that are shipped with mcl.  It can be
-# run on any set of clusterings from any method or program, but (in this
+# This RCL is implemented using programs/tools that are shipped with mcl.  It
+# can be run on any set of clusterings from any method or program, but (in this
 # implementation) the network and clusterings have to be supplied in mcl matrix
 # format.
 #
@@ -26,6 +26,8 @@ cpu=1
 do_ucl=false          # unrestricted contingency clustering, classic approach
 do_gralog=false       # granularity report on log scale
 do_force=false
+
+SELF=--self
 
 
 HELP_intro="
@@ -81,7 +83,7 @@ Options:
 -H           Expanded help, opened in less'
 
 
-while getopts :m:n:t:l:r:p:UShFH opt
+while getopts :m:n:t:l:r:p:UShFHX opt
 do
     case "$opt" in
     m)
@@ -104,6 +106,9 @@ do
       ;;
     F)
       do_force=true
+      ;;
+    X)
+      SELF=""
       ;;
     S)
       do_gralog=true
@@ -211,13 +216,13 @@ EOC
    else
       echo "-- Computing RCL object"
       if (( cpu == 1 )); then
-        clm vol --progress -imx $matrixfile -write-rcl $rclfile -o $pfx.vol "$@"
+        clm vol --progress $SELF -imx $matrixfile -write-rcl $rclfile -o $pfx.vol "$@"
       else
         maxp=$((cpu-1))
         list=$(eval "echo {0..$maxp}")
         echo "-- All $cpu processes are chasing .,=+<>()-"
         for id in $list; do
-          clm vol --progress -imx $matrixfile -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "$@" &
+          clm vol --progress $SELF -imx $matrixfile -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "$@" &
         done
         wait
         clxdo mxsum $(eval echo "$pfx.R{0..$maxp}") > $rclfile
@@ -231,8 +236,9 @@ EOC
 else
    echo "-- $rclfile exists, querying its dimensions"
    if ! mcx query -imx $rclfile --dim; then
-      echo "Suggest removing $rclfile"
+      echo "-- This is not a functioning RCL object alas"
    fi
+   echo "-- Use -F to force rerun"
 fi
 
 if [[ -z $LEVELS && -z $RESOLUTION ]]; then

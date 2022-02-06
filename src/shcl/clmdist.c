@@ -84,9 +84,17 @@ static double mclx_choose_sum
 
 static double flt_decrement
 (  pval     flt
-,  void*    unused
+,  void*    arg
 )
-	{	return flt -1
+   {  double factor = *((double*)arg)
+   ;  if (flt > 1.01)
+      return flt - 1.0
+   ;  else
+      return 0.01111111 * factor
+         /* edges (their nodes) may never co-cluster
+          * we put such edges at a sentinel value of about 0.011111.
+          * The returned number will be divided by factor.
+         */
 ;  }
 
 
@@ -383,7 +391,7 @@ static mcxstatus distMain
    ;  int a             =  0
    ;  mclx* vol_scores  =  NULL
    ;  mclx* mxrcl       =  NULL
-   ;  double  one       =  1.00
+   ;  double one        =  1.0
    ;  dim n_comparisons =  0
    ;  dim n_todo_total  =  0
    ;  dim n_clusterings =  0
@@ -419,7 +427,6 @@ static mcxstatus distMain
       ,  mcxIOopen(xfrcl, EXIT_ON_FAIL)
       ,  mxrcl = mclxReadx(xfimx, EXIT_ON_FAIL, MCLX_REQUIRE_GRAPH)
       ,  mclxUnary(mxrcl, fltxConst, &one)
-
 
    ;  for (a=0;a<argc;a++)
       {  mcxstatus status
@@ -621,7 +628,7 @@ static mcxstatus distMain
 
     ; if (i_am_vol && n_comparisons)
       {  double factor = n_comparisons / 1000.0
-		;  mclxUnary(vol_scores, flt_decrement, NULL)
+      ;  mclxUnary(vol_scores, flt_decrement, &factor)
       ;  mclxUnary(vol_scores, fltxScale, &factor)
 
       ;  if (clm_progress_g && !job_N) fputc('\n', stderr)
@@ -630,10 +637,13 @@ static mcxstatus distMain
       ;  mcxIOclose(xfout)
 
       ;  if (mxrcl)
-         {  mclxUnary(mxrcl, flt_decrement, NULL)
+         {  mclxUnary(mxrcl, flt_decrement, &factor)
          ;  mclxUnary(mxrcl, fltxScale, &factor)
          ;  mclxWrite(mxrcl, xfrcl, 6, RETURN_ON_FAIL)
          ;  mcxIOclose(xfrcl)
+              /* Note edges that never co-clustered are prevented
+               * from being set to zero (and disappear) in flt_decrement.
+              */
       ;  }
       }
       return STATUS_OK

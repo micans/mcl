@@ -41,7 +41,8 @@ introduce a dummy node in the mcl representations for index 0."
 Help_1='
 1) compute the rcl object with
       rcl.sh -n NAME -m <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
-   NAME will be used as a prefix for various outputs; think of it as a project tag.'
+   NAME will be used as a prefix for various outputs; think of it as a project tag.
+   suggest to choose it such that no files with prefix NAME already exist.'
 HELP_1b='
    NAME is used in 2) to retrieve the right objects.'
 

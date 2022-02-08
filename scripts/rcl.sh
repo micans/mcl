@@ -7,8 +7,8 @@
 #                                                                           _|
 #  R C L : Restricted Contingency Linkage clustering
 #
-# This RCL is implemented using programs/tools that are shipped with mcl.  It
-# can be run on any set of clusterings from any method or program, but (in this
+# RCL is implemented using programs/tools that are shipped with mcl.  It can be
+# run on any set of clusterings from any method or program, but (in this
 # implementation) the network and clusterings have to be supplied in mcl matrix
 # format.
 #
@@ -16,14 +16,14 @@
 
 set -euo pipefail
 
-matrixfile=
+network=
 tabfile=
 pfx=
 LEVELS=
 RESOLUTION=
 cpu=1
 
-do_ucl=false          # unrestricted contingency clustering, classic approach
+do_ucl=false          # unrestricted contingency clustering, basic approach
 do_gralog=false       # granularity report on log scale
 do_force=false
 
@@ -40,41 +40,40 @@ introduce a dummy node in the mcl representations for index 0."
 
 Help_1='
 1) compute the rcl object with
-      rcl.sh -n NAME -m <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
-   NAME will be used as a prefix for various outputs; think of it as a project tag.
-   suggest to choose it such that no files with prefix NAME already exist.'
+      rcl.sh TAG -n <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
+   TAG will be used as a prefix for various outputs; think of it as a project tag.
+   suggest to choose it such that no files with prefix TAG already exist.'
 HELP_1b='
-   NAME is used in 2) to retrieve the right objects.'
+   TAG is used in 2) to retrieve the right objects.'
 
 Help_2='
 2) derive resolution-based clusterings from the rcl object.
-      rcl.sh -n NAME [-S] -r "N1 N2 N3 .."
+      rcl.sh TAG [-S] -r "N1 N2 N3 .."
       e.g. -r "50 100 200 400 1000 2000"
    A logarithmic scale such as above is suggested.'
 
 HELP_2b='
  In graphs/ in the mcl source distribution, you can run a small test case:
-   rcl.sh -n TINY -m rcltiny.mci -t rcltiny.tab rcltiny.cls[123]
-   RCL_RES_PLOT_LIMIT=1 rcl.sh -n TINY -r "1 2 3 4"'
+   rcl.sh TINY -n rcltiny.mci -t rcltiny.tab rcltiny.cls[123]
+   RCL_RES_PLOT_LIMIT=1 rcl.sh TINY -r "1 2 3 4"'
 
 HELP_3='
 Optionally:
 3) Investigate in more detail the dynamic range of the clusters present in the tree
    encoded in the rcl object by computing cluster sizes of thresholded trees
-      rcl.sh -n NAME -l <LOW/STEP/HIGH>
+      rcl.sh TAG -l <LOW/STEP/HIGH>
       e.g. -l 200/50/700
    Note that the edge weight range in the rcl objects is [0-1000].
    From the output you may wish to zoom in
       e.g. -l 450/10/550
    if the cluster sizes in that range are what you are after.
    To save a bunch of such clusterings, use e.g.
-      rcl.sh -n NAME -l 470/10/530/NAME'
+      rcl.sh TAG -l 470/10/530/TAG'
 
 Help_options='
 Options:
--m  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
+-n  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
 -t  <file>   Tab file with index - label mapping (obtain e.g. with mcxload)
--n  NAME     NAME will be used as prefix for various objects
 -l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "50 100 200 400" to compute resolution clusterings
 -p  <num>    Parallel/CPU, use this many CPUs for parallel RCL compute   
@@ -83,12 +82,16 @@ Options:
 -F           Force computation, ignore existing RCL object
 -H           Expanded help, opened in less'
 
+if (( $# > 0 )) && [[ ! $1 =~ ^- ]]; then
+  pfx=$1
+  shift 1
+fi
 
-while getopts :m:n:t:l:r:p:UShFHX opt
+while getopts :n:t:l:r:p:UShFHX opt
 do
     case "$opt" in
-    m)
-      matrixfile=$OPTARG
+    n)
+      network=$OPTARG
       ;;
     p)
       cpu=$OPTARG
@@ -149,13 +152,15 @@ done
 
 
 if [[ -z $pfx ]]; then
-   echo "Please specify -n NAME to tag this analysis (see -h)"
+   echo "Please specify TAG as first argument to tag this analysis (see -h)"
    false
 fi
 
+echo "$@" >> $pfx.cline
+
 rclfile=$pfx.rcl
 
-if [[ -z $matrixfile && ! -f $rclfile ]]; then
+if [[ -z $network && ! -f $rclfile ]]; then
    echo "Please supply network and clusterings to compute rcl object (see -h)"
    false
 fi
@@ -204,7 +209,7 @@ if $do_force || [[ ! -f $rclfile ]]; then
       echo "-- Computing UCL object"
       mcxi <<EOC
 0 vb
-/$matrixfile lm ch dup .x def .sum def
+/$network lm ch dup .x def .sum def
    .x dim pop
    ${clusters[@]}
    { type /str eq }
@@ -217,13 +222,13 @@ EOC
    else
       echo "-- Computing RCL object"
       if (( cpu == 1 )); then
-        clm vol --progress $SELF -imx $matrixfile -write-rcl $rclfile -o $pfx.vol "$@"
+        clm vol --progress $SELF -imx $network -write-rcl $rclfile -o $pfx.vol "$@"
       else
         maxp=$((cpu-1))
         list=$(eval "echo {0..$maxp}")
         echo "-- All $cpu processes are chasing .,=+<>()-"
         for id in $list; do
-          clm vol --progress $SELF -imx $matrixfile -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "$@" &
+          clm vol --progress $SELF -imx $network -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "$@" &
         done
         wait
         clxdo mxsum $(eval echo "$pfx.R{0..$maxp}") > $rclfile
@@ -243,8 +248,8 @@ else
 fi
 
 if [[ -z $LEVELS && -z $RESOLUTION ]]; then
-  echo "-- suggest rcl.sh -n $pfx -r \"N1 N2 N3 ..\" to compute resolution clusters"
-  echo "-- suggest log scale, e.g. rcl.sh -n $pfx -r \"50 100 200 400 1000\""
+  echo "-- suggest rcl.sh $pfx -r \"N1 N2 N3 ..\" to compute resolution clusters"
+  echo "-- suggest log scale, e.g. rcl.sh $pfx -r \"50 100 200 400 1000\""
   echo "-- vary N according to preference and data set size"
 fi
 

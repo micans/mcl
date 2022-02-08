@@ -4,11 +4,12 @@
 # output encodes the single-linkage join order of a tree.  The script further
 # requires a prefix for file output and a list of resolution sizes.
 #
-# A cluster for a given resolution size R corresponds to a node in the tree
-# where the cluster consists of all associated leaf nodes below. This cluster
-# is either at least of size R and has no sub-split in the tree into two
-# components each of size at least R, or it is smaller than R and was split off
-# in order to allow another such split to happen elsewhere.
+# A cluster corresponds to a tree node. The cluster consists of all associated
+# leaf nodes below this node. For a given resolution size R each cluster C must
+# either be of size at least R without a sub-split below C's tree node into two
+# other clusters of size at least R, or C is smaller than R and was split off
+# in order to allow another such split to happen elsewhere. In the last case
+# will not have been split any further.
 #
 # For decreasing resolution sizes, the code descends each node in the tree, as
 # long as it finds two independent components below the node that are both of
@@ -70,9 +71,10 @@ while (<>) {
 
                       # singletons have to be introduced into our tree/node listing
    if ($xcsz == 1) {
-     $::cid2node{$xcid} = "L0_$xcid";
-     $::nodes{"L0_$xcid"} =
-     {    name => "L0_$xcid"
+     my $leaf = "L$::L" . "_x$xcid";
+     $::cid2node{$xcid} = $leaf;
+     $::nodes{$leaf} =
+     {    name => $leaf
      ,    size =>  1
      ,   items => [ $xid ]
      ,     ann => ""
@@ -80,12 +82,14 @@ while (<>) {
      ,  csizes => []
      , lss => 0
      , nsg => 0
+     , val => 0
      } ;
    }
    if ($ycsz == 1) {
-     $::cid2node{$ycid} = "L0_$ycid";
-     $::nodes{"L0_$ycid"} =
-     {    name => "L0.$ycid"
+     my $leaf = "L$::L" . "_x$ycid";
+     $::cid2node{$ycid} = $leaf;
+     $::nodes{$leaf} =
+     {    name => $leaf
      ,    size =>  1
      ,   items => [ $yid ]
      ,     ann => ""
@@ -93,6 +97,7 @@ while (<>) {
      ,  csizes => []
      , lss => 0
      , nsg => 0
+     , val => 0
      } ;
    }
 
@@ -115,6 +120,7 @@ while (<>) {
       ,  csizes => [ $::nodes{$node1}{size}, $::nodes{$node2}{size}]
       , lss => max( $::nodes{$node1}{lss}, $::nodes{$node2}{lss}, min($::nodes{$node1}{size}, $::nodes{$node2}{size}))
       , nsg => $nsg
+      , val => $val
       } ;
 
    # clm close outputs a line with id1 == id2 for all singleton nodes.
@@ -130,8 +136,25 @@ while (<>) {
    $::L++;
 
 }
-
 print STDERR "\n" if $. >= 1000;
+
+
+if (defined($ENV{RCL_RES_DOT_TREE}) && $ENV{RCL_RES_DOT_TREE} == $::L) {
+  open(DOTTREE, ">$::prefix.joindot") || die "Cannot open $::prefix.joindot";
+  for my $node
+  ( grep { $::nodes{$_}{size} > 1 }
+    sort { $::nodes{$b}{val} <=> $::nodes{$a}{val} }
+    keys %::nodes
+  ) {
+    my $val = $::nodes{$node}{val};
+    my $ann = $::nodes{$node}{ann};
+    my $bob = $::nodes{$node}{bob};
+    print DOTTREE "$node\t$::nodes{$node}{ann}\t$val\t$::nodes{$ann}{size}\n";
+    print DOTTREE "$node\t$::nodes{$node}{bob}\t$val\t$::nodes{$bob}{size}\n";
+  }
+  close(DOTTREE);
+}
+
 my @inputstack = ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree );
 my @clustering = ();
 my %resolutionstack = ();
@@ -218,7 +241,7 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
   close(OUT);
 }
 
-open(DIGRAPH, ">$::prefix.digraph") || die "Cannot open $::prefix.digraph for writing";
+open(DIGRAPH, ">$::prefix.resdot") || die "Cannot open $::prefix.digraph for writing";
 print DIGRAPH <<EOT;
 digraph g {
   forcelabels = true;
@@ -228,11 +251,13 @@ for my $n (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_prin
   my $size = $::nodes{$n}{size};
   my $sum  = 0;
   my $missing = "0";
+  my $psingle = "0";
   if (defined($digraph{$n})) {
     $sum += $::nodes{$_}{size} for keys %{$digraph{$n}};
     $missing = sprintf("%d", 100 * ($size - $sum) / $size);
+    $psingle = sprintf("%d", 100 * $::nodes{$n}{nsg} / $size);
   }
-  print DIGRAPH qq{  $n [label="$digraph_printname{$n}", xlabel="[$missing]"];\n};
+  print DIGRAPH qq{  $n [label="$digraph_printname{$n}", xlabel="[$missing/$psingle]"];\n};
 }
 for my $n1 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_printname ) {
   for my $n2 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$digraph{$n1}} ) {

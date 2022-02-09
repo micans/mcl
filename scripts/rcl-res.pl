@@ -40,6 +40,8 @@ for my $r (@ARGV) {
 $::reslimit = $::resolution[0];
 $::resdisplaylimit = defined($ENV{RCL_RES_PLOT_LIMIT}) ? $ENV{RCL_RES_PLOT_LIMIT} : $::resolution[0];
 
+$::resolutiontag = join '-', @::resolution;
+
 @ARGV = ();
 %::nodes = ();
 %::cid2node = ();
@@ -208,6 +210,7 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
   for my $name ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @$clsstack ) {
 
     my $size = $::nodes{$name}{size};
+    my $val  = $::nodes{$name}{val};
     my @nodestack = ( $name );
     my @items = ();
 
@@ -236,16 +239,14 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
     print STDERR "Error res $res size difference $size / $nitems\n" unless $nitems == $size;
  
     my $nsg  = sprintf("%.3f", $::nodes{$name}{nsg} / $::nodes{$name}{size});
-    print OUT "$name\t$size\t$nsg\t@items\n";
+    print OUT "$name\t$val\t$size\t$nsg\t@items\n";
   }
   close(OUT);
 }
 
-open(DIGRAPH, ">$::prefix.resdot") || die "Cannot open $::prefix.digraph for writing";
-print DIGRAPH <<EOT;
-digraph g {
-  forcelabels = true;
-EOT
+
+my $dotname = "$::prefix.hi.$::resolutiontag.resdot";
+open(RESDOT, ">$dotname") || die "Cannot open $dotname for writing";
 
 for my $n (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_printname ) {
   my $size = $::nodes{$n}{size};
@@ -257,15 +258,14 @@ for my $n (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_prin
     $missing = sprintf("%d", 100 * ($size - $sum) / $size);
     $psingle = sprintf("%d", 100 * $::nodes{$n}{nsg} / $size);
   }
-  print DIGRAPH qq{  $n [label="$digraph_printname{$n}", xlabel="[$missing/$psingle]"];\n};
+  print RESDOT "node\t$n\t$::nodes{$n}{val}\t$size\t$missing\n";
 }
 for my $n1 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_printname ) {
   for my $n2 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$digraph{$n1}} ) {
-    print DIGRAPH "  $n1 -> $n2;\n" if $::nodes{$n2}{size} >= $::resdisplaylimit;
+    print RESDOT "link\t$n1\t$n2\n" if $::nodes{$n2}{size} >= $::resdisplaylimit;
+    print STDERR "yay test is useful\n" if $::nodes{$n2}{size} < $::resdisplaylimit;
   }
 }
-print DIGRAPH "}\n";
-close(DIGRAPH);
+close(RESDOT);
 
-print STDERR "\n";
 

@@ -150,13 +150,12 @@ EOU
    esac
 done
 
-
 if [[ -z $pfx ]]; then
    echo "Please specify TAG as first argument to tag this analysis (see -h)"
    false
 fi
 
-echo "$@" >> $pfx.cline
+echo -- "$pfx $@" >> $pfx.cline
 
 rclfile=$pfx.rcl
 
@@ -244,7 +243,9 @@ else
    if ! mcx query -imx $rclfile --dim; then
       echo "-- This is not a functioning RCL object alas"
    fi
-   echo "-- Use -F to force rerun"
+   if [[ -z $RESOLUTION ]]; then
+     echo "-- Use -F to force rerun"
+   fi
 fi
 
 if [[ -z $LEVELS && -z $RESOLUTION ]]; then
@@ -278,7 +279,7 @@ if [[ ! -z $RESOLUTION ]]; then
    echo "-- computing clusterings with resolution parameters $RESOLUTION"
 
    export MCLXIOVERBOSITY=2
-   export RCL_RES_PLOT_LIMIT=${RCL_RES_PLOT_LIMIT-500}
+   # export RCL_RES_PLOT_LIMIT=${RCL_RES_PLOT_LIMIT-500}
 
    rcl-res.pl $pfx $RESOLUTION < $pfx.join-order
 
@@ -300,7 +301,7 @@ if [[ ! -z $RESOLUTION ]]; then
          false
       fi
       prefix="$pfx.res$r"
-      cut -f 4 $rfile | mcxload -235-ai - -o $prefix.cls
+      cut -f 5 $rfile | mcxload -235-ai - -o $prefix.cls
       mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
       mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
       nshared="--"

@@ -18,7 +18,7 @@ set -euo pipefail
 
 network=
 tabfile=
-pfx=
+tag=
 LEVELS=
 RESOLUTION=
 cpu=1
@@ -27,7 +27,7 @@ do_ucl=false          # unrestricted contingency clustering, basic approach
 do_gralog=false       # granularity report on log scale
 do_force=false
 
-SELF=--self
+SELF=
 
 
 HELP_intro="
@@ -42,7 +42,8 @@ Help_1='
 1) compute the rcl object with
       rcl.sh TAG -n <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
    TAG will be used as a prefix for various outputs; think of it as a project tag.
-   suggest to choose it such that no files with prefix TAG already exist.'
+   The prefix used is TAG/TAG - the directory TAG will be created or
+   should be a writable directory.'
 HELP_1b='
    TAG is used in 2) to retrieve the right objects.'
 
@@ -83,11 +84,11 @@ Options:
 -H           Expanded help, opened in less'
 
 if (( $# > 0 )) && [[ ! $1 =~ ^- ]]; then
-  pfx=$1
+  tag=$1
   shift 1
 fi
 
-while getopts :n:t:l:r:p:UShFHX opt
+while getopts :n:t:l:r:p:UShFHD opt
 do
     case "$opt" in
     n)
@@ -95,9 +96,6 @@ do
       ;;
     p)
       cpu=$OPTARG
-      ;;
-    n)
-      pfx=$OPTARG
       ;;
     r)
       RESOLUTION=$OPTARG
@@ -111,8 +109,8 @@ do
     F)
       do_force=true
       ;;
-    X)
-      SELF=""
+    D)
+      SELF="--self"
       ;;
     S)
       do_gralog=true
@@ -150,10 +148,13 @@ EOU
    esac
 done
 
-if [[ -z $pfx ]]; then
+if [[ -z $tag ]]; then
    echo "Please specify TAG as first argument to tag this analysis (see -h)"
    false
 fi
+
+mkdir -p $tag
+pfx=$tag/$tag
 
 echo -- "$pfx $@" >> $pfx.cline
 
@@ -314,14 +315,23 @@ if [[ ! -z $RESOLUTION ]]; then
       res_prev=$r
       file_prev=$rfile
    done
-   commalist=$(tr -s ' ' ',' <<< $RESOLUTION)
+   commalist=$(tr -s $'\t ' ',' <<< $RESOLUTION)
+   hyphenlist=$(tr -s $'\t ' '-' <<< $RESOLUTION)
+   resmapfile=$pfx.hi.$hyphenlist.resdot
 
-   if [[ -f $pfx.digraph ]]; then
-      if ! dot -Tpng <  $pfx.digraph  > $pfx.cls.png; then
-        echo "-- Attempt to visualise hierachy with dot failed"
-      else
-        echo "-- Hierarchy visualised in $pfx.cls.png with display limit $RCL_RES_PLOT_LIMIT (RCL_RES_PLOT_LIMIT)"
-      fi
+   if [[ -f $resmapfile ]]; then
+     rlist=($RESOLUTION)
+     minres=${rlist[0]}
+     dotfile=${resmapfile%.resdot}.dot
+     pdffile=${resmapfile%.resdot}.pdf
+     rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$minres --label=size < $resmapfile > $dotfile
+     if ! dot -Tpdf -Gsize=10,10\! < $dotfile > $pdffile; then
+       echo "-- dot did not run, pdf not produced"
+     else
+       echo "-- map of output produced in $pdffile"
+     fi
+   else
+     echo "-- Expected file $resmapfile not present"
    fi
 
 cat <<EOM

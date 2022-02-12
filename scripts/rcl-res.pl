@@ -38,8 +38,6 @@ for my $r (@ARGV) {
 }
 @::resolution = sort { $a <=> $b } @ARGV;
 $::reslimit = $::resolution[0];
-$::resdisplaylimit = defined($ENV{RCL_RES_PLOT_LIMIT}) ? $ENV{RCL_RES_PLOT_LIMIT} : $::resolution[0];
-
 $::resolutiontag = join '-', @::resolution;
 
 @ARGV = ();
@@ -84,7 +82,7 @@ while (<>) {
      ,  csizes => []
      , lss => 0
      , nsg => 0
-     , val => 0
+     , val => 1000
      } ;
    }
    if ($ycsz == 1) {
@@ -99,7 +97,7 @@ while (<>) {
      ,  csizes => []
      , lss => 0
      , nsg => 0
-     , val => 0
+     , val => 1000
      } ;
    }
 
@@ -192,12 +190,11 @@ for my $res (sort { $b <=> $a } @::resolution) { print STDERR " .. $res";
   @clustering = ();
 }
 
-print STDERR "\n-- collecting clusters for resolution";
+print STDERR "\n-- collecting clusters for resolution\n";
  # when collecting items, proceed from fine-grained to coarser clusterings,
  # so with low resolution first.
  #
-my %digraph = ();   # collect links for dot plot
-my %digraph_printname = ();
+my %maplinks = ();   # collect links for dot plot
 
 for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
 
@@ -213,6 +210,8 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
     my $val  = $::nodes{$name}{val};
     my @nodestack = ( $name );
     my @items = ();
+    $maplinks{$name} = {} unless defined($maplinks{$name});
+          # this is to force nodes that are not a parent to exist in the map.
 
     while (@nodestack) {
 
@@ -224,7 +223,7 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
         push @items, @{$::nodes{$nodename}{items}};
 
         if ($nodename ne $name && $::nodes{$nodename}{size} >= $::reslimit) {
-          $digraph{$name}{$nodename} = 1;
+          $maplinks{$name}{$nodename} = 1;
         }
       }
       else {
@@ -233,7 +232,6 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
     }
     @items = sort { $a <=> $b } @items;
     $::nodes{$name}{items} = \@items unless defined($::nodes{$name}{items});
-    $digraph_printname{$name} = "$size" if $size >= $::resdisplaylimit;
  
     my $nitems = @items;
     print STDERR "Error res $res size difference $size / $nitems\n" unless $nitems == $size;
@@ -248,22 +246,20 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
 my $dotname = "$::prefix.hi.$::resolutiontag.resdot";
 open(RESDOT, ">$dotname") || die "Cannot open $dotname for writing";
 
-for my $n (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_printname ) {
+for my $n (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %maplinks) {
   my $size = $::nodes{$n}{size};
   my $sum  = 0;
-  my $missing = "0";
+  my $ppeeled = "0";
   my $psingle = "0";
-  if (defined($digraph{$n})) {
-    $sum += $::nodes{$_}{size} for keys %{$digraph{$n}};
-    $missing = sprintf("%d", 100 * ($size - $sum) / $size);
-    $psingle = sprintf("%d", 100 * $::nodes{$n}{nsg} / $size);
-  }
-  print RESDOT "node\t$n\t$::nodes{$n}{val}\t$size\t$missing\n";
+  $sum += $::nodes{$_}{size} for keys %{$maplinks{$n}};
+  $ppeeled = sprintf("%d", 100 * ($size - $sum) / $size) if $sum;
+  $psingle = sprintf("%d", 100 * $::nodes{$n}{nsg} / $size) if $sum;
+  print RESDOT "node\t$n\t$::nodes{$n}{val}\t$size\t$ppeeled\n";
 }
-for my $n1 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %digraph_printname ) {
-  for my $n2 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$digraph{$n1}} ) {
-    print RESDOT "link\t$n1\t$n2\n" if $::nodes{$n2}{size} >= $::resdisplaylimit;
-    print STDERR "yay test is useful\n" if $::nodes{$n2}{size} < $::resdisplaylimit;
+for my $n1 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %maplinks) {
+  for my $n2 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$maplinks{$n1}} ) {
+    print RESDOT "link\t$n1\t$n2\n"; # Could implement filter here
+                                     # to avoid printing out the very smallest stuff.
   }
 }
 close(RESDOT);

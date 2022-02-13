@@ -7,10 +7,9 @@
 #                                                                           _|
 #  R C L : Restricted Contingency Linkage clustering
 #
-# RCL is implemented using programs/tools that are shipped with mcl.  It can be
-# run on any set of clusterings from any method or program, but (in this
-# implementation) the network and clusterings have to be supplied in mcl matrix
-# format.
+# This RCL implementation uses programs/tools that are shipped with mcl.  It
+# can be run on any set of clusterings from any method or program, but the
+# network and clusterings have to be supplied in mcl matrix format.
 #
 # See github.com/micans/mcl#rcl and this script -h (or -H).
 
@@ -78,10 +77,14 @@ Options:
 -l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "50 100 200 400" to compute resolution clusterings
 -p  <num>    Parallel/CPU, use this many CPUs for parallel RCL compute   
--S           Output cluster size distribution information (use in (2))
+-F           Force computation, ignore existing RCL object'
+
+Help_options_b='-S           Output cluster size distribution information (use in (2))
 -U           Compute the Unrestricted Contingency Linkage object (use in (1))
--F           Force computation, ignore existing RCL object
--H           Expanded help, opened in less'
+             Perhaps include a mnemonic in TAG to indicate -U was used.
+-D           (Diagonal) include self-comparisons among cluster comparisons
+             Essentially this adds the UCL information to the RCL object.'
+
 
 if (( $# > 0 )) && [[ ! $1 =~ ^- ]]; then
   tag=$1
@@ -137,6 +140,7 @@ $Help_2
 $HELP_2b
 $HELP_3
 $Help_options
+$Help_options_b
 EOU
    } | less
       exit
@@ -250,8 +254,8 @@ else
 fi
 
 if [[ -z $LEVELS && -z $RESOLUTION ]]; then
-  echo "-- suggest rcl.sh $pfx -r \"N1 N2 N3 ..\" to compute resolution clusters"
-  echo "-- suggest log scale, e.g. rcl.sh $pfx -r \"50 100 200 400 1000\""
+  echo "-- suggest rcl.sh $tag -r \"N1 N2 N3 ..\" to compute resolution clusters"
+  echo "-- suggest log scale, e.g. rcl.sh $tag -r \"50 100 200 400 1000\""
   echo "-- vary N according to preference and data set size"
 fi
 

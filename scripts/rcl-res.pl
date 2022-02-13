@@ -9,7 +9,7 @@
 # either be of size at least R without a sub-split below C's tree node into two
 # other clusters of size at least R, or C is smaller than R and was split off
 # in order to allow another such split to happen elsewhere. In the last case
-# will not have been split any further.
+# C will not have been split any further.
 #
 # For decreasing resolution sizes, the code descends each node in the tree, as
 # long as it finds two independent components below the node that are both of
@@ -42,7 +42,7 @@ $::resolutiontag = join '-', @::resolution;
 
 @ARGV = ();
 %::nodes = ();
-%::cid2node = ();
+
 $::L=1;
 %::topoftree = ();
 print STDERR "-- constructing tree:\n";
@@ -57,84 +57,90 @@ while (<>) {
    chomp;
    my @F = split "\t";
 
-   die "Expect 15 elements (have \"@F\")\n" unless @F == 15;
-   my ($i, $x, $y, $xid, $yid, $val, $xcid, $ycid, $xcsz, $ycsz, $xycsz, $nedge, $ctr, $lss, $nsg) = @F;
+   die "Expect 12 elements (have \"@F\")\n" unless @F == 12;
+   my ($i, $val, $upname, $ann, $bob, $xcsz, $ycsz, $xycsz, $nedge, $ctr, $lss, $nsg) = @F;
    die "Checks failed on line $.\n" unless
-         looks_like_number($xid) && looks_like_number($yid)
+         looks_like_number($xcsz) && looks_like_number($ycsz)
       && looks_like_number($lss) && looks_like_number($nsg);
    print STDERR '.' if $. % 1000 == 1;
 
-   my ($id1, $id2) = ($xcid, $ycid);
-   ($id1, $id2)    = ($ycid, $xcid) if $ycid < $xcid;
-
-   my $upname    = "L$::L" . "_$id1" . "_$xycsz";
-
-                      # singletons have to be introduced into our tree/node listing
+                      # leaves have to be introduced into our tree/node listing
    if ($xcsz == 1) {
-     my $leaf = "L$::L" . "_x$xcid";
-     $::cid2node{$xcid} = $leaf;
-     $::nodes{$leaf} =
-     {    name => $leaf
-     ,    size =>  1
-     ,   items => [ $xid ]
-     ,     ann => ""
-     ,     bob => ""
-     ,  csizes => []
-     , lss => 0
-     , nsg => 0
-     , val => 1000
-     } ;
+      $ann =~ /leaf_(\d+)/ || die "Missing leaf (Ann) on line $.\n";
+      my $leafid = $1;
+      $::nodes{$ann} =
+      {  name => $ann
+      ,  size =>  1
+      ,  items => [ $leafid ]
+      ,  ann => ""
+      ,  bob => ""
+      ,  csizes => []
+      ,  lss => 0
+      ,  nsg => 0
+      ,  val => 1000
+      } ;
    }
    if ($ycsz == 1) {
-     my $leaf = "L$::L" . "_x$ycid";
-     $::cid2node{$ycid} = $leaf;
-     $::nodes{$leaf} =
-     {    name => $leaf
-     ,    size =>  1
-     ,   items => [ $yid ]
-     ,     ann => ""
-     ,     bob => ""
-     ,  csizes => []
-     , lss => 0
-     , nsg => 0
-     , val => 1000
+      $bob =~ /leaf_(\d+)/ || die "Missing leaf (Bob) on line $.\n";
+      my $leafid = $1;
+      $::nodes{$bob} =
+      {  name => $bob
+      ,  size =>  1
+      ,  items => [ $leafid ]
+      ,  ann => ""
+      ,  bob => ""
+      ,  csizes => []
+      ,  lss => 0
+      ,  nsg => 0
+      ,  val => 1000
+      } ;
+   }
+
+   # Keep track of the maximum size of the smaller of any pair of nodes below
+   # the current node that are not related by descendancy.  Given a node N;
+   # what is the max min size of two non-nesting nodes below it.  Its
+   # max(mms(desc1), mms(desc2), min(|desc1|, |desc2|))
+
+   # $ann eq $bob are singletons in the network, the only ones that cannot be
+   # made out of a join.  by filling in {items} we shold not need to modify
+   # code elsewhere.
+
+   if ($ann eq $bob) {
+     $::nodes{$upname} =
+     {  name  => $upname
+     ,  parent => undef
+     ,  size  => 1
+     ,  ann  => "sgl-dead-end"
+     ,  bob  => "sgl-dead-end"
+     ,  csizes => [ 1, 0 ]
+     ,  lss => 1
+     ,  nsg => $nsg
+     ,  val => $val
+     ,  items =>[ @{$::nodes{$ann}{items}} ]
+     } ;
+   }
+   else {
+     $::nodes{$upname} =
+     {  name  => $upname
+     ,  parent => undef
+     ,  size  => $::nodes{$ann}{size} + $::nodes{$bob}{size}
+     ,  ann  => $ann
+     ,  bob  => $bob
+     ,  csizes => [ $::nodes{$ann}{size}, $::nodes{$bob}{size}]
+     ,  lss => max( $::nodes{$ann}{lss}, $::nodes{$bob}{lss}, min($::nodes{$ann}{size}, $::nodes{$bob}{size}))
+     ,  nsg => $nsg
+     ,  val => $val
      } ;
    }
 
-   my $node1 = $::cid2node{$id1};     # id1 id2 are xcid ycid; these were assigned and updated
-   my $node2 = $::cid2node{$id2};     # along join order for descendant nodes by clm close.
+   # clm close outputs a line with ann eq bob for all singleton nodes.
+   print STDERR "LSS error check failed ($ann $bob)\n" if $::nodes{$upname}{lss} != $lss && $ann ne $bob;
 
-
-   # Keep track of the maximum size of the smaller of any pair of nodes below the current node that are
-   # not related by descendancy.
-
-   # Given a node N; what is the max min size of two non-nesting nodes below it.
-   # Its max(mms(desc1), mms(desc2), min(|desc1|, |desc2|))
-
-      $::nodes{$upname} =
-      {   name  => $upname
-      ,   parent => undef
-      ,   size  => $::nodes{$node1}{size} + $::nodes{$node2}{size}
-      ,    ann  => $node1
-      ,    bob  => $node2
-      ,  csizes => [ $::nodes{$node1}{size}, $::nodes{$node2}{size}]
-      , lss => max( $::nodes{$node1}{lss}, $::nodes{$node2}{lss}, min($::nodes{$node1}{size}, $::nodes{$node2}{size}))
-      , nsg => $nsg
-      , val => $val
-      } ;
-
-   # clm close outputs a line with id1 == id2 for all singleton nodes.
-   print STDERR "LSS error check failed ($id1 $id2)\n" if $::nodes{$upname}{lss} != $lss && $id1 ne $id2;
-
-   $::cid2node{$id1} = $upname;
-   $::cid2node{$id2} = $upname;
-
-   delete($::topoftree{$node1});
-   delete($::topoftree{$node2});
+   delete($::topoftree{$ann});
+   delete($::topoftree{$bob});
 
    $::topoftree{$upname} = 1;
    $::L++;
-
 }
 print STDERR "\n" if $. >= 1000;
 

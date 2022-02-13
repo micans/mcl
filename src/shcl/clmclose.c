@@ -577,6 +577,8 @@ static mcxstatus closeMain
       ;  mclx* sl
       ;  mcxIO* xflist = mcxIOnew(fn_nodelist, "w")
       ;  struct annot* ant = mcxNAlloc(N_COLS(mx), sizeof ant[0], NULL, EXIT_ON_FAIL)
+      ;  mcxTing* nodeid   = mcxNAlloc(N_COLS(mx), sizeof nodeid[0], mcxTingInit, EXIT_ON_FAIL)
+      ;  mcxTing* upname   = mcxTingNew("")
 
                     /* annot.lss: Largest Sub-Split below or at this node;
                      * > max(min(szleft, szright))
@@ -603,6 +605,7 @@ static mcxstatus closeMain
                ;  edge->val = d->val
             ;  }
             }
+         ;  mcxTingPrint(nodeid+i, "leaf_%d", (int) i)
       ;  }
          E = e
       ;  mcxTell(me, "have %d edges ..", (int) E)
@@ -613,7 +616,7 @@ static mcxstatus closeMain
 
       ;  fprintf
          (  xfout->fp
-         ,  "link\tx\ty\txid\tyid\tval\txcid\tycid\txcsz\tycsz\txycsz\tnedge\tctr\tlss\tnsg\n"
+         ,  "link\tval\tNID\tANN\tBOB\txcsz\tycsz\txycsz\tnedge\tctr\tlss\tnsg\n"
          )
       ;  while (e<E)
          {  pnum s = edges[e].src
@@ -655,18 +658,16 @@ static mcxstatus closeMain
                           "nedge ctr lss nsg"
                         */
 
-            fprintf
-            (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.2f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\n"
+            mcxTingPrint(upname, "L%d_%d", (int) n_linked, (int) (sl->cols[si].n_ivps + sl->cols[di].n_ivps))
+         ;  fprintf
+            (  xfout->fp, "%d\t%.2f\t" "%s\t%s\t%s\t" "%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\n"
             ,  (int) n_linked
-            ,  tab ? mclTabGet(tab, s, NULL) : sbuf
-            ,  tab ? mclTabGet(tab, d, NULL) : dbuf
-
-            ,  (int) s
-            ,  (int) d
             ,  (double) v
 
-            ,  (int) si
-            ,  (int) di
+            ,  upname->str
+            ,  nodeid[si].str
+            ,  nodeid[di].str
+
             ,  (int) sl->cols[si].n_ivps
             ,  (int) sl->cols[di].n_ivps
             ,  (int) (sl->cols[si].n_ivps + sl->cols[di].n_ivps)
@@ -676,6 +677,7 @@ static mcxstatus closeMain
             ,  (long unsigned) ant[ni].lss
             ,  (long unsigned) ant[ni].nsg
             )
+         ;  mcxTingWrite(nodeid+ni, upname->str)
                                           /* merge clusters */
          ;  mclvBinary(sl->cols+si, sl->cols+di, sl->cols+ni, fltMax)
 
@@ -696,17 +698,14 @@ static mcxstatus closeMain
             ;  snprintf(ibuf, 50, "%d", (int) i)
             ;  fprintf(xflist->fp, "%s\t0.0\n", tab ? mclTabGet(tab, i, NULL) : ibuf)
             ;  fprintf
-               (  xfout->fp, "%d\t%s\t%s\t" "%d\t%d\t%.2f\t" "%d\t%d\t%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\n"
+               (  xfout->fp, "%d\t%.2f\t" "sgl_%d\t%s\t%s\t" "%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\n"
                ,  (int) n_linked++
-               ,  tab ? mclTabGet(tab, i, NULL) : ibuf
-               ,  tab ? mclTabGet(tab, i, NULL) : ibuf
-
-               ,  (int) i
-               ,  (int) i
                ,  1000.0
 
                ,  (int) i
-               ,  (int) i
+               ,  nodeid[i].str
+               ,  nodeid[i].str
+
                ,  (int) 1
                ,  (int) 1
                ,  (int) 1

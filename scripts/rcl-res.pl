@@ -4,6 +4,13 @@
 # output encodes the single-linkage join order of a tree.  The script further
 # requires a prefix for file output and a list of resolution sizes.
 #
+# The output is a list of flat clusterings, one for each resolution size.
+# These clusterings usually share clusters between them (i.e. clusters do not
+# always split at each resolution level), but do form a nesting set of clusterings.
+# Also output is the 'dot' specification of a plot that shows the structure
+# of the hierarchy (ignoring clusters below the smallest resolution size).
+# This file can be put through GraphViz dot to obtain the plot.
+#
 # A cluster corresponds to a tree node. The cluster consists of all associated
 # leaf nodes below this node. For a given resolution size R each cluster C must
 # either be of size at least R without a sub-split below C's tree node into two
@@ -23,8 +30,9 @@
 # rcl.sh incorporates rcl-res.pl, see there for comprehensive usage example.
 # Use e.g.
 #     rcl-res.pl pfx 50 100 200 < sl.join-order
-#     mcxload -235-ai pfx50.clusters -o pfx50.cls
+#     mcxload -235-ai pfx50.info -o pfx50.cls
 
+# TODO: detect circular/nonDAG input to prevent memory/forever issues.
 
 use strict;
 use warnings;
@@ -42,6 +50,8 @@ $::resolutiontag = join '-', @::resolution;
 
 @ARGV = ();
 %::nodes = ();
+$::nodes{dummy}{items} = [];     # used for singletons; see below
+$::nodes{dummy}{size}  = 0;      #
 
 $::L=1;
 %::topoftree = ();
@@ -72,8 +82,8 @@ while (<>) {
       {  name => $ann
       ,  size =>  1
       ,  items => [ $leafid ]
-      ,  ann => ""
-      ,  bob => ""
+      ,  ann => "null"
+      ,  bob => "null"
       ,  csizes => []
       ,  lss => 0
       ,  nsg => 0
@@ -87,8 +97,8 @@ while (<>) {
       {  name => $bob
       ,  size =>  1
       ,  items => [ $leafid ]
-      ,  ann => ""
-      ,  bob => ""
+      ,  ann => "null"
+      ,  bob => "null"
       ,  csizes => []
       ,  lss => 0
       ,  nsg => 0
@@ -96,42 +106,33 @@ while (<>) {
       } ;
    }
 
-   # Keep track of the maximum size of the smaller of any pair of nodes below
-   # the current node that are not related by descendancy.  Given a node N;
-   # what is the max min size of two non-nesting nodes below it.  Its
-   # max(mms(desc1), mms(desc2), min(|desc1|, |desc2|))
+   # LSS: largest sub split. keep track of the maximum size of the smaller of
+   # any pair of nodes below the current node that are not related by
+   # descendancy.  Given a node N; what is the max min size of two non-nesting
+   # nodes below it.  Its max(mms(desc1), mms(desc2), min(|desc1|, |desc2|))
+   # clm close and rcl-res.pl both compute it - a bit pointless but let's just
+   # say it is a sanity check.
 
-   # $ann eq $bob are singletons in the network, the only ones that cannot be
-   # made out of a join.  by filling in {items} we shold not need to modify
-   # code elsewhere.
+   # $ann eq $bob is how clm close denotes a singleton in the network - the
+   # only type of node that does not participate in a join.
+   # A dummy node exists (see above) that has only size = 0 and items = [] with none
+   # of the other fields set. Currently that node is only accessed when
+   # items are picked up in the cluster aggregation step. (If code is added
+   # and pokes at other attributes they will be undefined and we will know).
 
-   if ($ann eq $bob) {
-     $::nodes{$upname} =
-     {  name  => $upname
-     ,  parent => undef
-     ,  size  => 1
-     ,  ann  => "sgl-dead-end"
-     ,  bob  => "sgl-dead-end"
-     ,  csizes => [ 1, 0 ]
-     ,  lss => 1
-     ,  nsg => $nsg
-     ,  val => $val
-     ,  items =>[ @{$::nodes{$ann}{items}} ]
-     } ;
-   }
-   else {
-     $::nodes{$upname} =
-     {  name  => $upname
-     ,  parent => undef
-     ,  size  => $::nodes{$ann}{size} + $::nodes{$bob}{size}
-     ,  ann  => $ann
-     ,  bob  => $bob
-     ,  csizes => [ $::nodes{$ann}{size}, $::nodes{$bob}{size}]
-     ,  lss => max( $::nodes{$ann}{lss}, $::nodes{$bob}{lss}, min($::nodes{$ann}{size}, $::nodes{$bob}{size}))
-     ,  nsg => $nsg
-     ,  val => $val
-     } ;
-   }
+   $bob = 'dummy' if $ann eq $bob;
+
+   $::nodes{$upname} =
+   {  name  => $upname
+   ,  parent => undef
+   ,  size  => $::nodes{$ann}{size} + $::nodes{$bob}{size}
+   ,  ann   => $ann
+   ,  bob   => $bob
+   ,  csizes => [ $::nodes{$ann}{size}, $::nodes{$bob}{size}]
+   ,  lss   => max( $::nodes{$ann}{lss}, $::nodes{$bob}{lss}, min($::nodes{$ann}{size}, $::nodes{$bob}{size}))
+   ,  nsg   => $nsg
+   ,  val   => $val
+   } ;
 
    # clm close outputs a line with ann eq bob for all singleton nodes.
    print STDERR "LSS error check failed ($ann $bob)\n" if $::nodes{$upname}{lss} != $lss && $ann ne $bob;

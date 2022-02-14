@@ -18,15 +18,14 @@ set -euo pipefail
 network=
 tabfile=
 tag=
+cpu=1
 LEVELS=
 RESOLUTION=
-cpu=1
+SELF=
 
 do_ucl=false          # unrestricted contingency clustering, basic approach
 do_gralog=false       # granularity report on log scale
 do_force=false
-
-SELF=
 
 
 HELP_intro="

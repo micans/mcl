@@ -3,8 +3,8 @@
 set -euo pipefail
 
 UCL=""
-name=rcl
-if [[ ! -z ${MCLX_USEUCL+x} ]]; then UCL=-U; name=ucl; fi
+TAG=rcl
+if [[ ! -z ${MCLX_USEUCL+x} ]]; then UCL=-U; TAG=ucl; fi
 
 if [[ ! -f falkner.mci || ! -f falkner.tab ]]; then
    echo "Please copy graphs/falkner.mci and graphs/falkner.tab from the mcl source to here"
@@ -23,17 +23,15 @@ cached=0
 for i in 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.5 3.0 4.0 5.0 6.0; do
    cline1="mcl falkner.mci -q x -V all -I $i"
    cline2="mcl falkner.mci -q x -V all -I $i -dae  1 -aa .dad"
-   cline3="mcl falkner.mci -q x -V all -I $i -dae  2 -aa .dae"
    ( [[ ! -f $($cline1 -az) ]] && $cline1 ) || (( ++cached ))
    ( [[ ! -f $($cline2 -az) ]] && $cline2 ) || (( ++cached ))
-   ( [[ ! -f $($cline3 -az) ]] && $cline3 ) || (( ++cached ))
 done
 echo "Clustering done ($cached cached)"
 
-rcl.sh -n $name $UCL -m falkner.mci -t falkner.tab out.falkner.mci*
+rcl.sh $TAG $UCL -n falkner.mci -t falkner.tab out.falkner.mci*
 
-rcl.sh -n $name -l 200/100/600
+rcl.sh $TAG -l 200/100/600
 
-rcl.sh -n $name -r "5 10 15 20"
+rcl.sh $TAG -r "5 10 20 40"
 
 

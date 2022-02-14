@@ -566,10 +566,10 @@ static mcxstatus closeMain
          return STATUS_OK
    ;  }
 
-                       /* in this block we use mx->cols[i].vid to encode the current cluster index.
-                        * We require a canonical domain.
-                        * Make a function.
-                       */
+                  /* In this block we use mx->cols[i].vid to encode the current cluster index.
+                   * We require a canonical domain.
+                   * Make a function.
+                  */
       else if (sgl_g)
       {  dim i, e=0, E, N = mclxNrofEntries(mx), n_linked = 0
       ;  mcle* edges = mcxAlloc(sizeof edges[0] * N, EXIT_ON_FAIL)
@@ -580,14 +580,21 @@ static mcxstatus closeMain
       ;  mcxTing* nodeid   = mcxNAlloc(N_COLS(mx), sizeof nodeid[0], mcxTingInit, EXIT_ON_FAIL)
       ;  mcxTing* upname   = mcxTingNew("")
 
-                    /* annot.lss: Largest Sub-Split below or at this node;
-                     * > max(min(szleft, szright))
-                     * > over all nodes in the subtree rooted by this node
-                     * Useful for descend decisions.
-                    */
+                  /* annot.lss: Largest Sub-Split below or at this node;
+                   * > max(min(szleft, szright))
+                   * > over all nodes in the subtree rooted by this node
+                   * Useful for descend decisions.
+                  */
       ;  if (!mclxDomCanonical(mx))
          mcxDie(1, me, "I need canonical domains in link mode")
 
+                  /* This matrix keeps track of cluster membership as we build
+                   * the tree. cols[i].vid == x indicates membership of cluster
+                   * currently named x, for which the nodes are listed in
+                   * cols[x].ivps For each edge, we check the cluster
+                   * membership of its two nodes; if the clusters are different
+                   * then this edge is a new join link.
+                  */
       ;  sl = mclxIdentity(mclvCopy(NULL, mx->dom_cols))
       ;  mcxIOopen(xflist, EXIT_ON_FAIL)
 
@@ -693,6 +700,11 @@ static mcxstatus closeMain
          for (i=0;i<N_COLS(sl);i++)
          {  mclv* v = sl->cols+i
          ;  int n_singleton = 0
+                                    /* sl starts out as identity matrix;
+                                     * if two leaves are linked the lower-index node
+                                     * will have 2 nodes, and the higher-index node
+                                     * will have its vid set to that of the lower.
+                                    */
          ;  if (v->vid == i && v->n_ivps == 1)     /* singleton, never linked */
             {  char ibuf[50]
             ;  snprintf(ibuf, 50, "%d", (int) i)

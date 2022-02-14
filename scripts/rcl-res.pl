@@ -6,10 +6,11 @@
 #
 # The output is a list of flat clusterings, one for each resolution size.
 # These clusterings usually share clusters between them (i.e. clusters do not
-# always split at each resolution level), but do form a nesting set of clusterings.
-# Also output is the 'dot' specification of a plot that shows the structure
-# of the hierarchy (ignoring clusters below the smallest resolution size).
-# This file can be put through GraphViz dot to obtain the plot.
+# always split at each resolution level), but do form a (not strictly) nesting
+# set of clusterings.  Also output is the 'dot' specification of a plot that
+# shows the structure of the hierarchy (ignoring clusters below the smallest
+# resolution size).  This file can be put through GraphViz dot to obtain the
+# plot.
 #
 # A cluster corresponds to a tree node. The cluster consists of all associated
 # leaf nodes below this node. For a given resolution size R each cluster C must
@@ -52,6 +53,7 @@ $::resolutiontag = join '-', @::resolution;
 %::nodes = ();
 $::nodes{dummy}{items} = [];     # used for singletons; see below
 $::nodes{dummy}{size}  = 0;      #
+$::nodes{dummy}{lss}   = 0;      #
 
 $::L=1;
 %::topoftree = ();
@@ -108,19 +110,20 @@ while (<>) {
 
    # LSS: largest sub split. keep track of the maximum size of the smaller of
    # any pair of nodes below the current node that are not related by
-   # descendancy.  Given a node N; what is the max min size of two non-nesting
-   # nodes below it.  Its max(mms(desc1), mms(desc2), min(|desc1|, |desc2|))
-   # clm close and rcl-res.pl both compute it - a bit pointless but let's just
-   # say it is a sanity check.
+   # descendancy.  Given a node N the max min size of two non-nesting
+   # nodes below it is max(mms(desc1), mms(desc2), min(|desc1|, |desc2|)).
+   # clm close and rcl-res.pl both compute it - a bit pointless but lets just
+   # call it a sanity check.
 
    # $ann eq $bob is how clm close denotes a singleton in the network - the
    # only type of node that does not participate in a join.
-   # A dummy node exists (see above) that has only size = 0 and items = [] with none
+   # A dummy node exists (see above) that has only size, items and lss with none
    # of the other fields set. Currently that node is only accessed when
-   # items are picked up in the cluster aggregation step. (If code is added
-   # and pokes at other attributes they will be undefined and we will know).
+   # items are picked up in the cluster aggregation step. If code is added
+   # and pokes at other attributes they will be undefined and we will know.
 
    $bob = 'dummy' if $ann eq $bob;
+   die "Parent node $upname already exists\n" if defined($::nodes{$upname});
 
    $::nodes{$upname} =
    {  name  => $upname

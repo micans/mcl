@@ -66,6 +66,7 @@ enum
 ,  MY_OPT_LEVELS_NORM
 ,  MY_OPT_SL
 ,  MY_OPT_SLLIST
+,  MY_OPT_SL_RCL_CUTOFF
 ,  MY_OPT_WRITEGRAPH
 ,  MY_OPT_WRITEGRAPHC
 ,  MY_OPT_CCBOUND
@@ -75,6 +76,7 @@ enum
 ,  MY_OPT_TABXOUT
 ,  MY_OPT_MAPOUT
 ,  MY_OPT_TF
+,  MY_OPT_DEBUG
 ,  MY_OPT_CAN
 }  ;
 
@@ -140,6 +142,12 @@ mcxOptAnchor closeOptions[] =
    ,  MY_OPT_SL
    ,  NULL
    ,  "output single linkage tree encoded as list of joins"
+   }
+,  {  "-sl-rcl-cutoff"
+   ,  MCX_OPT_HASARG
+   ,  MY_OPT_SL_RCL_CUTOFF
+   ,  "<num>"
+   ,  "A value inbetween 0-1000 (suggested:100) at which to stop joining"
    }
 ,  {  "--write-count"
    ,  MCX_OPT_DEFAULT
@@ -213,6 +221,12 @@ mcxOptAnchor closeOptions[] =
    ,  "<tf-spec>"
    ,  "first apply tf-spec to matrix"
    }
+,  {  "--debug"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  MY_OPT_DEBUG
+   ,  NULL
+   ,  "set debug"
+   }
 ,  {  "--canonical"
    ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
    ,  MY_OPT_CAN
@@ -235,6 +249,7 @@ static mcxIO*  xfdom    =  (void*) -1;
 static mcxTing* tfting  =  (void*) -1;
 static dim     ccbound_num  =  -1;
 static mcxbool canonical=  -1;
+static mcxbool debug_g    =  -1;
 static mcxbool make_symmetric=  -1;
 static mcxmode write_mode = -1;
 
@@ -243,6 +258,7 @@ static ofs     lo_g     =  -1;
 static ofs     st_g     =  -1;
 static const char* levels_pfx = NULL;
 
+static double  sgl_rcl_thr_g = 0.0;
 static double  norm_g   =  0.0;
 static mcxbool sgl_g    =  FALSE;      /* once there was a reason for the -1 initialisations,
                                         * but TBH I forgot.
@@ -266,6 +282,7 @@ static mcxstatus closeInit
    ;  tfting   =  NULL
    ;  ccbound_num  =  0
    ;  canonical=  FALSE
+   ;  debug_g  =  FALSE
    ;  make_symmetric =  TRUE
    ;  hi_g     =  0;
    ;  lo_g     =  0;
@@ -351,6 +368,11 @@ static mcxstatus closeArgHandle
       ;  break
       ;
 
+         case MY_OPT_SL_RCL_CUTOFF
+      :  sgl_rcl_thr_g = atof(val)
+      ;  break
+      ;
+
          case MY_OPT_SLLIST
       :  fn_nodelist = val
       ;  break
@@ -396,6 +418,11 @@ static mcxstatus closeArgHandle
       ;  break
       ;
 
+         case MY_OPT_DEBUG
+      :  debug_g = TRUE
+      ;  break
+      ;
+
          case MY_OPT_CAN
       :  canonical = TRUE
       ;  break
@@ -432,11 +459,41 @@ static int edge_val_cmp
 ;  }
 
 
-struct annot
-{  dim lss
-;  dim nsg
+struct slleaf
+{  struct slleaf* next
+;  struct slleaf* last  /* so that we can quicly link two linked lists */
+;  dim nid              /* the leaf ID                   */
+;  dim cid              /* its current cluster ID        */
 ;
 }  ;
+
+void* leaf_init(void* v)
+{  struct slleaf* leaf = v
+;  leaf->next = NULL
+;  leaf->last = NULL
+;  leaf->nid  = 0
+;  leaf->cid  = 0
+;  return leaf
+;
+}
+
+struct slnode
+{  mcxTing* name  /* Name we give this node        */
+;  dim      size
+;  dim      lss
+;  dim      nsg
+;
+}  ;
+
+void* node_init(void* v)
+{  struct slnode* node = v
+;  node->name = mcxTingNew("")
+;  node->size = 1
+;  node->lss  = 0
+;  node->nsg  = 0
+;  return node
+;
+}
 
 
 static mcxstatus closeMain
@@ -566,43 +623,42 @@ static mcxstatus closeMain
          return STATUS_OK
    ;  }
 
-                  /* In this block we use mx->cols[i].vid to encode the current cluster index.
-                   * We require a canonical domain.
-                   * Make a function.
+                  /* We require a canonical domain.
+                   * Make this a function.
+                   * There is E log(E) factor due to edge sorting - Not an issue I think.
+                   * The tree merge operation is done using linked lists; only the nodes
+                   * in the smaller of the two children branches needs updating, so overall
+                   * that is probably O(N).
                   */
       else if (sgl_g)
-      {  dim i, e=0, E, N = mclxNrofEntries(mx), n_linked = 0
-      ;  mcle* edges = mcxAlloc(sizeof edges[0] * N, EXIT_ON_FAIL)
-      ;  double sumszsq = N_COLS(mx)
-      ;  mclx* sl
-      ;  mcxIO* xflist = mcxIOnew(fn_nodelist, "w")
-      ;  struct annot* ant = mcxNAlloc(N_COLS(mx), sizeof ant[0], NULL, EXIT_ON_FAIL)
-      ;  mcxTing* nodeid   = mcxNAlloc(N_COLS(mx), sizeof nodeid[0], mcxTingInit, EXIT_ON_FAIL)
-      ;  mcxTing* upname   = mcxTingNew("")
+      {  dim L, U, D
+      ;  mclxNrofEntriesLUD(mx, &L, &U, &D)
+      ;  mcxTell(me, "Input matrix entries: lower=%d, upper=%d, diagonal=%d", (int) L, (int) U, (int) D)
 
-                  /* annot.lss: Largest Sub-Split below or at this node;
-                   * > max(min(szleft, szright))
-                   * > over all nodes in the subtree rooted by this node
-                   * Useful for descend decisions.
-                  */
+      ;  dim i, e=0, E, N = MCX_MAX(U,L), n_linked = 0
+      ;  mcle* edges       =  mcxAlloc(sizeof edges[0] * N, EXIT_ON_FAIL)
+      ;  double sumszsq    =  N_COLS(mx)
+      ;  mcxIO* xflist     =  mcxIOnew(fn_nodelist, "w")
+      ;  mcxTing* upname   =  mcxTingNew("")
+      ;  struct slnode *NODE  =  mcxNAlloc(N_COLS(mx), sizeof NODE[0], node_init, EXIT_ON_FAIL)
+      ;  struct slleaf *LEAF  =  mcxNAlloc(N_COLS(mx), sizeof NODE[0], leaf_init, EXIT_ON_FAIL)
+      ;  int n_singleton = 0
+
       ;  if (!mclxDomCanonical(mx))
          mcxDie(1, me, "I need canonical domains in link mode")
 
-                  /* This matrix keeps track of cluster membership as we build
-                   * the tree. cols[i].vid == x indicates membership of cluster
-                   * currently named x, for which the nodes are listed in
-                   * cols[x].ivps For each edge, we check the cluster
-                   * membership of its two nodes; if the clusters are different
-                   * then this edge is a new join link.
-                  */
-      ;  sl = mclxIdentity(mclvCopy(NULL, mx->dom_cols))
       ;  mcxIOopen(xflist, EXIT_ON_FAIL)
 
       ;  for (i=0;i<N_COLS(mx);i++)
+         {  LEAF[i].nid = i
+         ;  LEAF[i].cid = i
+         ;  LEAF[i].last = LEAF+i
+         ;  mcxTingPrint(NODE[i].name, "leaf_%d", (int) i)
+      ;  }
+
+         for (i=0;i<N_COLS(mx);i++)
          {  mclv* v = mx->cols+i
          ;  dim j
-         ;  ant[i].lss = 0
-         ;  ant[i].nsg = 0
          ;  for (j=0;j<v->n_ivps;j++)
             {  mclp* d = v->ivps+j
             ;  if (d->idx > i)
@@ -612,8 +668,7 @@ static mcxstatus closeMain
                ;  edge->val = d->val
             ;  }
             }
-         ;  mcxTingPrint(nodeid+i, "leaf_%d", (int) i)
-      ;  }
+         }
          E = e
       ;  mcxTell(me, "have %d edges ..", (int) E)
       ;  qsort(edges, E, sizeof edges[0], edge_val_cmp)
@@ -626,86 +681,91 @@ static mcxstatus closeMain
          ,  "link\tval\tNID\tANN\tBOB\txcsz\tycsz\txycsz\tnedge\tctr\tlss\tnsg\n"
          )
       ;  while (e<E)
-         {  pnum s = edges[e].src
-         ;  pnum d = edges[e].dst
+         {  pnum s = edges[e].src      /* edge source node              */
+         ;  pnum d = edges[e].dst      /* edge destination node         */
          ;  pval v = edges[e].val
-         ;  pnum si = sl->cols[s].vid     /* current cluster ID */
-         ;  pnum di = sl->cols[d].vid     /* current cluster ID */
-         ;  pnum ni = MCX_MIN(si, di)     /* new cluster index  */
+         ;  pnum si = LEAF[s].cid      /* source (cluster) index        */
+         ;  pnum di = LEAF[d].cid      /* destination (cluster) index   */
+
+         ;  pnum ni = NODE[si].size >= NODE[di].size ? si : di          /* New Index (re-used)*/
+         ;  pnum ui = ni == si ? di : si                                /* this one needs Updating */
          ;  char sbuf[50]
          ;  char dbuf[50]
          ;  dim j
          ;  e++
 
-         ;  if (si == di)                 /* already linked / same cluster */
+         ;  if (v < sgl_rcl_thr_g)
+            {  mcxTell(me, "Threshold reached at link %d", (int) n_linked)
+            ;  break
+         ;  }
+
+            if (si == di)                 /* already linked / same cluster */
             continue
 
          ;  snprintf(sbuf, 50, "%d", (int) s)
          ;  snprintf(dbuf, 50, "%d", (int) d)
 
-         ;  {  dim sz1 = sl->cols[si].n_ivps
-            ;  dim sz2 = sl->cols[di].n_ivps
-            ;  dim lss_sub = MCX_MAX(ant[si].lss, ant[di].lss)
-            ;  dim sgl_sub = ant[si].nsg + ant[di].nsg
+         ;  {  dim sz1 = NODE[si].size
+            ;  dim sz2 = NODE[di].size
+            ;  dim lss_sub = MCX_MAX(NODE[si].lss, NODE[di].lss)
+            ;  dim sgl_sub = NODE[si].nsg + NODE[di].nsg
+            ;  dim sz_sum  = sz1 + sz2
 
             ;  sumszsq +=
                   (sz1 + sz2) * 1.0 * (sz1 + sz2)
                -  sz1 * 1.0 * sz1
                -  sz2 * 1.0 * sz2
 
-            ;  ant[ni].lss = MCX_MAX(lss_sub, MCX_MIN(sz1, sz2))
-            ;  ant[ni].nsg = sgl_sub + ((sz1 == 1) ^ (sz2 == 1))
-
             ;  if (sz1 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, s, NULL) : sbuf, v)
             ;  if (sz2 == 1) fprintf(xflist->fp, "%s\t%.2f\n", tab ? mclTabGet(tab, d, NULL) : dbuf, v)
+
+            ;  mcxTingPrint(upname, "L%d_%d", (int) n_linked, (int) (sz_sum))
+
+            ;  NODE[ni].lss = MCX_MAX(lss_sub, MCX_MIN(sz1, sz2))    /* overwrites si or di */
+            ;  NODE[ni].nsg = sgl_sub + ((sz1 == 1) ^ (sz2 == 1))    /* overwrites si or di */
+
+            ;  fprintf
+               (  xfout->fp, "%d\t%.2f\t" "%s\t%s\t%s\t" "%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\n"
+               ,  (int) n_linked, (double) v
+               ,  upname->str, NODE[si].name->str, NODE[di].name->str
+               ,  (int) sz1, (int) sz2, (int) sz_sum
+
+               ,  (double) (e * 100.0 / E)
+               ,  (0.5 + sumszsq / N_COLS(mx))
+               ,  (long unsigned) NODE[ni].lss
+               ,  (long unsigned) NODE[ni].nsg
+               )
+
+            ;  NODE[ni].size = sz1 + sz2
+            ;  mcxTingWrite(NODE[ni].name, upname->str)
+            ;
+               {  struct slleaf* leaf_ui = LEAF+ui    /* all these dudes need setting to ni */
+               ;  LEAF[ni].last->next = leaf_ui       /* link them to the ni node as well */
+               ;  LEAF[ni].last       = leaf_ui->last /* the last ni node thus is the last ui node */
+
+               ;  while (leaf_ui)
+                  {  leaf_ui->cid = ni
+                  ;  leaf_ui = leaf_ui->next          /* After this nothing point to ui anymore */
+               ;  }
+               }
+               if (++n_linked == N_COLS(mx))
+               break
          ;  }
-                       /* "link x y"
-                          "xid yid val"
-                          "xcid ycid xcsz ycsz xycsz"
-                          "nedge ctr lss nsg"
+         }
+
+         if (E)
+         mcxTell(me, "Finished linking at %.1f of edges", e * 100.0 / E)
+
+      ;  for (i=0;i<N_COLS(mx);i++)
+         {  struct slleaf* leaf = LEAF+i
+
+                        /* Detect/write singletons:
+                         * if a leaf is linked and has cid == nid
+                         * then it will have a next;
+                         * if it does not have a next and is linked
+                         * then then it will have cid != nid
                         */
-
-            mcxTingPrint(upname, "L%d_%d", (int) n_linked, (int) (sl->cols[si].n_ivps + sl->cols[di].n_ivps))
-         ;  fprintf
-            (  xfout->fp, "%d\t%.2f\t" "%s\t%s\t%s\t" "%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\n"
-            ,  (int) n_linked
-            ,  (double) v
-
-            ,  upname->str
-            ,  nodeid[si].str
-            ,  nodeid[di].str
-
-            ,  (int) sl->cols[si].n_ivps
-            ,  (int) sl->cols[di].n_ivps
-            ,  (int) (sl->cols[si].n_ivps + sl->cols[di].n_ivps)
-
-            ,  (double) (e * 100.0 / E)
-            ,  (0.5 + sumszsq / N_COLS(mx))
-            ,  (long unsigned) ant[ni].lss
-            ,  (long unsigned) ant[ni].nsg
-            )
-         ;  mcxTingWrite(nodeid+ni, upname->str)
-                                          /* merge clusters */
-         ;  mclvBinary(sl->cols+si, sl->cols+di, sl->cols+ni, fltMax)
-
-                                          /* bestow new membership */
-         ;  for (j=0; j<sl->cols[ni].n_ivps; j++)   
-            {  pnum x = sl->cols[ni].ivps[j].idx
-            ;  sl->cols[x].vid = ni
-         ;  }
-            if (++n_linked == N_COLS(sl))
-            break
-      ;  }
-
-         for (i=0;i<N_COLS(sl);i++)
-         {  mclv* v = sl->cols+i
-         ;  int n_singleton = 0
-                                    /* sl starts out as identity matrix;
-                                     * if two leaves are linked the lower-index node
-                                     * will have 2 nodes, and the higher-index node
-                                     * will have its vid set to that of the lower.
-                                    */
-         ;  if (v->vid == i && v->n_ivps == 1)     /* singleton, never linked */
+         ;  if (leaf->cid == leaf->nid && ! leaf->next)
             {  char ibuf[50]
             ;  snprintf(ibuf, 50, "%d", (int) i)
             ;  fprintf(xflist->fp, "%s\t0.0\n", tab ? mclTabGet(tab, i, NULL) : ibuf)
@@ -715,8 +775,8 @@ static mcxstatus closeMain
                ,  1000.0
 
                ,  (int) i
-               ,  nodeid[i].str
-               ,  nodeid[i].str
+               ,  NODE[i].name->str
+               ,  NODE[i].name->str
 
                ,  (int) 1
                ,  (int) 1
@@ -729,10 +789,10 @@ static mcxstatus closeMain
                )
             ;  n_singleton++
          ;  }
-            if (n_singleton)
-            mcxTell(me, "%d singletons in data", (int) n_singleton)
-      ;  }
-         mcxIOclose(xflist)
+         }
+         if (n_singleton)
+         mcxTell(me, "%d singletons in data", (int) n_singleton)
+      ;  mcxIOclose(xflist)
       ;  mcxIOclose(xfout)
       ;  return STATUS_OK
    ;  }

@@ -159,7 +159,7 @@ fi
 mkdir -p $tag
 pfx=$tag/$tag
 
-echo -- "$pfx $@" >> $pfx.cline
+echo -- "$tag $@" >> $pfx.cline
 
 rclfile=$pfx.rcl
 
@@ -240,7 +240,7 @@ EOC
    fi
 
    echo "-- Computing single linkage join order for network $rclfile"
-   clm close --sl -imx $rclfile -tab $pfx.tab -o $pfx.join-order -write-sl-list $pfx.node-values
+   clm close --sl -sl-rcl-cutoff ${RCL_CUTOFF-0} -imx $rclfile -tab $pfx.tab -o $pfx.join-order -write-sl-list $pfx.node-values
 
 else
    echo "-- $rclfile exists, querying its dimensions"

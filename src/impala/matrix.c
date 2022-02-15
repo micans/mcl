@@ -1581,6 +1581,30 @@ double mclxMass
 ;  }
 
 
+void mclxNrofEntriesLUD
+(  const mclx*     m
+,  dim* L
+,  dim* U
+,  dim* D
+)
+   {  dim i,j
+   ;  dim l = 0, u = 0, d = 0
+   ;  for (i=0;i<N_COLS(m);i++)
+      {  mclv* v = m->cols+i
+      ;  pnum col = v->vid
+      ;  for (j=0;j<v->n_ivps;j++)
+         {  pnum row = v->ivps[j].idx
+         ;  l += col  < row
+         ;  u += col  > row
+         ;  d += col == row
+      ;  }
+      }
+      *L = l
+   ;  *U = u
+   ;  *D = d
+;  }
+
+
 dim mclxNrofEntries
 (  const mclx*     m
 )

@@ -410,6 +410,13 @@ dim mclxNrofEntries
 (  const mclx*    m
 )  ;
 
+void mclxNrofEntriesLUD
+(  const mclx*     m
+,  dim* L						/* lower, m[ij] where i>j      */
+,  dim* U						/* upper, m[ij] where i<j      */
+,  dim* D						/* diagonal, m[ij] where i==j  */
+)	;
+
 double mclxMass
 (  const mclx*    m
 )  ;

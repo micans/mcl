@@ -459,38 +459,32 @@ static int edge_val_cmp
 ;  }
 
 
-struct slleaf
-{  struct slleaf* next  /* At a merge step we merge two linked lists of leafs */
-;  struct slleaf* last  /* last in current list, facilitates quick link       */
-;  dim lid              /* the leaf ID                   */
-;  dim cid              /* its current cluster ID        */
-;
-}  ;
-
-void* leaf_init(void* v)
-{  struct slleaf* leaf = v
-;  leaf->next = NULL
-;  leaf->last = NULL
-;  leaf->lid  = 0
-;  leaf->cid  = 0
-;  return leaf
-;
-}
-
-                        /* It is possible AFAICS to integrate slleaf and slnode
-                         * into a single structure. This may be next.
+                        /* the role of cid / cluster id is to identify set membership
+                         * of nodes. It is re-used throughout linking; when linking two
+                         * sets the largest set gets to keep its ID, the smaller set
+                         * is updated to the same ID.
+                         * The ID is used when inspecting an edge to see if its endpoints
+                         * are in different clusters.
                         */
 struct slnode
-{  mcxTing* name        /* Name we give this node        */
-;  dim      size
-;  dim      lss
-;  dim      nsg
+{  mcxTing* name        /* Name that's written to the join-order file      */
+;  struct slnode* next  /* so that we can iterate through a set of leaf nodes to update their current cluster ID */
+;  struct slnode* last  /* so that we can quickl merge two linked lists    */
+;  dim      lid         /* leaf ID, not strictly necessary; equal to offset in array */
+;  dim      cid         /* current cluster ID; starts out identical to leaf id */
+;  dim      size        /* current count of all leaf nodes below this node */
+;  dim      lss         /* current largest sub split below this node       */
+;  dim      nsg         /* number of singletons joining a bigger cluster   */
 ;
 }  ;
 
 void* node_init(void* v)
 {  struct slnode* node = v
 ;  node->name = mcxTingNew("")
+;  node->next = NULL
+;  node->last = NULL
+;  node->lid  = 0
+;  node->cid  = 0
 ;  node->size = 1
 ;  node->lss  = 0
 ;  node->nsg  = 0
@@ -644,7 +638,7 @@ static mcxstatus closeMain
       ;  mcxIO* xflist     =  mcxIOnew(fn_nodelist, "w")
       ;  mcxTing* upname   =  mcxTingNew("")
       ;  struct slnode *NODE  =  mcxNAlloc(N_COLS(mx), sizeof NODE[0], node_init, EXIT_ON_FAIL)
-      ;  struct slleaf *LEAF  =  mcxNAlloc(N_COLS(mx), sizeof NODE[0], leaf_init, EXIT_ON_FAIL)
+      ;  /* struct slleaf *LEAF  =  mcxNAlloc(N_COLS(mx), sizeof NODE[0], leaf_init, EXIT_ON_FAIL) */
       ;  int n_singleton = 0
 
       ;  if (!mclxDomCanonical(mx))
@@ -653,9 +647,10 @@ static mcxstatus closeMain
       ;  mcxIOopen(xflist, EXIT_ON_FAIL)
 
       ;  for (i=0;i<N_COLS(mx);i++)
-         {  LEAF[i].lid = i
-         ;  LEAF[i].cid = i
-         ;  LEAF[i].last = LEAF+i
+         {  NODE[i].lid = i
+         ;  NODE[i].cid = i
+         ;  NODE[i].size = 1
+         ;  NODE[i].last = NODE+i
          ;  mcxTingPrint(NODE[i].name, "leaf_%d", (int) i)
       ;  }
 
@@ -687,8 +682,8 @@ static mcxstatus closeMain
          {  pnum s = edges[e].src      /* edge source node              */
          ;  pnum d = edges[e].dst      /* edge destination node         */
          ;  pval v = edges[e].val
-         ;  pnum si = LEAF[s].cid      /* source (cluster) index        */
-         ;  pnum di = LEAF[d].cid      /* destination (cluster) index   */
+         ;  pnum si = NODE[s].cid      /* source (cluster) index        */
+         ;  pnum di = NODE[d].cid      /* destination (cluster) index   */
 
          ;  pnum ni = NODE[si].size >= NODE[di].size ? si : di          /* New Index (re-used)*/
          ;  pnum ui = ni == si ? di : si                                /* this one needs Updating */
@@ -742,13 +737,13 @@ static mcxstatus closeMain
             ;  NODE[ni].size = sz1 + sz2
             ;  mcxTingWrite(NODE[ni].name, upname->str)
             ;
-               {  struct slleaf* leaf_ui = LEAF+ui    /* all these dudes need setting to ni */
-               ;  LEAF[ni].last->next = leaf_ui       /* link them to the ni node as well */
-               ;  LEAF[ni].last       = leaf_ui->last /* the last ni node thus is the last ui node */
+               {  struct slnode* node_ui = NODE+ui    /* all these dudes need setting to ni */
+               ;  NODE[ni].last->next = node_ui       /* link them to the ni node as well */
+               ;  NODE[ni].last       = node_ui->last /* the last ni node thus is the last ui node */
 
-               ;  while (leaf_ui)
-                  {  leaf_ui->cid = ni
-                  ;  leaf_ui = leaf_ui->next          /* After this nothing points to ui anymore */
+               ;  while (node_ui)
+                  {  node_ui->cid = ni
+                  ;  node_ui = node_ui->next          /* After this nothing points to ui anymore */
                ;  }
                }
                if (++n_linked == N_COLS(mx))
@@ -760,13 +755,13 @@ static mcxstatus closeMain
          mcxTell(me, "Finished linking at %.1f of edges", e * 100.0 / E)
 
       ;  for (i=0;i<N_COLS(mx);i++)
-         {  struct slleaf* leaf = LEAF+i
+         {  struct slnode* node = NODE+i
 
-                        /* Detect/write singletons: if a leaf is linked and has cid == lid
+                        /* Detect/write singletons: if a node is linked and has cid == lid
                          * then it will have a next; if it does not have a next and is linked
-                         * then then it will have cid != lid
+                         * then it will have cid != lid
                         */
-         ;  if (leaf->cid == leaf->lid && ! leaf->next)
+         ;  if (node->cid == node->lid && ! node->next)
             {  char ibuf[50]
             ;  snprintf(ibuf, 50, "%d", (int) i)
             ;  fprintf(xflist->fp, "%s\t0.0\n", tab ? mclTabGet(tab, i, NULL) : ibuf)

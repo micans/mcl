@@ -130,13 +130,14 @@
 
 \par{
    The output (save with \genopt{-o} or UNIX redirection) can be supplied to
-   \script{rcl-mix.pl} with varying resolution parameters to produce a small
+   \script{rcl-res.pl} with a list of varying resolution parameters to produce a small
    number of nested clusterings.  The resolution
-   parameter (first argument) \genarg{res} to \script{rcl-mix.pl} is a cluster
-   size; the script will descend the tree as long as the current node has some
-   split below it where both clusters are of size at least \genarg{res}.
-   Note that the resulting clustering may still have smaller clusters and
-   singletons (resulting from other splits).
+   parameters (second and subsequent arguments) to \script{rcl-res.pl} are set sizes;
+   For each of the supplied resolutions \genarg{res} the script will descend
+   the tree as long as the current node has some split below it where both
+   clusters are of size at least \genarg{res}.  Note that the resulting
+   clustering may still have smaller clusters and singletons (resulting from
+   other splits).
    }
 
 \par{

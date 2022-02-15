@@ -37,16 +37,16 @@ index correspondence with Seurat's 1-based indexing, srt2cls.sh and srt2tab.sh
 introduce a dummy node in the mcl representations for index 0."
 
 Help_1='
-1) compute the rcl object with
+1) compute the rcl graph with
       rcl.sh TAG -n <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
    TAG will be used as a prefix for various outputs; think of it as a project tag.
    The prefix used is TAG/TAG - the directory TAG will be created or
    should be a writable directory.'
 HELP_1b='
-   TAG is used in 2) to retrieve the right objects.'
+   TAG is used in 2) to retrieve the right graph.'
 
 Help_2='
-2) derive resolution-based clusterings from the rcl object.
+2) derive resolution-based clusterings from the rcl graph.
       rcl.sh TAG [-S] -r "N1 N2 N3 .."
       e.g. -r "50 100 200 400 1000 2000"
    A logarithmic scale such as above is suggested.'
@@ -59,10 +59,10 @@ HELP_2b='
 HELP_3='
 Optionally:
 3) Investigate in more detail the dynamic range of the clusters present in the tree
-   encoded in the rcl object by computing cluster sizes of thresholded trees
+   encoded in the rcl graph by computing cluster sizes of thresholded trees
       rcl.sh TAG -l <LOW/STEP/HIGH>
       e.g. -l 200/50/700
-   Note that the edge weight range in the rcl objects is [0-1000].
+   Note that the edge weight range in the rcl graph is [0-1000].
    From the output you may wish to zoom in
       e.g. -l 450/10/550
    if the cluster sizes in that range are what you are after.
@@ -76,13 +76,13 @@ Options:
 -l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
 -r  "N1 N2 N3 .."    e.g. "50 100 200 400" to compute resolution clusterings
 -p  <num>    Parallel/CPU, use this many CPUs for parallel RCL compute   
--F           Force computation, ignore existing RCL object'
+-F           Force computation, ignore existing RCL graph'
 
 Help_options_b='-S           Output cluster size distribution information (use in (2))
--U           Compute the Unrestricted Contingency Linkage object (use in (1))
+-U           Compute the Unrestricted Contingency Linkage graph (use in (1))
              Perhaps include a mnemonic in TAG to indicate -U was used.
 -D           (Diagonal) include self-comparisons among cluster comparisons
-             Essentially this adds the UCL information to the RCL object.'
+             Essentially this adds the UCL information to the RCL graph.'
 
 
 if (( $# > 0 )) && [[ ! $1 =~ ^- ]]; then
@@ -164,7 +164,7 @@ echo -- "$pfx $@" >> $pfx.cline
 rclfile=$pfx.rcl
 
 if [[ -z $network && ! -f $rclfile ]]; then
-   echo "Please supply network and clusterings to compute rcl object (see -h)"
+   echo "Please supply network and clusterings to compute rcl graph (see -h)"
    false
 fi
 if [[ -z $tabfile && ! -f $pfx.tab ]]; then
@@ -209,7 +209,7 @@ if $do_force || [[ ! -f $rclfile ]]; then
       # 'type' returns null if the stack is exhausted.
       # 
 
-      echo "-- Computing UCL object"
+      echo "-- Computing UCL graph"
       mcxi <<EOC
 0 vb
 /$network lm ch dup .x def .sum def
@@ -223,7 +223,7 @@ if $do_force || [[ ! -f $rclfile ]]; then
 EOC
 
    else
-      echo "-- Computing RCL object"
+      echo "-- Computing RCL graph"
       if (( cpu == 1 )); then
         clm vol --progress $SELF -imx $network -write-rcl $rclfile -o $pfx.vol "$@"
       else
@@ -245,7 +245,7 @@ EOC
 else
    echo "-- $rclfile exists, querying its dimensions"
    if ! mcx query -imx $rclfile --dim; then
-      echo "-- This is not a functioning RCL object alas"
+      echo "-- This is not a functioning RCL graph alas"
    fi
    if [[ -z $RESOLUTION ]]; then
      echo "-- Use -F to force rerun"

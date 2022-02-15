@@ -460,9 +460,9 @@ static int edge_val_cmp
 
 
 struct slleaf
-{  struct slleaf* next
-;  struct slleaf* last  /* so that we can quicly link two linked lists */
-;  dim nid              /* the leaf ID                   */
+{  struct slleaf* next  /* At a merge step we merge two linked lists of leafs */
+;  struct slleaf* last  /* last in current list, facilitates quick link       */
+;  dim lid              /* the leaf ID                   */
 ;  dim cid              /* its current cluster ID        */
 ;
 }  ;
@@ -471,14 +471,17 @@ void* leaf_init(void* v)
 {  struct slleaf* leaf = v
 ;  leaf->next = NULL
 ;  leaf->last = NULL
-;  leaf->nid  = 0
+;  leaf->lid  = 0
 ;  leaf->cid  = 0
 ;  return leaf
 ;
 }
 
+                        /* It is possible AFAICS to integrate slleaf and slnode
+                         * into a single structure. This may be next.
+                        */
 struct slnode
-{  mcxTing* name  /* Name we give this node        */
+{  mcxTing* name        /* Name we give this node        */
 ;  dim      size
 ;  dim      lss
 ;  dim      nsg
@@ -650,7 +653,7 @@ static mcxstatus closeMain
       ;  mcxIOopen(xflist, EXIT_ON_FAIL)
 
       ;  for (i=0;i<N_COLS(mx);i++)
-         {  LEAF[i].nid = i
+         {  LEAF[i].lid = i
          ;  LEAF[i].cid = i
          ;  LEAF[i].last = LEAF+i
          ;  mcxTingPrint(NODE[i].name, "leaf_%d", (int) i)
@@ -745,7 +748,7 @@ static mcxstatus closeMain
 
                ;  while (leaf_ui)
                   {  leaf_ui->cid = ni
-                  ;  leaf_ui = leaf_ui->next          /* After this nothing point to ui anymore */
+                  ;  leaf_ui = leaf_ui->next          /* After this nothing points to ui anymore */
                ;  }
                }
                if (++n_linked == N_COLS(mx))
@@ -759,13 +762,11 @@ static mcxstatus closeMain
       ;  for (i=0;i<N_COLS(mx);i++)
          {  struct slleaf* leaf = LEAF+i
 
-                        /* Detect/write singletons:
-                         * if a leaf is linked and has cid == nid
-                         * then it will have a next;
-                         * if it does not have a next and is linked
-                         * then then it will have cid != nid
+                        /* Detect/write singletons: if a leaf is linked and has cid == lid
+                         * then it will have a next; if it does not have a next and is linked
+                         * then then it will have cid != lid
                         */
-         ;  if (leaf->cid == leaf->nid && ! leaf->next)
+         ;  if (leaf->cid == leaf->lid && ! leaf->next)
             {  char ibuf[50]
             ;  snprintf(ibuf, 50, "%d", (int) i)
             ;  fprintf(xflist->fp, "%s\t0.0\n", tab ? mclTabGet(tab, i, NULL) : ibuf)

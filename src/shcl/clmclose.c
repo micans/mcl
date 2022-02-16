@@ -620,16 +620,16 @@ static mcxstatus closeMain
          return STATUS_OK
    ;  }
 
-                  /* We require a canonical domain.
-                   * Make this a function.
+                  /* Make this a function.
+                   * We require a canonical domain so we can use direct addressing.
                    * There is E log(E) factor due to edge sorting - Not an issue I think.
-                   * The tree merge operation is done using linked lists; only the nodes
-                   * in the smaller of the two children branches needs updating.
-                   * This is O(N logN) - e.g. 32 nodes are 16 joins of 1 each,
-                   * 8 joins of 2, 4 joins of 4, 2 joins of 8 - for a cost of 4*16 or 5*32.
-
                    * Simply taking all edges and sorting leads conceptually and practically
                    * to a fairly simple implementation.
+                   *
+                   * The tree merge operations at each linkage step are done using linked lists;
+                   * only the nodes in the smaller of the two children branches needs updating.
+                   * This is O(N logN) - e.g. 32 nodes worst case: 16 joins of 1 each, 8 joins of
+                   * 2, 4 joins of 4, 2 joins of 8 - for a cost of 4*16 or 5*32.
                   */
       else if (sgl_g)
       {  dim L, U, D
@@ -715,8 +715,8 @@ static mcxstatus closeMain
             ;  dim sgl_sub = NODE[si].nsg + NODE[di].nsg
             ;  dim sz_sum  = sz1 + sz2
 
-            ;  sumszsq +=
-                  (sz1 + sz2) * 1.0 * (sz1 + sz2)
+            ;  sumszsq +=                 /* used to compute the expected cluster size for a random node, */
+                  (sz1 + sz2) * 1.0 * (sz1 + sz2)                    /* which is not particularly needed for anything */ 
                -  sz1 * 1.0 * sz1
                -  sz2 * 1.0 * sz2
 

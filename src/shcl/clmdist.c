@@ -48,6 +48,7 @@
 #include "clew/cat.h"
 
 #include "tingea/types.h"
+#include "tingea/alloc.h"
 #include "tingea/err.h"
 #include "tingea/opt.h"
 #include "tingea/minmax.h"
@@ -423,12 +424,14 @@ static mcxstatus distMain
    ;  mcxIOopen(xfout, EXIT_ON_FAIL)
 
    ;  if (xfimx)
-         mcxIOopen(xfimx, EXIT_ON_FAIL)
-      ,  mcxIOopen(xfrcl, EXIT_ON_FAIL)
-      ,  mxrcl = mclxReadx(xfimx, EXIT_ON_FAIL, MCLX_REQUIRE_GRAPH)
-      ,  mclxUnary(mxrcl, fltxConst, &one)
-
-   ;  for (a=0;a<argc;a++)
+      {  mcxIOopen(xfimx, EXIT_ON_FAIL)
+      ;  mcxIOopen(xfrcl, EXIT_ON_FAIL)
+      ;  mxrcl = mclxReadx(xfimx, EXIT_ON_FAIL, MCLX_REQUIRE_GRAPH)
+      ;  mclxUnary(mxrcl, fltxConst, &one)
+      ;  mcxIOclose(xfimx)  /* fixme layout */
+      ;  mcxIOfree(&xfimx)
+   ;  }
+      for (a=0;a<argc;a++)
       {  mcxstatus status
       ;  if (!strcmp(argv[a], "--"))
          {  stptr = &st2
@@ -470,7 +473,6 @@ static mcxstatus distMain
       : (stptr1->n_level * (stptr1->n_level-1)) / 2
    ;  n_clusterings = 
       split_g ? stptr1->n_level + stptr2->n_level
-      : consecutive_g ? stptr1->n_level -1
       : stptr1->n_level
 
    ;  if (clm_progress_g && job_i == 0)
@@ -540,7 +542,9 @@ static mcxstatus distMain
                      mclvFree(&meet)
                ;  }
                }
-               continue
+               mclxFree(&meet12)  /* ugly, duplicate, due to continue. TBFxd */
+            ;  mclxFree(&meet21)  /* ugly, duplicate, due to continue. TBFxd */
+            ;  continue
          ;  }
 
            else
@@ -634,18 +638,35 @@ static mcxstatus distMain
       ;  if (clm_progress_g && !job_N) fputc('\n', stderr)
 
       ;  mclxaWrite(vol_scores, xfout, 4, RETURN_ON_FAIL)
+      ;  mclxFree(&vol_scores)
       ;  mcxIOclose(xfout)
 
       ;  if (mxrcl)
          {  mclxUnary(mxrcl, flt_decrement, &factor)
          ;  mclxUnary(mxrcl, fltxScale, &factor)
          ;  mclxWrite(mxrcl, xfrcl, 6, RETURN_ON_FAIL)
-         ;  mcxIOclose(xfrcl)
-              /* Note edges that never co-clustered are prevented
-               * from being set to zero (and disappear) in flt_decrement.
-              */
+         ;  mcxIOfree(&xfrcl)
+         ;  mclxFree(&mxrcl)
       ;  }
       }
+
+      {  dim j
+			;	 for (j=0;j<st.n_level;j++)
+         {  mclxAnnot* an = st.level+j
+         ;  mclxFree(&an->mx)
+         ;  mcxTingFree(&an->fname)
+      ;  }
+         if (st.level) mcxFree(st.level)
+			;	 for (j=0;j<st2.n_level;j++)
+         {  mclxAnnot* an = st2.level+j
+         ;  mclxFree(&an->mx)
+         ;  mcxTingFree(&an->fname)
+      ;  }
+         if (st2.level) mcxFree(st2.level)
+      ;  mcxIOfree(&xfin)
+      ;  mcxIOfree(&xfout)    /* fixme: survey code for vol+dist consistent memory freeing */
+   ;  }
+
       return STATUS_OK
 ;  }
 

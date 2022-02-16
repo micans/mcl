@@ -623,13 +623,27 @@ static mcxstatus closeMain
                   /* Make this a function.
                    * We require a canonical domain so we can use direct addressing.
                    * There is E log(E) factor due to edge sorting - Not an issue I think.
-                   * Simply taking all edges and sorting leads conceptually and practically
-                   * to a fairly simple implementation.
-                   *
-                   * The tree merge operations at each linkage step are done using linked lists;
-                   * only the nodes in the smaller of the two children branches needs updating.
-                   * This is O(N logN) - e.g. 32 nodes worst case: 16 joins of 1 each, 8 joins of
-                   * 2, 4 joins of 4, 2 joins of 8 - for a cost of 4*16 or 5*32.
+                   * Simply taking all edges and sorting leads conceptually and
+                   * practically to a fairly simple implementation.
+
+                   * The tree merge operations at each linkage step are done using linked
+                   * lists; only the nodes in the smaller of the two children branches
+                   * need updating.  This is O(N logN) - e.g. for 32 nodes worst case: 16
+                   * joins of 1 each, 8 joins of 2, 4 joins of 4, 2 joins of 8 - for a
+                   * cost of 4*16 or 5*32.
+
+                   * Potential improvement: count number of components in advance, break
+                   * out of loop once n_linked == N_COLS(mx) - Ncc + 1 This may be an
+                   * improvement only for really large data.
+
+                   * If this were to be scaled much further; perhaps iterate this:
+                   *  - Use heap to find biggest X edges (prevent total edge sorting)
+                   *    -> or simply use histogram band of higher values.
+                   *  - Sort those X edges
+                   *  - Initiate the process below on this.
+                   *  - Use partial result to remove intra-cluster edges
+                   *  - Repeat
+                   * Hunch is N/E need to be huge before this wins.
                   */
       else if (sgl_g)
       {  dim L, U, D

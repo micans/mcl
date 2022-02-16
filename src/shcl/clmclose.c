@@ -624,8 +624,12 @@ static mcxstatus closeMain
                    * Make this a function.
                    * There is E log(E) factor due to edge sorting - Not an issue I think.
                    * The tree merge operation is done using linked lists; only the nodes
-                   * in the smaller of the two children branches needs updating, so overall
-                   * that is probably O(N).
+                   * in the smaller of the two children branches needs updating.
+                   * This is O(N logN) - e.g. 32 nodes are 16 joins of 1 each,
+                   * 8 joins of 2, 4 joins of 4, 2 joins of 8 - for a cost of 4*16 or 5*32.
+
+                   * Simply taking all edges and sorting leads conceptually and practically
+                   * to a fairly simple implementation.
                   */
       else if (sgl_g)
       {  dim L, U, D
@@ -638,8 +642,7 @@ static mcxstatus closeMain
       ;  mcxIO* xflist     =  mcxIOnew(fn_nodelist, "w")
       ;  mcxTing* upname   =  mcxTingNew("")
       ;  struct slnode *NODE  =  mcxNAlloc(N_COLS(mx), sizeof NODE[0], node_init, EXIT_ON_FAIL)
-      ;  /* struct slleaf *LEAF  =  mcxNAlloc(N_COLS(mx), sizeof NODE[0], leaf_init, EXIT_ON_FAIL) */
-      ;  int n_singleton = 0
+      ;  int n_singleton   =  0
 
       ;  if (!mclxDomCanonical(mx))
          mcxDie(1, me, "I need canonical domains in link mode")
@@ -654,7 +657,7 @@ static mcxstatus closeMain
          ;  mcxTingPrint(NODE[i].name, "leaf_%d", (int) i)
       ;  }
 
-         for (i=0;i<N_COLS(mx);i++)
+         for (i=0;i<N_COLS(mx);i++)       /* make list of edges */
          {  mclv* v = mx->cols+i
          ;  dim j
          ;  for (j=0;j<v->n_ivps;j++)
@@ -678,6 +681,9 @@ static mcxstatus closeMain
          (  xfout->fp
          ,  "link\tval\tNID\tANN\tBOB\txcsz\tycsz\txycsz\tnedge\tctr\tlss\tnsg\n"
          )
+                        /* We only actually do stuff in this loop no more
+                         * than N = N_COLS(mx) times
+                        */
       ;  while (e<E)
          {  pnum s = edges[e].src      /* edge source node              */
          ;  pnum d = edges[e].dst      /* edge destination node         */
@@ -760,6 +766,8 @@ static mcxstatus closeMain
                         /* Detect/write singletons: if a node is linked and has cid == lid
                          * then it will have a next; if it does not have a next and is linked
                          * then it will have cid != lid
+                         * size == 1 is not a good test as size is only updated currently
+                         * for nodes that represent merges / higher nodes.
                         */
          ;  if (node->cid == node->lid && ! node->next)
             {  char ibuf[50]

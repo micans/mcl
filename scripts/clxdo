@@ -62,6 +62,7 @@ clxdo cls_annot_summary <cls-annot-dump-file>
 clxdo tab_grep <tab-file> <identifier-file>      # get mcl identifiers for external identifiers
 clxdo dump_cls <cls-file> <dict-file>            # dump clustering as lines of labels
 clxdo coarsen <cls-file> <mx-file>               # create graph on clusters
+clxdo mxsum <mx-file>+                           # sum matrices (output on STDOUT)
 clxdo multiplex_coarse_cls <coarse-clustering> <fine-clustering>
 clxdo factor_table_from_cls <node-to-factormatrix> <node-clustering> <factor-dictionary>
 clxdo make_map <source-cls> <dest-cls>           # make map file between clusterings
@@ -79,6 +80,27 @@ EOU
 require_num 1 "<num>"
 export CLXDO_VAL1=$2
 perl -e '$i = 0; while ($i < $ENV{CLXDO_VAL1}) { print "$i $i\n"; $i++; }' | mcxload -123 - --stream-split
+      ;;
+
+
+
+################################
+
+    mxsum)
+require_num 2 "<mx>+"
+shift 1
+mxlist=("${@/#/\/}")
+nlist=${#mxlist[*]}
+      mcxi <<EOC
+0 vb
+   ${mxlist[@]}
+	 lm .sum def
+   { type /str eq }
+   { lm .sum add .sum def }
+   while
+   .sum /- wm
+EOC
+
       ;;
 
 

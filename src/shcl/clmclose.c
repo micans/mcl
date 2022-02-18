@@ -676,7 +676,7 @@ static mcxstatus closeMain
          ;  dim j
          ;  for (j=0;j<v->n_ivps;j++)
             {  mclp* d = v->ivps+j
-            ;  if (d->idx > i)
+            ;  if (d->idx > i && d->val >= sgl_rcl_thr_g)
                {  mcle* edge = edges+(e++)
                ;  edge->src = i
                ;  edge->dst = d->idx
@@ -712,12 +712,7 @@ static mcxstatus closeMain
          ;  dim j
          ;  e++
 
-         ;  if (v < sgl_rcl_thr_g)
-            {  mcxTell(me, "Threshold reached at link %d", (int) n_linked)
-            ;  break
-         ;  }
-
-            if (si == di)                 /* already linked / same cluster */
+         ;  if (si == di)                 /* already linked / same cluster */
             continue
 
          ;  snprintf(sbuf, 50, "%d", (int) s)
@@ -757,6 +752,10 @@ static mcxstatus closeMain
             ;  NODE[ni].size = sz1 + sz2
             ;  mcxTingWrite(NODE[ni].name, upname->str)
             ;
+                                          /* In this loop no next pointer is ever re-wired,
+                                           * only nexts that are NULL are set (via last->next)
+                                           * in order to merge two linked lists.
+                                          */
                {  struct slnode* node_ui = NODE+ui    /* all these dudes need setting to ni */
                ;  NODE[ni].last->next = node_ui       /* link them to the ni node as well */
                ;  NODE[ni].last       = node_ui->last /* the last ni node thus is the last ui node */

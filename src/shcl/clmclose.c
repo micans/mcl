@@ -1,5 +1,4 @@
-/*   (C) Copyright 2001, 2002, 2003, 2004, 2005 Stijn van Dongen
- *   (C) Copyright 2006, 2007, 2008, 2009, 2010 Stijn van Dongen
+/*   (C) Copyright 2007-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -630,7 +629,7 @@ static mcxstatus closeMain
                    * lists; only the nodes in the smaller of the two children branches
                    * need updating.  This is O(N logN) - e.g. for 32 nodes worst case: 16
                    * joins of 1 each, 8 joins of 2, 4 joins of 4, 2 joins of 8 - for a
-                   * cost of 4*16 or 5*32.
+                   * cost of 4*16.
 
                    * Potential improvement: count number of components in advance, break
                    * out of loop once n_linked == N_COLS(mx) - Ncc + 1 This may be an

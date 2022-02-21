@@ -162,6 +162,11 @@ Fri May 16 2014
 
    *  mcxi has a new 'threads' primitive to set the number of threads.
 
+   *  mcxi has a new 'type' primitive.
+      It returns one of 'mx', 'int', 'dbl', 'str', or 'null'.
+      Can be used for easy iteration over a set of objects of a certain type,
+      and/or to detect end of input/empty stack.
+
    *  The environment variable MCLEDGE_NCPUS is now interpreted by various
       programs in mcl-edge. For certain compute-intensive tasks they will
       split the work into this many different threads of computation.

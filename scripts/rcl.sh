@@ -157,7 +157,7 @@ if [[ -z $tag ]]; then
 fi
 
 mkdir -p $tag
-pfx=$tag/$tag
+pfx=$tag/rcl
 
 echo -- "$tag $@" >> $pfx.cline
 

@@ -534,7 +534,7 @@ opHook opHookDir[] =
    }
 ,  {  opType
    ,  TOKEN_TYPE
-   ,  "print type of top object: 'mx', 'int', 'null'"
+   ,  "print type of top object: 'mx', 'int', 'dbl', 'str', 'null'"
    ,  "*"
    ,  "<s>"
    }

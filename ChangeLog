@@ -27,7 +27,7 @@
       would cause a crash.  Achieve the intended effect e.g. with '-ri max'
       instead.
 
-   *  clm vol can compute an rcl (Restricted Contigency Linkage) object,
+   *  clm vol can compute an rcl (Restricted Contingency Linkage) object,
       encoding consensus clustering values.
 
    *  clm close can compute the single linkage tree of a network with --sl.
@@ -35,12 +35,15 @@
       Main intended use is to apply it to the rcl object described just above.
 
    *  rcl-res.pl is a script that reads a single linkage tree from the
-      clm close join order output in --sl mode. It accepts resolution parameters
+      clm close join-order output in --sl mode. It accepts resolution parameters
       as argument and will compute balanced flat clusterings from the tree
       that are adjacent in cluster size to the resolutions specified.
+      It will also output a GraphViz dot file encoding the tree relationship
+      between clusters at different resolution levels.
 
    *  rcl.sh implements the full RCL - Restricted Contingency Linkage -
-      method of consensus clustering, using clm vol, clm close, and rcl-res.pl
+      method of consensus clustering, using clm vol, clm close, and rcl-res.pl,
+      resulting in the resolution clusterings described in the entry above this.
 
    *  The volatility measure reported by clm vol has had its scale reversed
       to be compatible with rcl scores.
@@ -62,6 +65,11 @@
       This sub-network happens to be a rare beast for which inflation and expansion
       cancel each other out. Nearly all mcl processes start converging noticeably after
       10 iterations, so 40 is a conservative number here.
+
+   *  mcxi has a new 'type' primitive.
+      It returns one of 'mx', 'int', 'dbl', 'str', or 'null'.
+      Can be used for easy iteration over a set of objects of a certain type,
+      and/or to detect end of input/empty stack.
 
 
 Fri May 16 2014
@@ -161,11 +169,6 @@ Fri May 16 2014
    *  mcxdump can now transform objects before outputting them (-tf option).
 
    *  mcxi has a new 'threads' primitive to set the number of threads.
-
-   *  mcxi has a new 'type' primitive.
-      It returns one of 'mx', 'int', 'dbl', 'str', or 'null'.
-      Can be used for easy iteration over a set of objects of a certain type,
-      and/or to detect end of input/empty stack.
 
    *  The environment variable MCLEDGE_NCPUS is now interpreted by various
       programs in mcl-edge. For certain compute-intensive tasks they will

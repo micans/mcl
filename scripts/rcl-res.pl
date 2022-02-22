@@ -205,6 +205,7 @@ print STDERR "\n-- collecting clusters for resolution\n";
  # so with low resolution first.
  #
 my %maplinks = ();   # collect links for dot plot
+my %hasparent = ();
 
 for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
 
@@ -234,6 +235,7 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
 
         if ($nodename ne $name && $::nodes{$nodename}{size} >= $::reslimit) {
           $maplinks{$name}{$nodename} = 1;
+          $hasparent{$nodename} = 1;
         }
       }
       else {
@@ -273,5 +275,34 @@ for my $n1 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %maplinks) {
   }
 }
 close(RESDOT);
+
+my $listname = "$::prefix.hi.$::resolutiontag.txt";
+open(RESLIST, ">$listname") || die "Cannot open $listname for writing";
+
+   # This output encodes the top-level hierarchy of the RCL clustering,
+   # with explicit levels, descendancy encoded in concatenated labels,
+   # and all the nodes contained within each cluster.
+sub printlistnode {
+  my ($level, $nodelist, $ni) = @_;
+  my $size = $::nodes{$ni}{size};
+  return unless $size >= 400;       # fixme hardcoded make argument.
+  my $tag = join('::', (@{$nodelist}, $ni));
+  local $" = ' ';
+  print RESLIST "$level\t$tag\t@{$::nodes{$ni}{items}}\n";
+  for my $nj (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$maplinks{$ni}} ) {
+    printlistnode($level+1, [ @$nodelist, $ni ], $nj);
+  }
+}
+
+my $level = 1;
+
+for my $n
+( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} }
+  grep { !defined($hasparent{$_}) }
+  keys %maplinks
+)
+{   printlistnode(1, [], $n);
+}
+close(RESLIST);
 
 

@@ -285,10 +285,10 @@ open(RESLIST, ">$listname") || die "Cannot open $listname for writing";
 sub printlistnode {
   my ($level, $nodelist, $ni) = @_;
   my $size = $::nodes{$ni}{size};
-  return unless $size >= 400;       # fixme hardcoded make argument.
+  return unless $size >= $::reslimit;       # perhaps argumentise.
   my $tag = join('::', (@{$nodelist}, $ni));
   local $" = ' ';
-  print RESLIST "$level\t$tag\t@{$::nodes{$ni}{items}}\n";
+  print RESLIST "$level\t$size\t$tag\t@{$::nodes{$ni}{items}}\n";
   for my $nj (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$maplinks{$ni}} ) {
     printlistnode($level+1, [ @$nodelist, $ni ], $nj);
   }

@@ -278,17 +278,18 @@ close(RESDOT);
 
 my $listname = "$::prefix.hi.$::resolutiontag.txt";
 open(RESLIST, ">$listname") || die "Cannot open $listname for writing";
-
+print RESLIST "level\tsize\tjoinval\tnesting\tnodes\n";
    # This output encodes the top-level hierarchy of the RCL clustering,
    # with explicit levels, descendancy encoded in concatenated labels,
    # and all the nodes contained within each cluster.
 sub printlistnode {
   my ($level, $nodelist, $ni) = @_;
   my $size = $::nodes{$ni}{size};
+  my $ival = int(0.5 + $::nodes{$ni}{val});
   return unless $size >= $::reslimit;       # perhaps argumentise.
   my $tag = join('::', (@{$nodelist}, $ni));
   local $" = ' ';
-  print RESLIST "$level\t$size\t$tag\t@{$::nodes{$ni}{items}}\n";
+  print RESLIST "$level\t$size\t$ival\t$tag\t@{$::nodes{$ni}{items}}\n";
   for my $nj (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$maplinks{$ni}} ) {
     printlistnode($level+1, [ @$nodelist, $ni ], $nj);
   }

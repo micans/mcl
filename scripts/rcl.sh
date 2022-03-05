@@ -23,327 +23,259 @@
 
 set -euo pipefail
 
-network=
-tabfile=
-tag=
-cpu=1
-LEVELS=
-RESOLUTION=
-SELF=
+themode=              # first argument
+projectdir=           # second argument, for modes 'setup', 'tree', 'res'.
+network=              # -n FNAME
+tabfile=              # -t FNAME
+cpu=1                 # -p NUM
+RESOLUTION=           # -r, e.g. -r "100 200 400 800 1600 3200"
+do_force=false        # -F (for mode 'tree')
+mcldir=               # -m DIRNAME to run a bunch of mcl analyses for use as input later
+INFLATION=            # -I, e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
+SELF=                 # -D
 
-do_ucl=false          # unrestricted contingency clustering, basic approach
-do_gralog=false       # granularity report on log scale
-do_force=false
+function usage() {
+  local e=$1
+  cat <<EOH
+An rcl workflow requires three steps:
 
+1) rcl.sh setup TAG -n NETWORKFILENAME -t TABFILENAME
+2) rcl.sh tree  TAG [-F] [-p NCPU] LIST-OF-CLUSTERING-FILES
+3) rcl.sh res   TAG -r "RESOLUTIONLIST"
 
-HELP_intro="
-Options described below. Below 'networks', 'clusterings' and 'matrix' are files
-in mcl matrix format. Networks can be loaded from label data with mcxload.  Use
-srt2cls.sh to convert seurat clusterings to mcl format.  Both will need a label
-index 'tab' file, this can be created with srt2tab.sh.  Note that to maintain
-index correspondence with Seurat's 1-based indexing, srt2cls.sh and srt2tab.sh
-introduce a dummy node in the mcl representations for index 0."
+NETWORKFILENAME and TABFILENAME are usually created by mcxload.
+TAG will be used as a project directory name in the current directory.
+All rcl.sh commands are issued from outside and directly above directory TAG.
+-F forces a run if a previous output exists.
 
-Help_1='
-1) compute the rcl graph with
-      rcl.sh TAG -n <network> -t <tabfile> <LIST-OF-CLUSTER-FILE-NAMES>
-   TAG will be used as a prefix for various outputs; think of it as a project tag.
-   The prefix used is TAG/TAG - the directory TAG will be created or
-   should be a writable directory.'
-HELP_1b='
-   TAG is used in 2) to retrieve the right graph.'
+To make mcl clusterings to give to rcl:
+rcl.sh mcl [-p NCPU] -m OUTPUTDIR -I "INFLATIONLIST"
+This may take a while for large graphs.
+In step 2) you can then use
+   rcl.sh tree TAG [-p NCPU] OUTPUTDIR/out.*
+EOH
+  exit $e
+}
 
-Help_2='
-2) derive resolution-based clusterings from the rcl graph.
-      rcl.sh TAG [-S] -r "N1 N2 N3 .."
-      e.g. -r "50 100 200 400 1000 2000"
-   A logarithmic scale such as above is suggested.'
+MODES="setup tree res mcl"
 
-HELP_2b='
- In graphs/ in the mcl source distribution, you can run a small test case:
-   rcl.sh TINY -n rcltiny.mci -t rcltiny.tab rcltiny.cls[123]
-   RCL_RES_PLOT_LIMIT=1 rcl.sh TINY -r "1 2 3 4"'
+function require_mode() {
+  local mode=$1
+  [[ -z $mode ]] && echo "Please provide a mode" && usage 0
+  if ! grep -qFw -- $mode <<< "$MODES"; then
+    echo "Need a mode, one of { $MODES }"; usage 1
+  fi
+  themode=$mode
+}
+function require_tag() {
+  local mode=$1 tag=$2
+  if [[ -z $tag ]]; then
+    echo "Mode $mode requires a project directory tag"
+    false
+  elif [[ $tag =~ ^- ]]; then
+    echo "Project directory not allowed to start with a hyphen"
+    false
+  fi
+  projectdir=$tag
+}
+function require_imx() {
+  local fname=$1 response=$2
+  if [[ ! -f $fname ]]; then
+    echo "Expected network file $fname not found; $response"
+  fi
+  if ! mcx query -imx $fname --dim > /dev/null; then
+    echo "Input is not in mcl network format; check file $fname"
+    false
+  fi
+}
+function test_exist() {
+  local fname=$1
+  if [[ -f $fname ]]; then
+    if ! $do_force; then
+      echo "File $fname exists, use -F to force running $themode"
+      exit 0
+    fi
+  fi
+}
 
-HELP_3='
-Optionally:
-3) Investigate in more detail the dynamic range of the clusters present in the tree
-   encoded in the rcl graph by computing cluster sizes of thresholded trees
-      rcl.sh TAG -l <LOW/STEP/HIGH>
-      e.g. -l 200/50/700
-   Note that the edge weight range in the rcl graph is [0-1000].
-   From the output you may wish to zoom in
-      e.g. -l 450/10/550
-   if the cluster sizes in that range are what you are after.
-   To save a bunch of such clusterings, use e.g.
-      rcl.sh TAG -l 470/10/530/TAG'
-
-Help_options='
-Options:
--n  <file>   Input network/matrix file in mcl format (obtain e.g. with mcxload)
--t  <file>   Tab file with index - label mapping (obtain e.g. with mcxload)
--l  LOW/STEP/HIGH    e.g. 200/50/700 to show threshold cluster sizes
--r  "N1 N2 N3 .."    e.g. "50 100 200 400" to compute resolution clusterings
--p  <num>    Parallel/CPU, use this many CPUs for parallel RCL compute   
--F           Force computation, ignore existing RCL graph'
-
-Help_options_b='-S           Output cluster size distribution information (use in (2))
--U           Compute the Unrestricted Contingency Linkage graph (use in (1))
-             Perhaps include a mnemonic in TAG to indicate -U was used.
--D           (Diagonal) include self-comparisons among cluster comparisons
-             Essentially this adds the UCL information to the RCL graph.'
-
-
-if (( $# > 0 )) && [[ ! $1 =~ ^- ]]; then
-  tag=$1
+require_mode "${1-}"          # themode now set
+shift 1
+if grep -qFw $themode <<< "setup tree res"; then
+  require_tag $themode "${1-}"   # projectdir now set
   shift 1
 fi
 
-while getopts :n:t:l:r:p:UShFHD opt
+pfx=
+if [[ -n $projectdir ]]; then
+   mkdir -p $projectdir
+   pfx=$projectdir/rcl
+   echo -- "$themode $projectdir $@" >> $pfx.cline
+fi
+
+
+while getopts :n:t:m:r:p:I:UhFD opt
 do
     case "$opt" in
-    n)
-      network=$OPTARG
-      ;;
-    p)
-      cpu=$OPTARG
-      ;;
-    r)
-      RESOLUTION=$OPTARG
-      ;;
-    l)
-      LEVELS=$OPTARG
-      ;;
-    t)
-      tabfile=$OPTARG
-      ;;
-    F)
-      do_force=true
-      ;;
-    D)
-      SELF="--self"
-      ;;
-    S)
-      do_gralog=true
-      ;;
-    U)
-      do_ucl=true
-      ;;
+    n) network=$OPTARG ;;
+    m) mcldir=$OPTARG ;;
+    p) cpu=$OPTARG ;;
+    r) RESOLUTION=$OPTARG ;;
+    t) tabfile=$OPTARG ;;
+    I) INFLATION=$OPTARG ;;
+    F) do_force=true ;;
+    D) SELF="--self" ;;
     h)
       cat <<EOU
-$Help_1
-$Help_2
-$Help_options
-
-Use -H to output a longer description
+help
 EOU
        exit
       ;;
     H)
-   {  cat <<EOU
-$HELP_intro
-
-Suggested usage:$Help_1$HELP_1b
-$Help_2
-$HELP_2b
-$HELP_3
-$Help_options
-$Help_options_b
+      cat <<EOU
+help
 EOU
-   } | less
       exit
       ;;
-    :) echo "Flag $OPTARG needs argument"
-        exit 1;;
-    ?) echo "Flag $OPTARG unknown"
-        exit 1;;
+    :) echo "Flag $OPTARG needs argument" exit 1 ;;
+    ?) echo "Flag $OPTARG unknown" exit 1 ;;
    esac
 done
 
-if [[ -z $tag ]]; then
-   echo "Please specify TAG as first argument to tag this analysis (see -h)"
-   false
-fi
-
-mkdir -p $tag
-pfx=$tag/rcl
-
-echo -- "$tag $@" >> $pfx.cline
-
-rclfile=$pfx.rcl
-
-if [[ -z $network && ! -f $rclfile ]]; then
-   echo "Please supply network and clusterings to compute rcl graph (see -h)"
-   false
-fi
-if [[ -z $tabfile && ! -f $pfx.tab ]]; then
-   echo "Please supply the tab file mapping indexes to labels (-t)"
-   false
-fi
-
-if [[ ! -f $pfx.tab ]]; then
-   if ! ln $tabfile $pfx.tab 2> /dev/null; then
-     cp $tabfile $pfx.tab
-   fi
-fi
+shift $((OPTIND-1))
 
 
-if $do_force || [[ ! -f $rclfile ]]; then
+function require_opt() {
+  n_req=0
+  local mode=$1 option=$2 value=$3 description=$4
+  if [[ -z $value ]]; then
+    echo "Mode $mode requires $description for option $option"
+    (( ++n_req ))
+  fi
+}
 
-   export MCLXIOFORMAT=8
 
-   shift $(($OPTIND-1))
-   if (( $# < 2 )); then
-      echo "Please supply a few clusterings"
+  ##
+  ##  M C L
+
+if [[ $themode == 'mcl' ]]; then
+  require_opt mcl -n "$network" "a network in mcl format"
+  require_opt mcl -m "$mcldir" "a directory output name"
+  require_opt mcl -I "$INFLATION" "a set of inflation values between quotes"
+  if (( n_req )); then exit 1; fi
+  mkdir -p $mcldir
+  echo "-- Running mcl for inflation values in ($INFLATION)"
+  for I in $(tr -s ' ' '\n' <<< "$INFLATION" | sort -rn); do
+    echo -n "-- inflation $I start .."
+    mcl $network -I $I -t $cpu --i3 -odir $mcldir
+    echo " done"
+  done 2> $mcldir/log.mcl
+  exit 0
+
+
+  ##
+  ##  S E T U P
+
+elif [[ $themode == 'setup' ]]; then
+  require_opt setup -n "$network" "a network in mcl format"
+  require_opt setup -t "$tabfile" "a tab file mapping indexes to labels"
+  if (( n_req )); then exit 1; fi
+  if ! ln -f $tabfile $pfx.tab 2> /dev/null; then
+    cp $tabfile $pfx.tab
+  fi
+  if ! ln -f $network $pfx.input 2> /dev/null; then
+    ln -sf $network $pfx.input
+  fi
+  echo "Project directory $projectdir is ready" 
+
+
+  ##
+  ##  T R E E
+
+elif [[ $themode == 'tree' ]]; then
+  require_imx "$pfx.input" "did you run rcl.sh setup $projectdir?"
+  rclfile=$pfx.rcl
+  test_exist "$rclfile"
+  (( $# < 2 )) && echo "Please supply a few clusterings" && false
+  echo "-- Computing RCL graph on $@"
+  if (( cpu == 1 )); then
+    clm vol --progress $SELF -imx $pfx.input -write-rcl $rclfile -o $pfx.vol "$@"
+  else
+    maxp=$((cpu-1))
+    list=$(eval "echo {0..$maxp}")
+    echo "-- All $cpu processes are chasing .,=+<>()-"
+    for id in $list; do
+      clm vol --progress $SELF -imx $pfx.input -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "$@" &
+    done
+    wait
+    clxdo mxsum $(eval echo "$pfx.R{0..$maxp}") > $rclfile
+    echo "-- Components summed in $rclfile"
+  fi
+  echo "-- Computing single linkage join order for network $rclfile"
+  clm close --sl -sl-rcl-cutoff ${RCL_CUTOFF-0} -imx $rclfile -tab $pfx.tab -o $pfx.join-order -write-sl-list $pfx.node-values
+  echo "RCL network and linkage both ready, you can run rcl.sh res $projectdir"
+
+
+  ##
+  ##  R E S
+
+elif [[ $themode == 'res' ]]; then
+  minres=-
+  require_opt res -r "$RESOLUTION" "a list of resolution values between quotes"
+  (( n_req )) && false
+  require_imx "$pfx.rcl" "did you run rcl.sh tree $projectdir?"
+  echo "-- computing clusterings with resolution parameters $RESOLUTION"
+  export MCLXIOVERBOSITY=2
+  # export RCL_RES_PLOT_LIMIT=${RCL_RES_PLOT_LIMIT-500}
+
+  rcl-res.pl $pfx $RESOLUTION < $pfx.join-order
+
+  echo "-- saving resolution cluster files and"
+  echo "-- displaying size of the 20 largest clusters"
+  echo "-- in parentheses N identical clusters with previous level among 30 largest clusters"
+                                      # To help space the granularity output.
+  export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution
+
+  res_prev=""
+  file_prev=""
+
+  for r in $RESOLUTION; do
+    rfile=$pfx.res$r.info
+    if [[ ! -f $rfile ]]; then
+      echo "Expected file $rfile not found"
       false
-   fi
+    fi
+    prefix="$pfx.res$r"
+    cut -f 5 $rfile | mcxload -235-ai - -o $prefix.cls
+    mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
+    mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
+    nshared="--"
+    if [[ -n $res_prev ]]; then
+      nshared=$(grep -Fcwf <(head -n 30 $rfile | cut -f 1) <(head -n 30 $file_prev | cut -f  1) || true)
+    fi
+    export CLXDO_GRABIG_TAG="($(printf "%2s" $nshared)) "
+    clxdo grabig 20 $prefix.cls
+    res_prev=$r
+    file_prev=$rfile
+  done
+  commalist=$(tr -s $'\t ' ',' <<< $RESOLUTION)
+  hyphenlist=$(tr -s $'\t ' '-' <<< $RESOLUTION)
+  resmapfile=$pfx.hi.$hyphenlist.resdot
 
-   if $do_ucl; then
-
-      # prepend a slash to each input cluster file,
-      # this is how mcxi expects strings. Much love to bash syntax.
-      # No spaces in file names please.
-      #
-      clusters=("${@/#/\/}")
-      ncluster=${#clusters[*]}
-
-      # Below, project onto matrix (=network) using
-      # hadamard product in the loop.
-      # lm  : load matrix
-      # ch  : make characteristic (all entries set to 1)
-      # tp  : transpose
-      # hdm : hadamard product
-      # .x dim pop just checks whether this is a network and not a clustering,
-      # it will complain and exit if src/dst dimensions are not the same.
-      # 'type' returns null if the stack is exhausted.
-      # 
-
-      echo "-- Computing UCL graph"
-      mcxi <<EOC
-0 vb
-/$network lm ch dup .x def .sum def
-   .x dim pop
-   ${clusters[@]}
-   { type /str eq }
-   { lm tp mul .x hdm .sum add .sum def }
-   while
-   .sum 1000.0 $ncluster.0 1 add div mul
-   /$rclfile wm
-EOC
-
-   else
-      echo "-- Computing RCL graph"
-      if (( cpu == 1 )); then
-        clm vol --progress $SELF -imx $network -write-rcl $rclfile -o $pfx.vol "$@"
-      else
-        maxp=$((cpu-1))
-        list=$(eval "echo {0..$maxp}")
-        echo "-- All $cpu processes are chasing .,=+<>()-"
-        for id in $list; do
-          clm vol --progress $SELF -imx $network -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "$@" &
-        done
-        wait
-        clxdo mxsum $(eval echo "$pfx.R{0..$maxp}") > $rclfile
-        echo "-- Components summed in $rclfile"
-      fi
-   fi
-
-   echo "-- Computing single linkage join order for network $rclfile"
-   clm close --sl -sl-rcl-cutoff ${RCL_CUTOFF-0} -imx $rclfile -tab $pfx.tab -o $pfx.join-order -write-sl-list $pfx.node-values
-
-else
-   echo "-- $rclfile exists, querying its dimensions"
-   if ! mcx query -imx $rclfile --dim; then
-      echo "-- This is not a functioning RCL graph alas"
-   fi
-   if [[ -z $RESOLUTION ]]; then
-     echo "-- Use -F to force rerun"
-   fi
-fi
-
-if [[ -z $LEVELS && -z $RESOLUTION ]]; then
-  echo "-- suggest rcl.sh $tag -r \"N1 N2 N3 ..\" to compute resolution clusters"
-  echo "-- suggest log scale, e.g. rcl.sh $tag -r \"50 100 200 400 1000\""
-  echo "-- vary N according to preference and data set size"
-fi
-
-export MCLXIOFORMAT=1
-
-if [[ ! -z $LEVELS ]]; then
-   echo "-- cluster sizes resulting from simple thresholding with levels $LEVELS"
-   echo "-- (output may be truncated)"
-   clm close -imx $rclfile -levels $LEVELS | cut -b 1-100
-fi
-
-   # From the tree, compute a balanced clustering according to a
-   # resolution parameter. Given resolution R, the script will
-   # continue to descend the tree as long as there is a split
-   # in the nodes below into two clusters each of size >= R.
-   # The info files contain
-   # 1) size of clusters
-   # 2) a measure of cohesiveness of the cluster (higher is more cohesive)
-   # 3) the node indexes for each cluster
-   # Then transform the info files into clusterings that mcl
-   # and siblings understand; these are then dumped with labels
-   # in a line-based format.
-   #
-
-if [[ ! -z $RESOLUTION ]]; then
-   echo "-- computing clusterings with resolution parameters $RESOLUTION"
-
-   export MCLXIOVERBOSITY=2
-   # export RCL_RES_PLOT_LIMIT=${RCL_RES_PLOT_LIMIT-500}
-
-   rcl-res.pl $pfx $RESOLUTION < $pfx.join-order
-
-   echo "-- saving resolution cluster files and"
-   echo "-- displaying size of the 20 largest clusters"
-   if $do_gralog; then echo "-- summarising cluster size distribution on a log scale";
-   else                echo "-- (use in addition to these parameters -S for size distribution summary)"; fi
-   echo "-- in parentheses N identical clusters with previous level among 30 largest clusters"
-                                       # To help space the granularity output.
-   export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution
-
-   res_prev=""
-   file_prev=""
-
-   for r in $RESOLUTION; do
-      rfile=$pfx.res$r.info
-      if [[ ! -f $rfile ]]; then
-         echo "Expected file $rfile not found"
-         false
-      fi
-      prefix="$pfx.res$r"
-      cut -f 5 $rfile | mcxload -235-ai - -o $prefix.cls
-      mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
-      mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
-      nshared="--"
-      if [[ -n $res_prev ]]; then
-         nshared=$(grep -Fcwf <(head -n 30 $rfile | cut -f 1) <(head -n 30 $file_prev | cut -f  1) || true)
-      fi
-      export CLXDO_GRABIG_TAG="($(printf "%2s" $nshared)) "
-      clxdo grabig 20 $prefix.cls
-      if $do_gralog; then clxdo gralog $prefix.cls; echo "()"; fi
-      res_prev=$r
-      file_prev=$rfile
-   done
-   commalist=$(tr -s $'\t ' ',' <<< $RESOLUTION)
-   hyphenlist=$(tr -s $'\t ' '-' <<< $RESOLUTION)
-   resmapfile=$pfx.hi.$hyphenlist.resdot
-
-   if [[ -f $resmapfile ]]; then
-     rlist=($RESOLUTION)
-     minres=${rlist[0]}
-     dotfile=${resmapfile%.resdot}.dot
-     pdffile=${resmapfile%.resdot}.pdf
-     rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$minres --label=size < $resmapfile > $dotfile
-     if ! dot -Tpdf -Gsize=10,10\! < $dotfile > $pdffile; then
-       echo "-- dot did not run, pdf not produced"
-     else
-       echo "-- map of output produced in $pdffile"
-     fi
-   else
-     echo "-- Expected file $resmapfile not present"
-   fi
+  if [[ -f $resmapfile ]]; then
+    rlist=($RESOLUTION)
+    minres=${rlist[0]}
+    resdotfile=${resmapfile%.resdot}.dot
+    respdffile=${resmapfile%.resdot}.pdf
+    restxtfile=${resmapfile%.resdot}.txt
+    rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$minres --label=size < $resmapfile > $resdotfile
+    if ! dot -Tpdf -Gsize=10,10\! < $resdotfile > $respdffile; then
+      echo "-- dot did not run, pdf not produced"
+    else
+      echo "-- map of output produced in $respdffile"
+    fi
+  else
+    echo "-- Expected file $resmapfile not present"
+  fi
 
 cat <<EOM
 
@@ -354,6 +286,8 @@ LABEL<TAB>CLUSID files:
    $(eval echo $pfx.res{$commalist}.txt)
 mcl-edge matrix/cluster files (suitable input e.g. for 'clm dist' and others):
    $(eval echo $pfx.res{$commalist}.cls)
+A table with all clusters at different levels up to size $minres, including their nesting structure:
+   $restxtfile
 EOM
 
 fi

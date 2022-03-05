@@ -1,11 +1,19 @@
 #!/bin/bash
 
+# Copyright 2022 Stijn van Dongen
+
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of version 3 of the GNU General Public License as published
+# by the Free Software Foundation. It should be shipped with MCL in the top
+# level directory as the file COPYING.
+
+# R C L
 #    _ _  __|_ _. __|_ _  _|   _ _  _ _|_. _  _  _  _    |. _ |  _  _  _
 #   | (/__\ | | |(_ | (/_(_|  (_(_)| | | |(_|(/_| |(_\/  ||| ||<(_|(_|(/_
 #  _ _  _  _ _  _  _    _  |_ . _  _ _  ___|| . _ _ |/  _|    __|_ __|_. _  _
 # (_(_)| |_\(/_| |_\|_|_\  | ||(/_| (_|| (_| ||(_(_||  (_||_|_\ | (/_| || |(_|
 #                                                                           _|
-#  R C L : Restricted Contingency Linkage clustering
+# Author: Stijn van Dongen
 #
 # This RCL implementation uses programs/tools that are shipped with mcl.  It
 # can be run on any set of clusterings from any method or program, but the

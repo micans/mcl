@@ -12,6 +12,15 @@
       practice has stopped. The mcl source tree contains a script that
       will download both cimfomfa and mcl tar archives and compile both.
 
+   *  A new method for concensus clustering called RCL (restricted contingency
+      linkage) was created. It is implemented in scripts/rcl.sh; the help
+      output for this should be sufficient to run it. {rcl.sh} uses
+      {clm vol}, {clm close}, {rcl-res.pl} and {rcl-dot-resmap.pl} to
+      compute the RCL results. RCL is completely independent from mcl, but can
+      be used to integrate a set of MCL outputs at different levels of
+      inflation.  Various items below in this update reference RCL; a pre-print
+      is forthcoming.
+
    *  Various modes and programs were removed in a clean-up.
 
    *  Fixed bug in mcxarray in the case of NAs in data. The wrong N was used.

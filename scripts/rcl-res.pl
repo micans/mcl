@@ -1,5 +1,12 @@
 #!/usr/bin/perl
 
+# Copyright 2022 Stijn van Dongen
+
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of version 3 of the GNU General Public License as published
+# by the Free Software Foundation. It should be shipped with MCL in the top
+# level directory as the file COPYING.
+
 # Only reads STDIN, which should be the output of clm close in --sl mode.  That
 # output encodes the single-linkage join order of a tree.  The script further
 # requires a prefix for file output and a list of resolution sizes.

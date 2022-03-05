@@ -18,6 +18,8 @@
             auto-detect values should be possible.
          -  lots of fixmes in code
 
+ -  per-node and per-cluster modularity
+
  -  mcxsubs reimplement; mcxi and/or lex/yacc. cellatac one use case.
  -  consider also mcxalter/tf()
 

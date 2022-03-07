@@ -7,24 +7,22 @@
 # by the Free Software Foundation. It should be shipped with MCL in the top
 # level directory as the file COPYING.
 
-# R C L
 #    _ _  __|_ _. __|_ _  _|   _ _  _ _|_. _  _  _  _    |. _ |  _  _  _
 #   | (/__\ | | |(_ | (/_(_|  (_(_)| | | |(_|(/_| |(_\/  ||| ||<(_|(_|(/_
-#  _ _  _  _ _  _  _    _  |_ . _  _ _  ___|| . _ _ |/  _|    __|_ __|_. _  _
-# (_(_)| |_\(/_| |_\|_|_\  | ||(/_| (_|| (_| ||(_(_||  (_||_|_\ | (/_| || |(_|
-#                                                                           _|
+#                                           |        /               |
+# RCL consensus clustering
 # Author: Stijn van Dongen
 #
 # This RCL implementation uses programs/tools that are shipped with mcl.  It
 # can be run on any set of clusterings from any method or program, but the
 # network and clusterings have to be supplied in mcl matrix format.
 #
-# See github.com/micans/mcl#rcl and this script -h (or -H).
+# See github.com/micans/mcl#rcl and this script with no arguments.
 
 set -euo pipefail
 
-themode=              # first argument
-projectdir=           # second argument, for modes 'setup', 'tree', 'res'.
+themode=              # first argument, mode 'setup' 'tree' 'res' or 'mcl'.
+projectdir=           # second argument, for modes 'setup' 'tree' 'res'.
 network=              # -n FNAME
 tabfile=              # -t FNAME
 cpu=1                 # -p NUM
@@ -43,16 +41,26 @@ An rcl workflow requires three steps:
 2) rcl.sh tree  TAG [-F] [-p NCPU] LIST-OF-CLUSTERING-FILES
 3) rcl.sh res   TAG -r "RESOLUTIONLIST"
 
-NETWORKFILENAME and TABFILENAME are usually created by mcxload.
 TAG will be used as a project directory name in the current directory.
+NETWORKFILENAME and TABFILENAME are usually created by mcxload.
+Hard links to these files will be made in TAG, symbolic if this is not possible.
 All rcl.sh commands are issued from outside and directly above directory TAG.
 -F forces a run if a previous output exists.
+For RESOLUTIONLIST a doubling is suggested, e.g. -r "50 100 200 400 800 1600 3200"
+You may want to re-run with a modified list if the largest cluster size is either
+too small or too large for your liking.
+The history of your commands will be tracked in TAG/rcl.cline.
+If 'dot' is available, a plot of results is left in TAG/rcl.hi.RESOLUTION.pdf
+A table of all clusters of size above the smallest resolution is left in TAG/rcl.hi.RESOLUTION.txt
 
 To make mcl clusterings to give to rcl:
-rcl.sh mcl [-p NCPU] -m OUTPUTDIR -I "INFLATIONLIST"
+rcl.sh mcl [-p NCPU] -n NETWORKFILENAME -m OUTPUTDIR -I "INFLATIONLIST"
 This may take a while for large graphs.
 In step 2) you can then use
    rcl.sh tree TAG [-p NCPU] OUTPUTDIR/out.*
+INFLATIONLIST:
+- for single cell use e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
+- for protein families you will probably want somewhat larger values
 EOH
   exit $e
 }
@@ -113,7 +121,7 @@ if [[ -n $projectdir ]]; then
 fi
 
 
-while getopts :n:t:m:r:p:I:UhFD opt
+while getopts :n:m:p:r:t:I:FD opt
 do
     case "$opt" in
     n) network=$OPTARG ;;
@@ -124,25 +132,12 @@ do
     I) INFLATION=$OPTARG ;;
     F) do_force=true ;;
     D) SELF="--self" ;;
-    h)
-      cat <<EOU
-help
-EOU
-       exit
-      ;;
-    H)
-      cat <<EOU
-help
-EOU
-      exit
-      ;;
     :) echo "Flag $OPTARG needs argument" exit 1 ;;
     ?) echo "Flag $OPTARG unknown" exit 1 ;;
    esac
 done
 
 shift $((OPTIND-1))
-
 
 function require_opt() {
   n_req=0

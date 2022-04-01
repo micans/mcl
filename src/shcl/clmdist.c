@@ -124,6 +124,7 @@ enum
 ,  DIST_OPT_NORMALISE
 ,  DIST_OPT_MCI
 ,  DIST_OPT_DIGITS
+,  DIST_OPT_SELF
 }  ;
 
 
@@ -207,6 +208,12 @@ static mcxOptAnchor distOptions[] =
    ,  DIST_OPT_DIGITS
    ,  "<num>"
    ,  "number of trailing digits for floats"
+   }
+,  {  "--self"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  DIST_OPT_SELF
+   ,  NULL
+   ,  "include self-compares (e.g. for heatmaps)"
    }
 ,  {  "--chain"
    ,  MCX_OPT_DEFAULT
@@ -327,6 +334,11 @@ static mcxstatus distArgHandle
 
          case DIST_OPT_DIGITS
       :  digits = atoi(val)
+      ;  break
+      ;
+
+         case DIST_OPT_SELF
+      :  self_g = TRUE
       ;  break
       ;
 

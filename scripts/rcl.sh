@@ -258,16 +258,17 @@ elif [[ $themode == 'res' ]]; then
 
   if [[ -f $resmapfile ]]; then
     rlist=($RESOLUTION)
-    minres=${rlist[0]}
-    resdotfile=${resmapfile%.resdot}.dot
-    respdffile=${resmapfile%.resdot}.pdf
-    restxtfile=${resmapfile%.resdot}.txt
-    rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$minres --label=size < $resmapfile > $resdotfile
-    if ! dot -Tpdf -Gsize=10,10\! < $resdotfile > $respdffile; then
-      echo "-- dot did not run, pdf not produced"
-    else
-      echo "-- map of output produced in $respdffile"
-    fi
+    for minres in ${rlist[@]}; do
+      resdotfile=$pfx.hi.$minres.dot
+      respdffile=$pfx.hi.$minres.pdf
+      restxtfile=$pfx.hi.$minres.txt
+      rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$minres --label=size < $resmapfile > $resdotfile
+      if ! dot -Tpdf -Gsize=10,10\! < $resdotfile > $respdffile; then
+        echo "-- dot did not run, pdf not produced"
+      else
+        echo "-- map of output produced in $respdffile"
+      fi
+    done
   else
     echo "-- Expected file $resmapfile not present"
   fi

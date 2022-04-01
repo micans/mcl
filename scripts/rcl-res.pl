@@ -69,15 +69,15 @@ print STDERR "-- constructing tree:\n";
 my $header = <>;
 chomp $header;
 
-die "Join order header line not recognised" unless $header =~ /^link.*nsg$/;
+die "Join order header line not recognised" unless $header =~ /^link.*bobid$/;
 
 while (<>) {
 
    chomp;
    my @F = split "\t";
 
-   die "Expect 12 elements (have \"@F\")\n" unless @F == 12;
-   my ($i, $val, $upname, $ann, $bob, $xcsz, $ycsz, $xycsz, $nedge, $ctr, $lss, $nsg) = @F;
+   die "Expect 14 elements (have \"@F\")\n" unless @F == 14;
+   my ($i, $val, $upname, $ann, $bob, $xcsz, $ycsz, $xycsz, $nedge, $ctr, $lss, $nsg,$annid, $bobid) = @F;
    die "Checks failed on line $.\n" unless
          looks_like_number($xcsz) && looks_like_number($ycsz)
       && looks_like_number($lss) && looks_like_number($nsg);

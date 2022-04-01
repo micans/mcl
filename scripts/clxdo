@@ -47,7 +47,8 @@ function require_num() {
     -h)
       (cat | sort) <<EOU
 clxdo gra          <cls-file>                    #  show cluster sizes
-clxdo grabig       <num> <cls-file>              #  <num> biggest sizes
+clxdo grabig       <num> <cls-file>              #  <num> largest sizes
+clxdo grabar       <num> <cls-file>              #  largest sizes counting up to <num>
 clxdo gragq        <num> <cls-file>              #  all sizes at least <num>
 clxdo gralog       <cls-file>                    #  show cluster size distribution on log scale
 clxdo check_symmetry       <mx-file>             #  check symmetry. OUTPUTS DIFFERENCE EDGES
@@ -151,6 +152,23 @@ for mx in $@; do
      mcxdump -imx $mx --no-values --dump-lines -o - \
    | perl -ane '$x=@F-1; print "$x\n" if @F>$ENV{CLXDO_GRAGQ};' \
    | sort -nr | tr '\n' ' '
+   echo
+done
+      ;;
+
+
+################################
+
+    grabar)
+require_num 2 "<num> <cls-file>+"
+export CLXDO_GRABAR=$2
+shift 2
+for mx in $@; do
+     mcxdump -imx $mx --no-values --dump-lines -o - \
+   | perl -ane 'print (@F-1); print "\n";' \
+   | sort -nr \
+   | perl -ane 'chomp; $y+=$_; print "$_\n"; last if $y >= $ENV{CLXDO_GRABAR};' \
+   | tr '\n' ' '
    echo
 done
       ;;

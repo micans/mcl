@@ -31,6 +31,7 @@ do_force=false        # -F (for mode 'tree')
 mcldir=               # -m DIRNAME to run a bunch of mcl analyses for use as input later
 INFLATION=            # -I, e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
 SELF=                 # -D
+test_ucl=false        # -U
 
 function usage() {
   local e=$1
@@ -121,7 +122,7 @@ if [[ -n $projectdir ]]; then
 fi
 
 
-while getopts :n:m:p:r:t:I:FD opt
+while getopts :n:m:p:r:t:I:FDU opt
 do
     case "$opt" in
     n) network=$OPTARG ;;
@@ -132,6 +133,7 @@ do
     I) INFLATION=$OPTARG ;;
     F) do_force=true ;;
     D) SELF="--self" ;;
+    U) test_ucl=true ;;
     :) echo "Flag $OPTARG needs argument" exit 1 ;;
     ?) echo "Flag $OPTARG unknown" exit 1 ;;
    esac
@@ -192,7 +194,11 @@ elif [[ $themode == 'tree' ]]; then
   test_exist "$rclfile"
   (( $# < 2 )) && echo "Please supply a few clusterings" && false
   echo "-- Computing RCL graph on $@"
-  if (( cpu == 1 )); then
+  if $test_ucl; then
+    ucl-simple.sh "$pfx.input" "$@"
+    mv -f out.ucl $rclfile
+    echo "Ran UCL succesfully, output $rclfile was made accordingly"
+  elif (( cpu == 1 )); then
     clm vol --progress $SELF -imx $pfx.input -write-rcl $rclfile -o $pfx.vol "$@"
   else
     maxp=$((cpu-1))

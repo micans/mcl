@@ -246,7 +246,7 @@ elif [[ $themode == 'res' ]]; then
       false
     fi
     prefix="$pfx.res$r"
-    cut -f 5 $rfile | mcxload -235-ai - -o $prefix.cls
+    cut -f 4 $rfile | mcxload -235-ai - -o $prefix.cls
     mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
     mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
     nshared="--"

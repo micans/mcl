@@ -66,6 +66,7 @@ $::L=1;
 %::topoftree = ();
 print STDERR "-- constructing tree:\n";
 
+my $epsilon = 0.000001;
 my $header = <>;
 chomp $header;
 
@@ -132,6 +133,15 @@ while (<>) {
    $bob = 'dummy' if $ann eq $bob;
    die "Parent node $upname already exists\n" if defined($::nodes{$upname});
 
+   my $equijoin_report = defined($ENV{RCL_EQUIJOIN}) ? $ENV{RCL_EQUIJOIN} : 0;
+   my $equijoin = 0;
+   $equijoin = $val + $epsilon >= $::nodes{$ann}{val} && $val + $epsilon >= $::nodes{$bob}{val} unless $upname =~ /^sgl_/;
+
+   my $properjoin = $equijoin ? 0 : 1;
+   if ($equijoin && $equijoin_report && $::nodes{$ann}{size} >= $equijoin_report && $::nodes{$bob}{size} >= $equijoin_report) {
+      print STDERR "-- equijoin $val $::nodes{$ann}{val} $::nodes{$bob}{val} $::nodes{$ann}{size} $::nodes{$bob}{size}\n";
+   }
+
    $::nodes{$upname} =
    {  name  => $upname
    ,  parent => undef
@@ -139,13 +149,13 @@ while (<>) {
    ,  ann   => $ann
    ,  bob   => $bob
    ,  csizes => [ $::nodes{$ann}{size}, $::nodes{$bob}{size}]
-   ,  lss   => max( $::nodes{$ann}{lss}, $::nodes{$bob}{lss}, min($::nodes{$ann}{size}, $::nodes{$bob}{size}))
+   ,  lss   => max( $::nodes{$ann}{lss}, $::nodes{$bob}{lss}, $properjoin * min($::nodes{$ann}{size}, $::nodes{$bob}{size}))
    ,  nsg   => $nsg
    ,  val   => $val
    } ;
 
    # clm close outputs a line with ann eq bob for all singleton nodes.
-   print STDERR "LSS error check failed ($ann $bob)\n" if $::nodes{$upname}{lss} != $lss && $ann ne $bob;
+#  print STDERR "LSS error check failed ($ann $bob)\n" if $::nodes{$upname}{lss} != $lss && $ann ne $bob;
 
    delete($::topoftree{$ann});
    delete($::topoftree{$bob});
@@ -213,10 +223,12 @@ print STDERR "\n-- collecting clusters for resolution\n";
  #
 my %maplinks = ();   # collect links for dot plot
 my %hasparent = ();
+my @datasizes = ();
 
 for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
 
   my $clsstack = $resolutionstack{$res};
+  my $datasize = 0;
 
   local $" = ' ';
   my $fname = "$::prefix.res$res.info";
@@ -225,7 +237,7 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
   for my $name ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @$clsstack ) {
 
     my $size = $::nodes{$name}{size};
-    my $val  = $::nodes{$name}{val};
+    my $ival = int(0.5 + $::nodes{$name}{val});
     my @nodestack = ( $name );
     my @items = ();
     $maplinks{$name} = {} unless defined($maplinks{$name});
@@ -255,9 +267,10 @@ for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
     my $nitems = @items;
     print STDERR "Error res $res size difference $size / $nitems\n" unless $nitems == $size;
  
-    my $nsg  = sprintf("%.3f", $::nodes{$name}{nsg} / $::nodes{$name}{size});
-    print OUT "$name\t$val\t$size\t$nsg\t@items\n";
+    print OUT "$name\t$ival\t$size\t@items\n";
+    $datasize += $size;
   }
+  push @datasizes, $datasize;
   close(OUT);
 }
 
@@ -268,12 +281,10 @@ open(RESDOT, ">$dotname") || die "Cannot open $dotname for writing";
 for my $n (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %maplinks) {
   my $size = $::nodes{$n}{size};
   my $sum  = 0;
-  my $ppeeled = "0";
-  my $psingle = "0";
+  my $pctloss = "0";
   $sum += $::nodes{$_}{size} for keys %{$maplinks{$n}};
-  $ppeeled = sprintf("%d", 100 * ($size - $sum) / $size) if $sum;
-  $psingle = sprintf("%d", 100 * $::nodes{$n}{nsg} / $size) if $sum;
-  print RESDOT "node\t$n\t$::nodes{$n}{val}\t$size\t$ppeeled\n";
+  $pctloss = sprintf("%d", 100 * ($size - $sum) / $size) if $sum;
+  print RESDOT "node\t$n\t$::nodes{$n}{val}\t$size\t$pctloss\n";
 }
 for my $n1 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %maplinks) {
   for my $n2 (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$maplinks{$n1}} ) {
@@ -285,7 +296,7 @@ close(RESDOT);
 
 my $listname = "$::prefix.hi.$::resolutiontag.txt";
 open(RESLIST, ">$listname") || die "Cannot open $listname for writing";
-print RESLIST "level\tsize\tjoinval\tnesting\tnodes\n";
+print RESLIST "level\tsize\tjoinval\tpctloss\tnesting\tnodes\n";
    # This output encodes the top-level hierarchy of the RCL clustering,
    # with explicit levels, descendancy encoded in concatenated labels,
    # and all the nodes contained within each cluster.
@@ -293,17 +304,27 @@ sub printlistnode {
   my ($level, $nodelist, $ni) = @_;
   my $size = $::nodes{$ni}{size};
   my $ival = int(0.5 + $::nodes{$ni}{val});
+  my $sumofchildren = 0;
   return unless $size >= $::reslimit;       # perhaps argumentise.
+  $sumofchildren += $::nodes{$_}{size} for keys %{$maplinks{$ni}};
+  my $nloss = $sumofchildren ? sprintf("%d", 100 * ($size - $sumofchildren) / $size) : "-";
   my $tag = join('::', (@{$nodelist}, $ni));
   local $" = ' ';
-  print RESLIST "$level\t$size\t$ival\t$tag\t@{$::nodes{$ni}{items}}\n";
+  print RESLIST "$level\t$size\t$ival\t$nloss\t$tag\t@{$::nodes{$ni}{items}}\n";
   for my $nj (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %{$maplinks{$ni}} ) {
     printlistnode($level+1, [ @$nodelist, $ni ], $nj);
   }
 }
 
-my $level = 1;
+my $toplevelsum = 0;
+for (grep { $::nodes{$_}{size} >= $::reslimit && !defined($hasparent{$_}) } keys %maplinks) {
+  $toplevelsum += $::nodes{$_}{size};
+# print STDERR "$_ $::nodes{$_}{size}\n";
+}
+my $nloss = $toplevelsum ? sprintf("%d", 100 * ($datasizes[0] - $toplevelsum) / $datasizes[0]) : "-";
+print RESLIST "0\t$datasizes[0]\t0\t$nloss\troot\t-\n";
 
+my $level = 1;
 for my $n
 ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} }
   grep { !defined($hasparent{$_}) }
@@ -312,5 +333,4 @@ for my $n
 {   printlistnode(1, [], $n);
 }
 close(RESLIST);
-
 

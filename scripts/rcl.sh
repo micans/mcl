@@ -228,7 +228,7 @@ elif [[ $themode == 'res' ]]; then
   export MCLXIOVERBOSITY=2
   # export RCL_RES_PLOT_LIMIT=${RCL_RES_PLOT_LIMIT-500}
 
-  rcl-res.pl $pfx $RESOLUTION < $pfx.join-order
+  rcl-select.pl $pfx $RESOLUTION < $pfx.join-order
 
   echo "-- saving resolution cluster files and"
   echo "-- displaying size of the 20 largest clusters"

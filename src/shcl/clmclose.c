@@ -692,7 +692,7 @@ static mcxstatus closeMain
 
       ;  fprintf
          (  xfout->fp
-         ,  "link\tval\tNID\tANN\tBOB\txcsz\tycsz\txycsz\tnedge\tctr\tlss\tnsg\tannid\tbobid\n"
+         ,  "link\tval\tNID\tANN\tBOB\txcsz\tycsz\txycsz\tiss\tlss\tannid\tbobid\n"
          )
                         /* We only actually do stuff in this loop no more
                          * than N = N_COLS(mx) times
@@ -737,15 +737,13 @@ static mcxstatus closeMain
             ;  NODE[ni].nsg = sgl_sub + ((sz1 == 1) ^ (sz2 == 1))    /* overwrites si or di */
 
             ;  fprintf
-               (  xfout->fp, "%d\t%.2f\t" "%s\t%s\t%s\t" "%d\t%d\t%d\t" "%.2f\t%.0f\t%lu\t%lu\t%lu\t%lu\n"
+               (  xfout->fp, "%d\t%.2f\t" "%s\t%s\t%s\t" "%d\t%d\t%d\t" "%lu\t%lu\t%lu\t%lu\n"
                ,  (int) n_linked, (double) v
                ,  upname->str, NODE[si].name->str, NODE[di].name->str
                ,  (int) sz1, (int) sz2, (int) sz_sum
 
-               ,  (double) (e * 100.0 / E)
-               ,  (0.5 + sumszsq / N_COLS(mx))
+               ,  (long unsigned) MCX_MIN(sz1, sz2)
                ,  (long unsigned) NODE[ni].lss
-               ,  (long unsigned) NODE[ni].nsg
                ,  (long unsigned) s
                ,  (long unsigned) d
                )
@@ -788,20 +786,11 @@ static mcxstatus closeMain
             ;  snprintf(ibuf, 50, "%d", (int) i)
             ;  fprintf(xflist->fp, "%s\t0.0\n", tab ? mclTabGet(tab, i, NULL) : ibuf)
             ;  fprintf
-               (  xfout->fp, "%d\t%.2f\t" "sgl_%d\t%s\t%s\t" "%d\t%d\t%d\t" "%.2f\t%.0f\t0\t0\t0\t0\n"
+               (  xfout->fp, "%d\t1000.0\t" "sgl_%d\t%s\t%s\t" "1\t1\t1" "\t0\t0\t-\t-\n"
                ,  (int) n_linked++
-               ,  1000.0
-
                ,  (int) i
                ,  NODE[i].name->str
                ,  NODE[i].name->str
-
-               ,  (int) 1
-               ,  (int) 1
-               ,  (int) 1
-
-               ,  (double) (e * 100.0 / E)
-               ,  (0.5 + sumszsq / N_COLS(mx))
                )
             ;  n_singleton++
          ;  }

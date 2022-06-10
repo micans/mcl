@@ -7,10 +7,13 @@
 # by the Free Software Foundation. It should be shipped with MCL in the top
 # level directory as the file COPYING.
 
+# rcl-select.pl :
+# (1) From a binary tree pick sets of internal nodes that represent balanced flat clusterings
+# (2) From a binary tree pick internal nodes that represent significant merge and pre-merge states
 # Only reads STDIN, which should be the output of clm close in --sl mode.  That
 # output encodes the single-linkage join order of a tree.  The script further
 # requires a prefix for file output and a list of resolution sizes.
-#
+
 # --- The first mode of output ---
 # The output is a list of flat clusterings, one for each resolution size.
 # These clusterings usually share clusters between them (i.e. clusters do not
@@ -39,6 +42,8 @@
 # --- The second mode of output ---
 # The tree is descended, and any split where the smallest subtree is at least
 # size reslimit (the smallest specified resolution) is taken.
+# Additionally, any clusters found in the first mode are added if not found
+# by this method.
 
 
 # rcl.sh incorporates rcl-select.pl, see there for comprehensive usage example.
@@ -598,7 +603,7 @@ sub get_sibling {
 }
 
 
-sub get_carter {
+sub get_node_items {
 
   my $name = shift;
   my @nodestack = ( $name );
@@ -626,8 +631,12 @@ sub get_carter {
 
 sub hich_cls_collect {
   my $hichpick = shift;
+  #
+  # get longer names / deeper nesting clusters before shorter names / top level clusters.
+  # Anything found is cached, this helps efficiency.
+  #
   for (sort { $hichpick->{$b}{longname} cmp $hichpick->{$a}{longname} } keys %$hichpick) {
-    get_carter($_);
+    get_node_items($_);
   }
 }
 

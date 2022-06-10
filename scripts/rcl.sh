@@ -21,8 +21,8 @@
 
 set -euo pipefail
 
-themode=              # first argument, mode 'setup' 'tree' 'res' or 'mcl'.
-projectdir=           # second argument, for modes 'setup' 'tree' 'res'.
+themode=              # first argument, mode 'setup' 'tree' 'select', 'mcl', or 'qc'
+projectdir=           # second argument, for modes 'setup' 'tree' 'select'.
 network=              # -n FNAME
 tabfile=              # -t FNAME
 cpu=1                 # -p NUM
@@ -38,9 +38,9 @@ function usage() {
   cat <<EOH
 An rcl workflow requires three steps:
 
-1) rcl.sh setup TAG -n NETWORKFILENAME -t TABFILENAME
-2) rcl.sh tree  TAG [-F] [-p NCPU] LIST-OF-CLUSTERING-FILES
-3) rcl.sh res   TAG -r "RESOLUTIONLIST"
+1) rcl.sh setup   TAG -n NETWORKFILENAME -t TABFILENAME
+2) rcl.sh tree    TAG [-F] [-p NCPU] LIST-OF-CLUSTERING-FILES
+3) rcl.sh select  TAG -r "RESOLUTIONLIST"
 
 TAG will be used as a project directory name in the current directory.
 NETWORKFILENAME and TABFILENAME are usually created by mcxload.
@@ -66,7 +66,7 @@ EOH
   exit $e
 }
 
-MODES="setup tree res mcl"
+MODES="setup tree select mcl qc"
 
 function require_mode() {
   local mode=$1
@@ -87,11 +87,16 @@ function require_tag() {
   fi
   projectdir=$tag
 }
-function require_imx() {
+function require_file() {
   local fname=$1 response=$2
   if [[ ! -f $fname ]]; then
-    echo "Expected network file $fname not found; $response"
+    echo "Expected file $fname not found; $response"
+    false
   fi
+}
+function require_imx() {
+  local fname=$1 response=$2
+  require_file "$fname" "$response"
   if ! mcx query -imx $fname --dim > /dev/null; then
     echo "Input is not in mcl network format; check file $fname"
     false
@@ -109,7 +114,7 @@ function test_exist() {
 
 require_mode "${1-}"          # themode now set
 shift 1
-if grep -qFw $themode <<< "setup tree res"; then
+if grep -qFw $themode <<< "setup tree select qc"; then
   require_tag $themode "${1-}"   # projectdir now set
   shift 1
 fi
@@ -176,12 +181,14 @@ elif [[ $themode == 'setup' ]]; then
   require_opt setup -n "$network" "a network in mcl format"
   require_opt setup -t "$tabfile" "a tab file mapping indexes to labels"
   if (( n_req )); then exit 1; fi
+  require_imx "$network" "Is $network an mcl matrix file?"
   if ! ln -f $tabfile $pfx.tab 2> /dev/null; then
     cp $tabfile $pfx.tab
   fi
   if ! ln -f $network $pfx.input 2> /dev/null; then
     ln -sf $network $pfx.input
   fi
+  wc -l < $pfx.tab > $pfx.nitems
   echo "Project directory $projectdir is ready" 
 
 
@@ -194,6 +201,7 @@ elif [[ $themode == 'tree' ]]; then
   test_exist "$rclfile"
   (( $# < 2 )) && echo "Please supply a few clusterings" && false
   echo "-- Computing RCL graph on $@"
+  echo "$@" > $pfx.lsocls
   if $test_ucl; then
     ucl-simple.sh "$pfx.input" "$@"
     mv -f out.ucl $rclfile
@@ -213,15 +221,15 @@ elif [[ $themode == 'tree' ]]; then
   fi
   echo "-- Computing single linkage join order for network $rclfile"
   clm close --sl -sl-rcl-cutoff ${RCL_CUTOFF-0} -imx $rclfile -tab $pfx.tab -o $pfx.join-order -write-sl-list $pfx.node-values
-  echo "RCL network and linkage both ready, you can run rcl.sh res $projectdir"
+  echo "RCL network and linkage both ready, you can run rcl.sh select $projectdir"
 
 
   ##
   ##  R E S
 
-elif [[ $themode == 'res' ]]; then
+elif [[ $themode == 'select' ]]; then
   minres=-
-  require_opt res -r "$RESOLUTION" "a list of resolution values between quotes"
+  require_opt select -r "$RESOLUTION" "a list of resolution values between quotes"
   (( n_req )) && false
   require_imx "$pfx.rcl" "did you run rcl.sh tree $projectdir?"
   echo "-- computing clusterings with resolution parameters $RESOLUTION"
@@ -292,6 +300,83 @@ A table with all clusters at different levels up to size $minres, including thei
    $restxtfile
 EOM
 
+
+  ##
+  ##  Q C
+
+elif [[ $themode == 'qc' ]]; then
+
+       #       ____  ___)              ______          ______                                 #
+      #       (, /   /                (, /    )       (, /    )                              #
+     #          /---/   _  __   _       /---(   _       /    / __  _   _   _____   _        #
+    #        ) /   (___(/_/ (__(/_   ) / ____)_(/_    _/___ /_/ (_(_(_(_/_(_) / (_/_)_     #
+   #        (_/                     (_/ (           (_/___ /         .-/                  #
+  #                                                                 (_/                  #
+   # Some things still hardcoded, e.g. cluster size range.
+   # This looks absolutely awful, with perl madness and inline R scripts.
+   # Remember that things like daisies and clover exist.
+
+  require_file "$pfx.lsocls" "(created in step 'tree')"
+  require_file "$pfx.nitems" "(created in step 'setup')"
+
+  export RCLPLOT_PARAM_SCALE=${RCLPLOT_PARAM_SCALE:-2}
+
+# Heatmap:
+  out_heat_txt=$pfx.qc-heat.txt
+  out_heat_pdf=${out_heat_txt%.txt}.pdf
+  ( echo -e "d\tP1\tP2"; clm dist $(cat $pfx.lsocls) | rcldo.pl distwrangle $(cat $pfx.nitems) ) > $out_heat_txt # \
+
+  R --slave --quiet --silent --vanilla <<EOR
+library(ggplot2, warn.conflicts=FALSE)
+library(viridis, warn.conflicts=FALSE)
+
+mytheme = theme(plot.title = element_text(hjust = 0.5), plot.margin=grid::unit(c(5,5,5,5), "mm"),
+   axis.text.x=element_text(size=rel(1.0), angle=0), axis.text.y=element_text(size=rel(1.0), angle=0), 
+   legend.position="bottom", legend.text=element_text(size=rel(0.6)), legend.title=element_text(size=rel(0.8)),
+   text=element_text(family="serif"))
+  
+h <- read.table("$out_heat_txt",header=T, colClasses=c("double", "character", "character"))
+h\$d <- 100 * h\$d
+
+p1 <- ggplot(h, aes(x=P1, y=P2, fill=d)) +  
+     geom_tile() + mytheme + ggtitle("Cluster discrepancies") +
+     guides(shape = guide_legend(override.aes = list(size = 0.3))) +
+     labs(x="Granularity parameter", y="Granularity parameter") +
+     geom_text(aes(label=round(d)), color="white", size=4) + scale_fill_viridis(option = "A",
+       name = "Distance to GCS as percentage of nodes", direction = -1, limits=c(0,100),
+       guide = guide_colourbar(direction = "horizontal",
+       draw.ulim = F,
+       title.hjust = 0.5,
+       barheight = unit(3, "mm"),
+       label.hjust = 0.5, title.position = "top"))
+ggsave("$out_heat_pdf", width=6, height=5); 
+EOR
+  echo "-- $out_heat_pdf created"
+
+# Granularity:
+  out_gra_txt="$pfx.qc-gra.txt"
+  out_gra_pdf="${out_gra_txt%.txt}.pdf"
+  for fname in $(cat $pfx.lsocls); do
+    clxdo gra $fname | tr -s ' ' '\n' | tail -n +2 | rcldo.pl cumgra $fname $(cat $pfx.nitems)
+  done > "$out_gra_txt"
+  R --slave --quiet --silent --vanilla <<EOR
+library(ggplot2, warn.conflicts=FALSE)
+
+mytheme = theme(plot.title = element_text(hjust = 0.5),
+  plot.margin=grid::unit(c(4,4,4,4), "mm"), legend.spacing.y=unit(0, 'mm'), legend.key.size = unit(5, "mm"),
+               text=element_text(family="serif"))
+
+a <- read.table("$out_gra_txt", colClasses=c("factor", "double", "double"))
+xLabels <- c(1,10,100,1000,10000)
+  ggplot(a) + geom_line(aes(x = V2, y = V3, group=V1, colour=V1)) +
+  mytheme + scale_color_viridis_d() +
+  geom_point(aes(x = V2, y = V3, group=V1, colour=V1)) +
+  labs(col="${RCLPLOT_GRA_COLOUR:-Granularity parameter}", x="Cluster size x", y=expression("Fraction of nodes in clusters of size "<="x")) +
+  scale_x_continuous(breaks = c(0,10,20,30,40),labels= xLabels) +
+  ggtitle("${RCLPLOT_GRA_TITLE:-Granularity signatures across inflation}")
+ggsave("$out_gra_pdf", width=6, height=4)
+EOR
+  echo "-- $out_gra_pdf created"
 fi
 
 

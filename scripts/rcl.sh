@@ -38,14 +38,15 @@ function usage() {
   cat <<EOH
 An rcl workflow requires three steps:
 
-1) rcl.sh setup   TAG -n NETWORKFILENAME -t TABFILENAME
-2) rcl.sh tree    TAG [-F] [-p NCPU] LIST-OF-CLUSTERING-FILES
+1) rcl.sh setup   TAG -n NETWORKFILENAME -t TABFILENAME  LIST-OF-CLUSTERING-FILES
+2) rcl.sh tree    TAG [-F] [-p NCPU]
 3) rcl.sh select  TAG -r "RESOLUTIONLIST"
 
 TAG will be used as a project directory name in the current directory.
 NETWORKFILENAME and TABFILENAME are usually created by mcxload.
 Hard links to these files will be made in TAG, symbolic if this is not possible.
 All rcl.sh commands are issued from outside and directly above directory TAG.
+LIST-OF-CLUSTERING-FILES is stored in a file and retrieved when needed.
 -F forces a run if a previous output exists.
 For RESOLUTIONLIST a doubling is suggested, e.g. -r "50 100 200 400 800 1600 3200"
 You may want to re-run with a modified list if the largest cluster size is either
@@ -57,16 +58,20 @@ A table of all clusters of size above the smallest resolution is left in TAG/rcl
 To make mcl clusterings to give to rcl:
 rcl.sh mcl [-p NCPU] -n NETWORKFILENAME -m OUTPUTDIR -I "INFLATIONLIST"
 This may take a while for large graphs.
-In step 2) you can then use
-   rcl.sh tree TAG [-p NCPU] OUTPUTDIR/out.*
+In step 1) you can then use
+   rcl.sh setup TAG -n NETWORKFILENAME -t TABFILENAME  OUTPUTDIR/out.*
 INFLATIONLIST:
 - for single cell use e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
 - for protein families you will probably want somewhat larger values
+
+Additional modes:
+rcl.sh qc  TAG      create (1) heat map of clustering discrepancies and (2) granularity plot.
+rcl.sh qc2 TAG      create scatter plot of cluster sizes versus induced mean eccentricity of nodes.
 EOH
   exit $e
 }
 
-MODES="setup tree select mcl qc"
+MODES="setup tree select mcl qc qc2"
 
 function require_mode() {
   local mode=$1
@@ -114,7 +119,7 @@ function test_exist() {
 
 require_mode "${1-}"          # themode now set
 shift 1
-if grep -qFw $themode <<< "setup tree select qc"; then
+if grep -qFw $themode <<< "setup tree select qc qc2"; then
   require_tag $themode "${1-}"   # projectdir now set
   shift 1
 fi
@@ -182,6 +187,22 @@ elif [[ $themode == 'setup' ]]; then
   require_opt setup -t "$tabfile" "a tab file mapping indexes to labels"
   if (( n_req )); then exit 1; fi
   require_imx "$network" "Is $network an mcl matrix file?"
+
+  ndim=$(grep -o "[0-9]\+$" <<< $(mcx query --dim -imx "$network"))
+  ntab=$(wc -l < "$tabfile")
+
+  if [[ $ntab != $ndim ]]; then
+    echo "Dimension mismatch between network ($ndim) and tab file ($ntab)"
+    false
+  fi
+
+  (( $# < 2 )) && echo "Please supply a few clusterings" && false
+  ls "$@" > $pfx.lsocls
+  for f in $(cat $pfx.lsocls); do
+    require_imx "$f" "Is clustering $f an mcl matrix file?"
+  done
+  echo "-- Supplied clusterings are in mcl format"
+
   if ! ln -f $tabfile $pfx.tab 2> /dev/null; then
     cp $tabfile $pfx.tab
   fi
@@ -189,7 +210,7 @@ elif [[ $themode == 'setup' ]]; then
     ln -sf $network $pfx.input
   fi
   wc -l < $pfx.tab > $pfx.nitems
-  echo "Project directory $projectdir is ready" 
+  echo "Project directory $projectdir is ready ($pfx.input)"
 
 
   ##
@@ -197,23 +218,26 @@ elif [[ $themode == 'setup' ]]; then
 
 elif [[ $themode == 'tree' ]]; then
   require_imx "$pfx.input" "did you run rcl.sh setup $projectdir?"
+  require_file "$pfx.lsocls" "cluster file $pfx.lsocls is missing, weirdly"
+
   rclfile=$pfx.rcl
   test_exist "$rclfile"
-  (( $# < 2 )) && echo "Please supply a few clusterings" && false
-  echo "-- Computing RCL graph on $@"
-  echo "$@" > $pfx.lsocls
+
+  mapfile -t cls < $pfx.lsocls
+  echo "-- Computing RCL graph on ${cls[@]}"
+
   if $test_ucl; then
-    ucl-simple.sh "$pfx.input" "$@"
+    ucl-simple.sh "$pfx.input" "${cls[@]}"
     mv -f out.ucl $rclfile
     echo "Ran UCL succesfully, output $rclfile was made accordingly"
   elif (( cpu == 1 )); then
-    clm vol --progress $SELF -imx $pfx.input -write-rcl $rclfile -o $pfx.vol "$@"
+    clm vol --progress $SELF -imx $pfx.input -write-rcl $rclfile -o $pfx.vol "${cls[@]}"
   else
     maxp=$((cpu-1))
     list=$(eval "echo {0..$maxp}")
     echo "-- All $cpu processes are chasing .,=+<>()-"
     for id in $list; do
-      clm vol --progress $SELF -imx $pfx.input -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "$@" &
+      clm vol --progress $SELF -imx $pfx.input -gi $id/$cpu -write-rcl $pfx.R$id -o pfx.V$id "${cls[@]}" &
     done
     wait
     clxdo mxsum $(eval echo "$pfx.R{0..$maxp}") > $rclfile
@@ -320,11 +344,12 @@ elif [[ $themode == 'qc' ]]; then
   require_file "$pfx.nitems" "(created in step 'setup')"
 
   export RCLPLOT_PARAM_SCALE=${RCLPLOT_PARAM_SCALE:-2}
+  mapfile -t cls < $pfx.lsocls
 
 # Heatmap:
   out_heat_txt=$pfx.qc-heat.txt
   out_heat_pdf=${out_heat_txt%.txt}.pdf
-  ( echo -e "d\tP1\tP2"; clm dist $(cat $pfx.lsocls) | rcldo.pl distwrangle $(cat $pfx.nitems) ) > $out_heat_txt # \
+  ( echo -e "d\tP1\tP2"; clm dist "${cls[@]}" | rcldo.pl distwrangle $(cat $pfx.nitems) ) > $out_heat_txt # \
 
   R --slave --quiet --silent --vanilla <<EOR
 library(ggplot2, warn.conflicts=FALSE)
@@ -356,7 +381,7 @@ EOR
 # Granularity:
   out_gra_txt="$pfx.qc-gra.txt"
   out_gra_pdf="${out_gra_txt%.txt}.pdf"
-  for fname in $(cat $pfx.lsocls); do
+  for fname in "${cls[@]}"; do
     clxdo gra $fname | tr -s ' ' '\n' | tail -n +2 | rcldo.pl cumgra $fname $(cat $pfx.nitems)
   done > "$out_gra_txt"
   R --slave --quiet --silent --vanilla <<EOR
@@ -377,6 +402,57 @@ xLabels <- c(1,10,100,1000,10000)
 ggsave("$out_gra_pdf", width=6, height=4)
 EOR
   echo "-- $out_gra_pdf created"
+
+
+elif [[ $themode == 'qc2' ]]; then
+
+  require_file "$pfx.lsocls" "(created in step 'tree')"
+  export MCLXIOVERBOSITY=2
+  mapfile -t cls < $pfx.lsocls
+
+  # if $do_force || [[ ! -f $pfx.qc2all.txt ]]; then
+  if test_exist $pfx.qc2all.txt; then
+
+    for cls in "${cls[@]}"; do
+
+      export tag=$(rcldo.pl clstag $cls)
+      ecc_file=$pfx.ecc.$tag.txt
+      cls_dump=$pfx.clsdump.$tag
+
+      echo "-- computing cluster-wise eccentricity for $cls [$tag]"
+      mcx alter -icl $cls -imx $pfx.input --block | mcx diameter -imx - -t $cpu --progress | tail -n +2 > $ecc_file
+
+      mcxdump -imx $cls --transpose --no-values > $cls_dump
+
+      if ! diff -q <(cut -f 1 $ecc_file) <(cut -f 1 $cls_dump); then
+        echo "Difference in domains!"
+        false
+      fi
+
+      paste $ecc_file  <(cut -f 2 $cls_dump) \
+        | sort -nk 3 \
+        | datamash --group 3 mean 2 count 3 \
+        | perl -ne 'chomp; print "$_\t$ENV{tag}\n"' \
+        > $pfx.qc2.$tag.txt
+
+    done
+    cat $pfx.qc2.*.txt | tac > $pfx.qc2all.txt
+  else
+    echo "-- reusing $pfx.qc2all.txt"
+  fi
+
+  out_qc2_pdf=$pfx.qc2all.pdf
+
+  R --slave --quiet --silent --vanilla <<EOR
+library(ggplot2, warn.conflicts=FALSE)
+library(viridis, warn.conflicts=FALSE)
+d <- read.table("$pfx.qc2all.txt")
+d\$V4 <- as.factor(d\$V4)
+ggplot() + geom_point(data=d, aes(x=V2, y=log10(V3), colour=V4)) + expand_limits(x=c(0,10), y=c(0,5)) + scale_color_viridis(discrete=TRUE)
+ggsave("$out_qc2_pdf", width=5, height=5)
+EOR
+  echo "-- file $out_qc2_pdf created"
+
 fi
 
 

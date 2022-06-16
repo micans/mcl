@@ -110,9 +110,11 @@ function require_imx() {
 function test_exist() {
   local fname=$1
   if [[ -f $fname ]]; then
-    if ! $do_force; then
-      echo "File $fname exists, use -F to force running $themode"
-      exit 0
+    if $do_force; then
+      echo "Recreating existing file $fname"
+    else
+      echo "File $fname exists, use -F to force renewal"
+      return 1
     fi
   fi
 }
@@ -374,7 +376,7 @@ p1 <- ggplot(h, aes(x=P1, y=P2, fill=d)) +
        title.hjust = 0.5,
        barheight = unit(3, "mm"),
        label.hjust = 0.5, title.position = "top"))
-ggsave("$out_heat_pdf", width=6, height=5); 
+ggsave("$out_heat_pdf", width=${RCLPLOT_X:-6}, height=${RCLPLOT_Y:-5}); 
 EOR
   echo "-- $out_heat_pdf created"
 
@@ -399,7 +401,7 @@ xLabels <- c(1,10,100,1000,10000)
   labs(col="${RCLPLOT_GRA_COLOUR:-Granularity parameter}", x="Cluster size x", y=expression("Fraction of nodes in clusters of size "<="x")) +
   scale_x_continuous(breaks = c(0,10,20,30,40),labels= xLabels) +
   ggtitle("${RCLPLOT_GRA_TITLE:-Granularity signatures across inflation}")
-ggsave("$out_gra_pdf", width=6, height=4)
+ggsave("$out_gra_pdf", width=${RCLPLOT_X:-6}, height=${RCLPLOT_Y:-4})
 EOR
   echo "-- $out_gra_pdf created"
 
@@ -413,7 +415,7 @@ elif [[ $themode == 'qc2' ]]; then
   # if $do_force || [[ ! -f $pfx.qc2all.txt ]]; then
   if test_exist $pfx.qc2all.txt; then
 
-    for cls in "${cls[@]}"; do
+    for cls in ${cls[@]}; do
 
       export tag=$(rcldo.pl clstag $cls)
       ecc_file=$pfx.ecc.$tag.txt
@@ -447,9 +449,18 @@ elif [[ $themode == 'qc2' ]]; then
 library(ggplot2, warn.conflicts=FALSE)
 library(viridis, warn.conflicts=FALSE)
 d <- read.table("$pfx.qc2all.txt")
+d <- d[d\$V3 > 1,]          # remove singletons.
 d\$V4 <- as.factor(d\$V4)
-ggplot() + geom_point(data=d, aes(x=V2, y=log10(V3), colour=V4)) + expand_limits(x=c(0,10), y=c(0,5)) + scale_color_viridis(discrete=TRUE)
-ggsave("$out_qc2_pdf", width=5, height=5)
+mytheme = theme(plot.title = element_text(hjust = 0.5),
+  plot.margin=grid::unit(c(4,4,4,4), "mm"), legend.spacing.y=unit(0, 'mm'), legend.key.size = unit(5, "mm"),
+               text=element_text(family="serif"))
+ggplot() + mytheme +
+geom_point(data=d, aes(x=V2, y=log10(V3), colour=V4)) +
+expand_limits(x=c(0,${RCL_ECC_X:-10}), y=c(0,${RCL_ECC_Y:-5})) +
+labs(colour = "Cls", x="Average eccentricity", y="Cluster size (log10)") +
+scale_color_viridis(discrete=TRUE, labels=as.numeric(levels(d\$V4))/10**${RCLPLOT_PARAM_SCALE:-0}) +
+ggtitle("${RCLPLOT_ECC_TITLE:-Cluster size / eccentricity}")
+ggsave("$out_qc2_pdf", width=${RCLPLOT_X:-5}, height=${RCLPLOT_Y:-5})
 EOR
   echo "-- file $out_qc2_pdf created"
 

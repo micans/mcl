@@ -28,7 +28,6 @@ tabfile=              # -t FNAME
 cpu=1                 # -p NUM
 RESOLUTION=           # -r, e.g. -r "100 200 400 800 1600 3200"
 do_force=false        # -F (for mode 'tree')
-mcldir=               # -m DIRNAME to run a bunch of mcl analyses for use as input later
 INFLATION=            # -I, e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
 SELF=                 # -D
 test_ucl=false        # -U
@@ -56,10 +55,10 @@ If 'dot' is available, a plot of results is left in TAG/rcl.hi.RESOLUTION.pdf
 A table of all clusters of size above the smallest resolution is left in TAG/rcl.hi.RESOLUTION.txt
 
 To make mcl clusterings to give to rcl:
-rcl.sh mcl [-p NCPU] -n NETWORKFILENAME -m OUTPUTDIR -I "INFLATIONLIST"
+rcl.sh mcl TAG [-p NCPU] -n NETWORKFILENAME -I "INFLATIONLIST"
 This may take a while for large graphs.
 In step 1) you can then use
-   rcl.sh setup TAG -n NETWORKFILENAME -t TABFILENAME  OUTPUTDIR/out.*
+   rcl.sh setup TAG -n NETWORKFILENAME -t TABFILENAME
 INFLATIONLIST:
 - for single cell use e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
 - for protein families you will probably want somewhat larger values
@@ -107,21 +106,26 @@ function require_imx() {
     false
   fi
 }
-function test_exist() {
+function test_absence () {
   local fname=$1
+  local action=${2:?Programmer error, need second argument}  # return or exit
   if [[ -f $fname ]]; then
     if $do_force; then
       echo "Recreating existing file $fname"
     else
       echo "File $fname exists, use -F to force renewal"
-      return 1
+      if [[ $action == 'return' ]]; then
+        return 1
+      elif [[ $action == 'exit' ]]; then
+        exit 1
+      fi
     fi
   fi
 }
 
 require_mode "${1-}"          # themode now set
 shift 1
-if grep -qFw $themode <<< "setup tree select qc qc2"; then
+if grep -qFw $themode <<< "setup tree select mcl qc qc2"; then
   require_tag $themode "${1-}"   # projectdir now set
   shift 1
 fi
@@ -134,11 +138,10 @@ if [[ -n $projectdir ]]; then
 fi
 
 
-while getopts :n:m:p:r:t:I:FDU opt
+while getopts :n:p:r:t:I:FDU opt
 do
     case "$opt" in
     n) network=$OPTARG ;;
-    m) mcldir=$OPTARG ;;
     p) cpu=$OPTARG ;;
     r) RESOLUTION=$OPTARG ;;
     t) tabfile=$OPTARG ;;
@@ -168,16 +171,16 @@ function require_opt() {
 
 if [[ $themode == 'mcl' ]]; then
   require_opt mcl -n "$network" "a network in mcl format"
-  require_opt mcl -m "$mcldir" "a directory output name"
   require_opt mcl -I "$INFLATION" "a set of inflation values between quotes"
   if (( n_req )); then exit 1; fi
-  mkdir -p $mcldir
+  mkdir -p $projectdir
   echo "-- Running mcl for inflation values in ($INFLATION)"
   for I in $(tr -s ' ' '\n' <<< "$INFLATION" | sort -rn); do
     echo -n "-- inflation $I start .."
-    mcl $network -I $I -t $cpu --i3 -odir $mcldir
+    mcl $network -I $I -t $cpu --i3 -odir $projectdir
     echo " done"
-  done 2> $mcldir/log.mcl
+  done 2> $projectdir/log.mcl
+  echo $projectdir/out.*.I* | tr ' ' '\n' > $projectdir/rcl.lsocls
   exit 0
 
 
@@ -198,12 +201,16 @@ elif [[ $themode == 'setup' ]]; then
     false
   fi
 
-  (( $# < 2 )) && echo "Please supply a few clusterings" && false
-  ls "$@" > $pfx.lsocls
-  for f in $(cat $pfx.lsocls); do
-    require_imx "$f" "Is clustering $f an mcl matrix file?"
-  done
-  echo "-- Supplied clusterings are in mcl format"
+  if ! test_absence $pfx.lsocls return; then
+    true # echo "-- using existing file $pfx.lsocls"
+  else
+    (( $# < 2 )) && echo "Please supply a few clusterings" && false
+    ls "$@" > $pfx.lsocls
+    for f in $(cat $pfx.lsocls); do
+      require_imx "$f" "Is clustering $f an mcl matrix file?"
+    done
+    echo "-- Supplied clusterings are in mcl format"
+  fi
 
   if ! ln -f $tabfile $pfx.tab 2> /dev/null; then
     cp $tabfile $pfx.tab
@@ -223,7 +230,7 @@ elif [[ $themode == 'tree' ]]; then
   require_file "$pfx.lsocls" "cluster file $pfx.lsocls is missing, weirdly"
 
   rclfile=$pfx.rcl
-  test_exist "$rclfile"
+  test_absence  "$rclfile" exit
 
   mapfile -t cls < $pfx.lsocls
   echo "-- Computing RCL graph on ${cls[@]}"
@@ -341,6 +348,7 @@ elif [[ $themode == 'qc' ]]; then
    # Some things still hardcoded, e.g. cluster size range.
    # This looks absolutely awful, with perl madness and inline R scripts.
    # Remember that things like daisies and clover exist.
+   # Additionally It Should Work
 
   require_file "$pfx.lsocls" "(created in step 'tree')"
   require_file "$pfx.nitems" "(created in step 'setup')"
@@ -413,7 +421,9 @@ elif [[ $themode == 'qc2' ]]; then
   mapfile -t cls < $pfx.lsocls
 
   # if $do_force || [[ ! -f $pfx.qc2all.txt ]]; then
-  if test_exist $pfx.qc2all.txt; then
+  if ! test_absence  $pfx.qc2all.txt return; then
+    echo "-- reusing $pfx.qc2all.txt"
+  else
 
     for cls in ${cls[@]}; do
 
@@ -439,8 +449,6 @@ elif [[ $themode == 'qc2' ]]; then
 
     done
     cat $pfx.qc2.*.txt | tac > $pfx.qc2all.txt
-  else
-    echo "-- reusing $pfx.qc2all.txt"
   fi
 
   out_qc2_pdf=$pfx.qc2all.pdf

@@ -66,8 +66,8 @@ sub cumgra {
 
   my @x = 0..80;
 
+        # TODO make below flexible.
   my @y = grep { $_ <= 10000 } map { 10 ** ($_/10) } @x;
-  # print "@y\n";
 
   my $runningtotal = 0;
   my $y = 0;
@@ -110,8 +110,8 @@ sub attach_annotation {
 }
 
 sub read_node_annotation_table {
-  my $ctfile = shift;
-  open(CT, "<$ctfile") || die "No ct\n";
+  my $fntable = shift;
+  open(CT, "<$fntable") || die "Cannot open annotation table $fntable\n";
   my $header = <CT>;
   chomp $header;
   my @header = split "\t", $header;

@@ -25,8 +25,11 @@ themode=              # first argument, mode 'setup' 'tree' 'select', 'mcl', or 
 projectdir=           # second argument, for modes 'setup' 'tree' 'select'.
 network=              # -n FNAME
 tabfile=              # -t FNAME
+infix='infix'         # -x infix, a secondary tag
 cpu=1                 # -p NUM
 RESOLUTION=           # -r, e.g. -r "100 200 400 800 1600 3200"
+ANNOTATION=           # -a FNAME annotation file
+CLUSTERING=           # -c FNAME clustering file
 do_force=false        # -F (for mode 'tree')
 INFLATION=            # -I, e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
 SELF=                 # -D
@@ -66,11 +69,13 @@ INFLATIONLIST:
 Additional modes:
 rcl.sh qc  TAG      create (1) heat map of clustering discrepancies and (2) granularity plot.
 rcl.sh qc2 TAG      create scatter plot of cluster sizes versus induced mean eccentricity of nodes.
+rcl.sh heatannot TAG  -a annotationfile -c rclheatmapfile (output from rcl select, TAG/rcl.hm*)
+rcl.sh heatannotcls TAG  -a annotationfile -c clustering (in mcl matrix format)
 EOH
   exit $e
 }
 
-MODES="setup tree select mcl qc qc2"
+MODES="setup tree select mcl qc qc2 heatannot heatannotcls"
 
 function require_mode() {
   local mode=$1
@@ -125,7 +130,7 @@ function test_absence () {
 
 require_mode "${1-}"          # themode now set
 shift 1
-if grep -qFw $themode <<< "setup tree select mcl qc qc2"; then
+if grep -qFw $themode <<< "setup tree select mcl qc qc2 heatannot heatannotcls"; then
   require_tag $themode "${1-}"   # projectdir now set
   shift 1
 fi
@@ -138,13 +143,16 @@ if [[ -n $projectdir ]]; then
 fi
 
 
-while getopts :n:p:r:t:I:FDU opt
+while getopts :a:c:n:p:r:t:x:I:FDU opt
 do
     case "$opt" in
+    a) ANNOTATION=$OPTARG ;;
+    c) CLUSTERING=$OPTARG ;;
     n) network=$OPTARG ;;
     p) cpu=$OPTARG ;;
     r) RESOLUTION=$OPTARG ;;
     t) tabfile=$OPTARG ;;
+    x) infix=$OPTARG ;;
     I) INFLATION=$OPTARG ;;
     F) do_force=true ;;
     D) SELF="--self" ;;
@@ -471,6 +479,40 @@ ggtitle("${RCLPLOT_ECC_TITLE:-Cluster size / eccentricity}")
 ggsave("$out_qc2_pdf", width=${RCLPLOT_X:-5}, height=${RCLPLOT_Y:-5})
 EOR
   echo "-- file $out_qc2_pdf created"
+
+
+elif [[ $themode == 'heatannot' || $themode == 'heatannotcls' ]]; then
+
+require_opt $themode -c "$CLUSTERING" "an rcl.hm.*.txt file or clustering in mcl matrix format"
+require_opt $themode -a "$ANNOTATION" "an annotation table with header line, row names as in tab file"
+
+require_file "$CLUSTERING" "(file $projectdir/rcl.hm.*.txt for heatannot or clustering in mcl matrix format for heatannotcls)"
+require_file "$ANNOTATION" "an annotation table with header line, row names as in tab file"
+
+mybase=$projectdir/hm${infix:+.$infix}
+
+if [[ $themode == heatannotcls ]]; then
+  clsinput=$CLUSTERING
+  CLUSTERING=$mybase.thecls.txt
+  mcxdump -imx $clsinput --dump-rlines --no-values > $CLUSTERING
+fi
+rcldo.pl $themode $ANNOTATION $CLUSTERING $projectdir/rcl.tab > $mybase.txt
+echo "-- file $mybase.txt created"
+
+  R --slave --quiet --silent --vanilla <<EOR
+suppressPackageStartupMessages(library(circlize, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library(ComplexHeatmap, warn.conflicts=FALSE))
+mycol = colorRamp2(c(0, 5, 10, 20, 40, 80), c("darkblue", "purple", "red", "orange", "green", "yellow"))
+g  <- read.table("$mybase.txt", header=T, sep="\t")
+g2 <- g[,3:ncol(g)]
+pdf("$mybase.pdf", width = ${RCLPLOT_X:-8}, height = ${RCLPLOT_Y:-8})
+ht <- Heatmap(t(g2), name = "mat", cluster_rows = FALSE, cluster_columns=FALSE, col=mycol, row_names_gp = gpar(fontsize = ${RCLPLOT_YFTSIZE:-8}))
+options(repr.plot.width = ${RCLPLOT_HM_X:-20}, repr.plot.height = ${RCLPLOT_HM_Y:-14}, repr.plot.res = 100)
+ht = draw(ht)
+invisible(dev.off())
+EOR
+
+echo "-- file $mybase.pdf created"
 
 fi
 

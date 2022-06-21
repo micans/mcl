@@ -122,7 +122,7 @@ mcxOptAnchor mcxSharedOptions[] =
    ,  MCX_OPT_DEFAULT
    ,  MCX_DISP_NOP
    ,  NULL
-   ,  "this option has no affect but changing the argument count"
+   ,  "this option has no effect but changing the argument count"
    }
 ,  {  "--write-binary"
    ,  MCX_OPT_DEFAULT
@@ -158,7 +158,7 @@ mcxbool  mcx_test_g      =  FALSE;
 mcxbool  mcx_wb_g =  FALSE;
 
 
-mcxstatus sharedArgHandle
+static mcxstatus sharedArgHandle
 (  int optid
 ,  const char* val
 ,  mcxDispHook*   hook

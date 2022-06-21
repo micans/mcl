@@ -10,6 +10,7 @@
 #include <time.h>
 #include <signal.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "proc.h"
 #include "dpsd.h"
@@ -99,6 +100,7 @@ mclProcParam* mclProcParamNew
    ;  mpp->vec_attr        =  NULL
 
    ;  mpp->mainInflation   =  2
+   ;  mpp->suffix_i_dgt    =  0
    ;  mpp->mainLoopLength  =  10000
    ;  mpp->initInflation   =  2
    ;  mpp->initLoopLength  =  0
@@ -151,7 +153,7 @@ mclMatrix*  mclProcess
                                        */
 
    ;  if (!mxp->stats)                 /* size dependent init stuff */
-      mclExpandParamDim(mxp, mxIn)
+      mclExpandParamDim(mxp, mxIn, MCPVB(mpp, MCPVB_CHR))
 
    ;  mpp->n_entries = mclxNrofEntries(mxstart[0])
 
@@ -225,6 +227,13 @@ mclMatrix*  mclProcess
       ;  mpp->n_ite++
       ;  mxIn  =  mxOut
 
+             /* This is to force convergence for the rare invariant beast (possibly
+              * as sub-network); graphs/infinity.mci or [4, 1, 1 | 1, 4, 1 | 1 1, 4]
+             */
+      ;  if (mpp->n_ite >= 40)
+            mpp->mainInflation *= 1.001
+         ,  mcxLog(MCX_LOG_MODULE, me, "====== Inflation bumped to %.4f ======", mpp->mainInflation)
+
       ;  if (abort_loop || convergence)
          break
    ;  }
@@ -235,6 +244,9 @@ mclMatrix*  mclProcess
    ;  mpp->lap = ((double) (clock() - t1)) / CLOCKS_PER_SEC
 
    ;  *limit = mxIn
+
+   ;  if (mpp->mxp->stats->flow_chr && MCPVB(mpp, MCPVB_CHR))
+      mclDumpMatrix(mpp->mxp->stats->flow_chr, mpp, "chr", "", 0, TRUE)
 
    ;  {  mclx* dag = mclDag(mxIn, mpp->ipp)
       ;  if (1)  /* hum ho fixme docme. is-this-really-necessary-or-is-it-a-debug-remnant ? */
@@ -251,15 +263,12 @@ mclMatrix*  mclProcess
 ;  }
 
 
-void mclInflate
+static void mclInflate
 (  mclx*    mx
 ,  double   power
 ,  mclv*    homgVec
 )
-   {  mcxbool   local   cpl__unused = getenv("MCL_AUTO_LOCAL") ? TRUE : FALSE
-   ;  mcxbool   smooth  cpl__unused = getenv("MCL_AUTO_SMOOTH") ? TRUE : FALSE  
-
-   ;  double    infl   =   power
+   {  double    infl   =   power
    ;  mclv*     vec_infl = NULL
    ;  dim k
 
@@ -293,7 +302,7 @@ int doIteration
    ;  mcxbool           log_stats      =  XPNVB(mxp, XPNVB_CLUSTERS)
    ;  double            homgAvg
    ;  mclv*             homgVec
-   ;  int               n_cols         =  N_COLS(*mxin)
+   ;  dim               n_cols         =  N_COLS(*mxin)
    ;  dim               n_expand_entries = 0
    ;  dim               n_graph_entries = mclxNrofEntries(mxin[0])
    ;  dim               n_new_entries  =  0
@@ -327,7 +336,7 @@ int doIteration
    ;  n_new_entries = mclxNrofEntries(mxout[0])
 
    ;  homgVec = mxp->stats->homgVec
-   ;  mxp->stats->homgVec = NULL       /* fixme ugly ownership */
+   ;  mxp->stats->homgVec = NULL       /* fixme-ugly-ownership */
 
    ;  for (i=0;i<N_COLS(mxout[0]);i++)
       n_expand_entries += mxp->stats->bob_expand[i]

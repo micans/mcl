@@ -11,7 +11,9 @@ Makefile
 *.gz
 *.html
 Makefile.in
-config*
+aclocal.m4
+/config*
+/doc/stamp.*
 /slate
 /autom4te.cache
 /src/shmx/mcx
@@ -28,6 +30,7 @@ config*
 /src/shmx/mcxminusmeet
 /src/shmx/mcxmm
 /src/shmx/mcxmetric
+/src/impala/version.c
 /src/shmcl/mcl
 /src/shmcl/mclcm
 /src/shcl/mclgrep
@@ -37,5 +40,6 @@ config*
 /src/shcl/clm
 /src/shcl/clmdag
 /src/shcl/clmframe
-src/shmcx/mcxi
-src/shmcxquery/mcxquery
+/src/shmcx/mcxi
+/src/shmcxquery/mcxquery
+/VERSION

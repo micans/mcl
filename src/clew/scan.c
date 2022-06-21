@@ -145,7 +145,7 @@ void clmVScoreCoverage
    ;  *cov = 0.0
    ;  *covmax = 0.0
 
-   ;  if (sum * sum)
+   ;  if (sum * sum > 0)
       {  double ctr  =  ssq / (powah ? pow(sum, powah) : (sum * sum))
       ;  dim n_join  =  score->n_vdif+score->n_meet+score->n_ddif
       ;  dim n_dom   =  (dim) (n_join - score->n_vdif)
@@ -297,4 +297,77 @@ double clmCoverage
    ;  return cov
 ;  }
 
+
+
+/* fixme duplicate with src/shcl/clmdist.c */
+
+static double flt_add_if_left
+(  pval lft
+,  pval rgt
+)
+   {  return lft ?  lft + rgt : 0.0
+;  }
+
+
+double clmModularity
+(  const mclx* mx
+,  const mclx* cls
+)
+   { 	dim i, j
+	;	mclv* vsums = mclxColSums(mx, MCL_VECTOR_COMPLETE)
+   ;  mclv* clintern = NULL, *cldegreesum = NULL
+   ;  
+	;	double Q = 0.0
+	;	double E = mclvSum(vsums)
+
+   ;  if (!E)
+      return 0.0
+
+	;	for (i=0; i<N_COLS(cls); i++)
+		{	const mclv* cl = cls->cols+i
+      ;  const mclv* nb = NULL
+		;	clintern = mclvCopy(clintern, cl)
+      ;  mclvMakeCharacteristic(clintern)    /* later we need to subtract the sum of this */
+
+      ;  for (j=0; j<clintern->n_ivps; j++)
+         {  nb = mclxGetVector(mx, clintern->ivps[j].idx, EXIT_ON_FAIL, nb)
+         ;  mclvBinary(clintern, nb, clintern, flt_add_if_left)
+      ;  }
+
+         cldegreesum = mcldMeet(vsums, cl, cldegreesum)
+
+                     /* We store edges in two directions, so our E
+                        is twice that in the formula below.
+                        In the first fraction, the factor two cancels.
+                        In the second fraction, the numerator is not affected,
+                        the formula denominator (2E) is the same as our E.
+                     */
+
+      ;  Q += (  ( mclvSum(clintern)-clintern->n_ivps ) / E
+               -  pow(mclvSum(cldegreesum) / E, 2.0)
+              )
+		;	
+      }
+      mclvFree(&vsums)
+   ;  mclvFree(&clintern)
+   ;  mclvFree(&cldegreesum)
+   ;  return Q
+;  }
+
+
+
+/*    Modularity formula:
+
+  *1 E(x) Sum of edge weights internal to cluster x
+  *2 Sum of edge weights for nodes in cluster x, across full network
+  *3
+  *4 E Sum of edge weights in graph
+
+       *1        *2
+SUM   [ E(x)    ( sum_v_in_x (sum(edge(v))))^2 ]
+      [ ----  - ( -----------------------  )   ]
+cl x  [  E      (          2E              )   ]
+       *3        *4
+
+*/
 

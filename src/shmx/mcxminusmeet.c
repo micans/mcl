@@ -75,7 +75,7 @@ const char* usagelines[] =
 }  ;
 
 
-mclv* mcldMinus1
+static mclv* mcldMinus1
 (  const mclv* lft
 ,  const mclv* rgt
 ,  mclv* dst
@@ -84,7 +84,7 @@ mclv* mcldMinus1
 ;  }
 
 
-void pairwise_setops
+static void pairwise_setops
 (  mclx* mx1
 ,  mclx* mx2
 ,  mcxbits modes

@@ -31,12 +31,17 @@
    \synreqopt{-dom}{fname}{input domain/cluster file}
    \synoptopt{-o}{fname}{output file}
    \synoptopt{--is-undirected}{trust input graph to be undirected}
+   \synoptopt{-levels}{LO/STEP/HI[/prefix]}{write cluster size distribution for each cutoff}
+   \synoptopt{-levels-norm}{num}{divide each level by num to define cutoff}
    \synoptopt{--write-count}{output component count}
    \synoptopt{--write-sizes}{output component sizes (default)}
+   \synoptopt{--write-size-counts}{output compressed list of component sizes}
    \synoptopt{--write-cc}{output components as clustering}
    \synoptopt{--write-block}{output graph restricted to -dom argument}
    \synoptopt{--write-blockc}{output graph complement of -dom argument}
    \synoptopt{-cc-bound}{num}{select components with size at least num}
+   \synoptopt{--sl}{output single linkage tree as list of joins (for -imx input)}
+   \synoptopt{-write-sl-list}{fname}{write list of join order with weights}
    \shared_synoptopt{-tf}
    \stdsynopt
    }
@@ -83,6 +88,7 @@
 \items{
    {\defopt{--write-count}{output component count}}
    {\defopt{--write-sizes}{output component sizes (default)}}
+   {\defopt{--write-size-counts}{output compressed list of component sizes}}
    {\defopt{--write-cc}{output components as clustering}}
    {\defopt{--write-block}{output graph restricted to -dom argument}}
    {\defopt{--write-blockc}{output graph complement of -dom argument}}
@@ -90,12 +96,55 @@
 \car{
    The default behaviour is currently to output the sizes of the
    connected components. It is also possible to simply output
-   the number of components with \genopt{--write-count} or to
+   the number of components with \genopt{--write-count}, to write
+   a counted list of sizes with \genopt{--write-size-counts}, or to
    write the components as a clustering in mcl format with
    \genopt{-write-cc}. Even more options exist: it is possible
    to output the restriction of the input graph to a domain, or
    to output the complement of this restriction.
    }
+
+\items{
+   {\defopt{-levels}{LO/STEP/HI[/prefix]}{write cluster size distribution for each cutoff}}
+   {\defopt{-levels-norm}{num}{divide each level by num to define cutoff}}
+}
+\car{
+   Use \genopt{-levels} to inspect the cluster size distribution at various cut-offs by
+   specifying a triplet of numbers (separated by forward slashes), the first of which
+   is the starting point, the second is the step size, and the third is the end point.
+   If a fourth argument (preceded by another slash) is given, all clusterings are
+   written to a file based on the supplied argument as file name prefix.
+   The cut-off can be further varied by the argument to \genopt{-levels-norm}.
+   }
+
+\items{
+   {\defopt{--sl}{output single linkage tree as list of joins (for -imx input)}}
+   {\defopt{-write-sl-list}{fname}{write list of join order with weights}}
+}
+\car{
+   A primary use case for this is to apply single link clustering to the rcl
+   (restricted contingency linkage) graph that is output by \clm{vol} with its
+   \genopt{write-rcl} option. This rcl graph encodes a consensus clustering
+   derived from the multiple clusterings that are given to \clm{vol}.
+   }
+
+\par{
+   The output (save with \genopt{-o} or UNIX redirection) can be supplied to
+   \script{rcl-res.pl} with a list of varying resolution parameters to produce a small
+   number of nested clusterings.  The resolution
+   parameters (second and subsequent arguments) to \script{rcl-res.pl} are set sizes;
+   For each of the supplied resolutions \genarg{res} the script will descend
+   the tree as long as the current node has some split below it where both
+   clusters are of size at least \genarg{res}.  Note that the resulting
+   clustering may still have smaller clusters and singletons (resulting from
+   other splits).
+   }
+
+\par{
+   The mcl distribution has an example script \script{graphs/rcl-example.sh}
+   that illustrates the different steps.
+   }
+
 
 \item{\defopt{--is-undirected}{omit graph undirected check}}
 \car{

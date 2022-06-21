@@ -1,8 +1,10 @@
 
-clew/          cluster related operations
-contrib/       contributed code
-giraffe/       perl scripts for generating graphs
-impala         ivp vector matrix operations
-mcl/           mcl code
-taurus/        <BITROT SIGN> integer list operations
+clew/          library, cluster related operations
+gryphon/       library, paths, diameter, clustering coefficient
+impala         library, ivp vector matrix network operations
+mcl/           library, clustering code
+shmcl/         executable, mcl (clustering program)
+shcl           executable(s), clm (cluster/network investigation)
+shmx           executable(s), mcx, mcxarray, mcxload, mcxdump (network/matrix creation/conversion/traits)
+shmcx          executable, mcxi (interpeter for network/matrix stack language)
 

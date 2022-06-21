@@ -82,6 +82,7 @@ int      opSet                (  void  )  ;
 int      opTut                (  void  )  ;
 int      opInfo               (  void  )  ;
 int      opTell               (  void  )  ;
+int      opType               (  void  )  ;
 int      opSearch             (  void  )  ;
 int      opIdentity           (  void  )  ;
 int      opNew                (  void  )  ;
@@ -90,13 +91,12 @@ int      opLoadFile           (  void  )  ;
 int      opMakeCharacteristic (  void  )  ;
 int      opMakeStochastic     (  void  )  ;
 int      opQuit               (  void  )  ;
-int      opDong               (  void  )  ;
+int      opVb                 (  void  )  ;
 int      opRowDimension       (  void  )  ;
 int      opThreads            (  void  )  ;
 int      opRepeat             (  void  )  ;
 int      opIfelse             (  void  )  ;
 int      opDo                 (  void  )  ;
-int      opTypes              (  void  )  ;
 int      opWhile              (  void  )  ;
 int      opEq                 (  void  )  ;
 int      opLt                 (  void  )  ;
@@ -220,8 +220,8 @@ opHook opHookDir[] =
    ,  "<o1> <o2>"
    ,  "<o2> <o1>"
    }
-,  {  opDong
-   ,  TOKEN_DONG
+,  {  opVb
+   ,  TOKEN_VB
    ,  "set verbosity level"
    ,  "[<i>]"
    ,  "*"
@@ -532,6 +532,12 @@ opHook opHookDir[] =
    ,  "<i>"
    ,  "*"
    }
+,  {  opType
+   ,  TOKEN_TYPE
+   ,  "print type of top object: 'mx', 'int', 'dbl', 'str', 'null'"
+   ,  "*"
+   ,  "<s>"
+   }
 ,  {  opInfo
    ,  TOKEN_INFO
    ,  "print top object info"
@@ -596,7 +602,7 @@ opAlias opAliasDir[] =
 }  ;
 
 
-void opHookHelp
+static void opHookHelp
 (  opHook* ophook
 )
    {  fprintf
@@ -900,7 +906,7 @@ int opDup
 ;  }
 
 
-int opDong
+int opVb
 (  void
 )
    {  const int   *ip
@@ -919,7 +925,8 @@ int opDong
 
    ;  if (!vb) /* used as toggle */
       {  v_g = v_g ? 0 : 1
-      ;  fprintf(stdout, v_g ? "talkative\n" : "silent\n")
+      ;  if (v_g)
+         fprintf(stdout, "talkative\n")
    ;  }
       else
       {  v_g = 1
@@ -1082,6 +1089,31 @@ int opSize
       zmNotSupported1(TOKEN_DIV, typeo)
 
    ;  return 1
+;  }
+
+
+int opType
+(  void
+)
+   {  int empty = zsEmpty()
+   ;  const char* ret = "null"
+
+   ;  if (!empty)
+      {  zgglob_p o1 = zsGetGlob(0)
+      ;  int tp = zgGetType(o1)
+
+      ;  if (tp == UTYPE_MX)
+         ret = "mx"
+      ;  else if (tp == UTYPE_INT)
+         ret = "int"
+      ;  else if (tp == UTYPE_STR)
+         ret = "str"
+      ;  else if (tp == UTYPE_DBL)
+         ret = "dbl"
+      ;  else
+         ret = "unsupported"
+   ;  }
+      return zgPush(UTYPE_STR, mcxTingNew(ret))
 ;  }
 
 
@@ -1384,7 +1416,7 @@ int opExpand
    ;  mclx *sq
 
    ;  if (!mx) return 0
-   ;  mclExpandParamDim(mxp, mx)
+   ;  mclExpandParamDim(mxp, mx, FALSE)      /* do not compute flow characteristics */
 
    ;  sq = mclExpand(mx, mx, mxp)
   /*  mclExpandParamFree(&mxp)

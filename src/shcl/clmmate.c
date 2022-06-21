@@ -1,5 +1,4 @@
-/*   (C) Copyright 2003, 2004, 2005 Stijn van Dongen
- *   (C) Copyright 2006, 2007 Stijn van Dongen
+/*   (C) Copyright 2007-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -24,6 +23,7 @@
 #include "tingea/err.h"
 #include "tingea/opt.h"
 #include "tingea/compile.h"
+#include "tingea/minmax.h"
 
 #include "impala/matrix.h"
 #include "impala/io.h"
@@ -133,18 +133,7 @@ static mcxstatus mateMain
    ;  teem=  mclxTranspose(meet)
 
    ;  if (legend)
-      fprintf
-      (  xfout->fp
-      ,  "%-10s %6s %6s %6s %6s %6s %6s %6s\n"
-      ,  "overlap"
-      ,  "x-idx"
-      ,  "y-idx"
-      ,  "meet"
-      ,  "xdiff"
-      ,  "ydiff"
-      ,  "x-size"
-      ,  "y-size"
-      )
+      fprintf(xfout->fp, "overlap\tx-idx\ty-idx\tmeet\txdiff\tydiff\tx-size\ty-size\tvol\n")
 
    ;  for (x=0;x<N_COLS(meet);x++)
       {  mclv* xvec = meet->cols+x
@@ -158,7 +147,7 @@ static mcxstatus mateMain
          {  mclv* yvec = teem->cols+y
          ;  long Y = yvec->vid
          ;  long ysize = my->cols[y].n_ivps
-         ;  double twinfac
+         ;  double twinfac, vol
          ;  long meetsize
          ;  mclp* ivp = mclvGetIvp(yvec, X, NULL)
          ;  if (!ivp)
@@ -178,7 +167,7 @@ static mcxstatus mateMain
          ;  if (xfout)
             fprintf
             (  xfout->fp
-            ,  "%-10.3f %6ld %6ld %6ld %6ld %6ld %6ld %6ld\n"
+            ,  "%.3f\t%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%.0f\n"
             ,  twinfac
             ,  X
             ,  Y
@@ -187,6 +176,7 @@ static mcxstatus mateMain
             ,  ysize - meetsize
             ,  xsize
             ,  ysize
+            ,  meetsize * 1000.0 / MCX_MIN(xsize, ysize)
             )
       ;  }
       }

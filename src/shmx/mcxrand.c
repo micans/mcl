@@ -257,7 +257,7 @@ mcxOptAnchor options[] =
 }  ;
 
 
-int dimCmp
+static int dimCmp
 (  const void*   xp
 ,  const void*   yp
 )
@@ -284,7 +284,7 @@ static void mx_readd_diagonal
     * NOTE currently callers need to ensure there is a sentinel edge
     * (with src member larger than largest columnd domain index)
    */
-mclx* mcleAddtoCanonical
+static mclx* mcleAddtoCanonical
 (  mcle* E
 ,  dim   n_e
 ,  mclx* dst
@@ -505,7 +505,7 @@ static mclx* pref_attach
 #endif
 
 
-void static do_the_shuffle
+static void do_the_shuffle
 (  mclx* mx
 ,  dim N_shuffle
 ,  dim* offsets   /* size N_COLS(mx) */

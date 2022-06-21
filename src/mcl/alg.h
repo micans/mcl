@@ -44,7 +44,6 @@ typedef struct
 ;  int                  expandDigits
 
 ;  double               pre_inflation
-;  double               pre_inflationx
 ;  mcxbool              foundOverlap
 
 #  define   ALG_DO_APPEND_LOG          1  <<  0
@@ -59,10 +58,10 @@ typedef struct
 #  define   ALG_CACHE_START            1  << 12
 #  define   ALG_CACHE_EXPANDED         1  << 13
 #  define   ALG_DO_DISCARDLOOPS        1  << 14
-#  define   ALG_DO_SHADOW              1  << 15
 #  define   ALG_DO_SHOW_PID            1  << 16
 #  define   ALG_DO_SHOW_JURY           1  << 17
 #  define   ALG_DO_SUMLOOPS            1  << 18
+#  define   ALG_DO_DEGREE_ADJUST       1  << 19
 
 ;  mcxbits              modes
 
@@ -80,11 +79,9 @@ typedef struct
 ;  mcxTing*             transform_spec
 ;  mclgTF*              transform
 ;  mcxbool              adjust_loops
-;  mclv*                shadow_cache_domain   /* cache original domain when shadowing */
-;  long                 shadow_mode
-;  double               shadow_s
 ;  double               center
 ;  mcxbool              expand_only
+;  double               degree_adjust_exp
 
 ;  mclx*                mx_input
 ;  mclx*                mx_start

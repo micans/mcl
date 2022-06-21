@@ -67,7 +67,6 @@
    {\mysib{mcxmap}}{relabel indices in a graph/matrix}
    {\mysib{mcxsubs}}{extracting submatrices in various ways}
    {\mysib{mcxi}}{general matrix operations}
-   {\mysib{mcxassemble}}{create matrices from raw data}
 {skip}{}
    {\mysib{clm}}{general graph-clustering related tasks}
    {\clmref{dist}}{compute split/join distance between clusterings}
@@ -79,9 +78,7 @@
    {\clmref{imac}}{interpret MCL iterand/matrix as clustering}
    {\clmref{order}}{reorder indices to represent blocks from different clusterings}
    {\clmref{residue}}{extend subgraph clustering}
-   {\mysib{clmformat}}{display clusters as html or txt files}
 {skip}{}
-   {\mysib{mclpipeline}}{parsing/assembly/clustering/display}
    {\mysib{mclblastline} \v{*}}{BLAST pipeline}
    {\mysib{mcxdeblast} \v{*}}{parse BLAST files}
 }

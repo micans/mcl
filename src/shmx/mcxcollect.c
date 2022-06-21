@@ -30,6 +30,7 @@
 #include <time.h>
 
 #include "mcx.h"
+#include "mcxcollect.h"
 
 #include "impala/io.h"
 #include "impala/matrix.h"
@@ -209,7 +210,7 @@ typedef struct
 }  aggr        ;
 
 
-int aggr_cmp_val(const void* a1, const void* a2)
+static int aggr_cmp_val(const void* a1, const void* a2)
    {  const aggr* ag1 = a1, *ag2 = a2
    ;  return ag1->val > ag2->val ? 1 : ag1->val < ag2->val ? -1 : 0
 ;  }

@@ -9,6 +9,8 @@
 
 /*    TODO
 
+!  Perhaps (annoy) KNN network construction obviates most TODOs here.
+
 -  { -j -J } should work independently from -t; different
    jobs should be able to have different number of threads.
    So, hierarchical slicing.
@@ -17,7 +19,7 @@
 -  Dice coefficient  2 * in(x,y)  / ( ||x||^2 + ||y||^2 )
 
 -  Kendall Tau
-   Fast algorithms for the calculation of Kendall’s Tau, David Christensen.
+   Fast algorithms for the calculation of Kendall's Tau, David Christensen.
 
 -  Speed up all vs all in metric case.
       M-tree, "Searching in Metric Spaces", Chavez et al
@@ -35,7 +37,9 @@
 
 -  table reading elsewhere in mcl-edge
 
-http://www.mathworks.com/matlabcentral/fileexchange/15935-computing-pairwise-distances-and-metrics/content/pwmetric/slmetric_pw.m
+histogram intersect (perhaps now deleted content code was a poor cousin of that).
+chi-square distance
+information theoretical divergence
 
 A
 B
@@ -47,21 +51,6 @@ cb
 e  = A \/ B    (everything)
 d  = e \ c     (difference)
 
-sum(a)
-sum(a,2)
-in(ca, cb)
-
-restrict(a,c)  a restricted to c
-restrict
-union(a,c,max)
-union(a,c,add)
-a+1
-a*2
-a[a>3]   restrict(a, a>3)
-
-
-
-
 Monve, V.; Introduction to Similarity Searching in Chemistry.
 www.orgchm.bas.bg/~vmonev/SimSearch.pdf
  fingerprint distances:
@@ -72,8 +61,8 @@ www.orgchm.bas.bg/~vmonev/SimSearch.pdf
       soergel            D    (a+b)/(a +b +c)
       patternDifference       ab / (a+b+c+d)^2
       variance                (a+b)/4(a+b+c+d)
-      size                    (a−b)^2/(a+b+c+d)^2
-      shape                   (a+b)/(a+b+c+d) - [(a−b) (a+b+c+d)]^2
+      size                    (a+b)^2/(a+b+c+d)^2
+      shape                   (a+b)/(a+b+c+d) - [(a+b) (a+b+c+d)]^2
   +   jaccard/tanimoto        c / (a+b+c)
       dice                    2c / (a+b)
       mt
@@ -88,7 +77,7 @@ www.orgchm.bas.bg/~vmonev/SimSearch.pdf
       robust
       hamann
       yule
-      pearson                 (cd−ab) / sqrt((a+c)(b+c)(a+d)(b+d))
+      pearson                 (cd+ab) / sqrt((a+c)(b+c)(a+d)(b+d))
       mcconnaughey
       stiles
       simpson
@@ -141,7 +130,7 @@ const char* syntax = "Usage: mcxarray <-data <data-file> | -imx <mcl-file> [opti
 #define ARRAY_COSINESKEW   (1 <<   3)     /* experimental */
 #define ARRAY_SUBSET_MEET  (1 <<   4)
 #define ARRAY_SUBSET_DIFF  (1 <<   5)
-#define ARRAY_CONTENT      (1 <<   6)
+
 #define ARRAY_DOT          (1 <<   7)
 #define ARRAY_FINGERPRINT  (1 <<   8)
 #define ARRAY_SINE         (1 <<   9)
@@ -150,6 +139,8 @@ const char* syntax = "Usage: mcxarray <-data <data-file> | -imx <mcl-file> [opti
 #define ARRAY_HSINE        (1 <<  12)
 #define ARRAY_HCOSINE      (1 <<  13)
 #define ARRAY_MINKOWSKI    (1 <<  14)
+#define ARRAY_RUN_NACODE   (1 <<  15)
+#define ARRAY_NA_FLEXNASP  (1 <<  16)     /* flexible NA-Spearman; compute rank on the fly */
 
 #define MODE_ZEROASNA      (1 <<   0)
 #define MODE_TRANSPOSE     (1 <<   1)
@@ -158,19 +149,12 @@ const char* syntax = "Usage: mcxarray <-data <data-file> | -imx <mcl-file> [opti
 #define MODE_NOWRITE       (1 <<   4)
 #define MODE_SPARSE        (1 <<   5)
 
-#define CONTENT_AVERAGE    (1 <<   0)
-#define CONTENT_COSINE     (1 <<   1)
-#define CONTENT_EUCLID     (1 <<   2)
-#define CONTENT_INTERSECT  (1 <<   3)
-#define CONTENT_MEDIAN     (1 <<   4)
-
 #define FP_TANIMOTO              0
 #define FP_MEET                  1
 #define FP_COSINE                2
 #define FP_COVER                 3
 #define FP_HAMMING               4
 
-#define CONTENT_DEFAULT    (CONTENT_MEDIAN | CONTENT_COSINE | CONTENT_EUCLID | CONTENT_INTERSECT)
 
 
   /* Mutual information (Fast Calculation of pairwise mutual information for gene
@@ -220,12 +204,64 @@ static dim n_thread_l = 0;
 static dim start_g = 0;
 static dim end_g = 0;
 
-static double minkowski = 0.0;
+static double g_minkowski = 0.0;
 
 static double g_epsilon        =  1e-6;
 
 
 static unsigned int support_modalities = 0;
+
+
+                           /* The thing where we keep track */
+struct abacus
+{  const mclx* tbl
+;  const mclx* na
+;  const mclv* Nssqs
+;  const mclv* sums
+;  double      cutoff
+;  mcxbits     bits
+;  mclx*       res
+;
+}  ;
+
+
+typedef struct rank_unit
+{  long     index
+;  double   ord
+;  double   value
+;
+}  rank_unit   ;
+
+
+static void*  rank_unit_init
+(  void*   ruv
+)
+   {  rank_unit* ru =   (rank_unit*) ruv
+   ;  ru->index     =   -1
+   ;  ru->value     =   -1
+   ;  ru->ord       =   -1.0
+   ;  return ru
+;  }
+
+
+static int rank_unit_cmp_index
+(  const void* rua
+,  const void* rub
+)
+   {  long a = ((rank_unit*) rua)->index
+   ;  long b = ((rank_unit*) rub)->index
+   ;  return a < b ? -1 : a > b ? 1 : 0
+;  }
+
+
+static int rank_unit_cmp_value
+(  const void* rua
+,  const void* rub
+)
+   {  double a = ((rank_unit*) rua)->value
+   ;  double b = ((rank_unit*) rub)->value
+   ;  return a < b ? -1 : a > b ? 1 : 0
+;  }
 
 
                            /* first mini job is c=0, d=0..N-1 AND c=N-1, d=N-1 (N+2 tasklets)
@@ -333,7 +369,7 @@ static int ji_step
 ;  }
 
 
-double mclvChebyshev
+static double mclvChebyshev
 (  const mclVector*        lft
 ,  const mclVector*        rgt
 )
@@ -369,7 +405,7 @@ double mclvChebyshev
 ;  }
 
 
-double mclvMinkowski
+static double mclvMinkowski
 (  const mclVector*        lft
 ,  const mclVector*        rgt
 ,  double p
@@ -407,12 +443,12 @@ static double mclv_inner_minkowski
    ;  double norm = 0.0
 
    ;  if (a->n_ivps < N || b->n_ivps < N)
-      return minkowski ? mclvMinkowski(a, b, minkowski) : mclvChebyshev(a, b)
+      return g_minkowski ? mclvMinkowski(a, b, g_minkowski) : mclvChebyshev(a, b)
 
-   ;  if (minkowski)
+   ;  if (g_minkowski)
       {  for (j=0;j<a->n_ivps;j++)
-         norm += pow(fabs(a->ivps[j].val - b->ivps[j].val), minkowski)
-      ;  return pow(norm, 1/minkowski)
+         norm += pow(fabs(a->ivps[j].val - b->ivps[j].val), g_minkowski)
+      ;  return pow(norm, 1/g_minkowski)
    ;  }
 
       else
@@ -428,6 +464,7 @@ static double mclv_inner_minkowski
 ;  }
 
 
+                     /* use regular loop for non-sparse data */
 static double mclv_inner_dot
 (  const mclv* a
 ,  const mclv* b
@@ -445,7 +482,7 @@ static double mclv_inner_dot
 ;  }
 
 
-double pearson
+static double pearson
 (  const mclv* a
 ,  const mclv* b
 ,  dim n
@@ -461,42 +498,42 @@ double pearson
 ;  }
 
 
-typedef struct rank_unit
-{  long     index
-;  double   ord
-;  double   value
-;
-}  rank_unit   ;
-
-
-void*  rank_unit_init
-(  void*   ruv
+static void mclv_spearman
+(  mclv*       v              /* will be updated with ranks */
+,  rank_unit*  ru             /* caller must make sure capacity at least v->n_ivps+1 */
 )
-   {  rank_unit* ru =   (rank_unit*) ruv
-   ;  ru->index     =   -1
-   ;  ru->value     =   -1
-   ;  ru->ord       =   -1.0
-   ;  return ru
-;  }
+   {  dim stretch = 1
+   ;  dim i
+   ;  for (i=0;i<v->n_ivps;i++)
+      {  ru[i].index = v->ivps[i].idx
+      ;  ru[i].value = v->ivps[i].val
+      ;  ru[i].ord = -14
+   ;  }
+      qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_value)
 
-
-int rank_unit_cmp_index
-(  const void* rua
-,  const void* rub
-)
-   {  long a = ((rank_unit*) rua)->index
-   ;  long b = ((rank_unit*) rub)->index
-   ;  return a < b ? -1 : a > b ? 1 : 0
-;  }
-
-
-int rank_unit_cmp_value
-(  const void* rua
-,  const void* rub
-)
-   {  double a = ((rank_unit*) rua)->value
-   ;  double b = ((rank_unit*) rub)->value
-   ;  return a < b ? -1 : a > b ? 1 : 0
+                              /* sentinel out-of-bounds value. We set NA values
+                               * to FLT_MAX (elsewhere) and use double in
+                               * rank_unit, so this is genuinely different. For
+                               * future generalisation/extraction, beware
+                              */
+   ;  ru[v->n_ivps].value = ru[v->n_ivps-1].value * 1.1
+;if(0) fprintf(stderr, "sentinel %.4f\n", ru[v->n_ivps].value)
+   ;  for (i=0;i<v->n_ivps;i++)
+      {  if (ru[i].value != ru[i+1].value)    /* input current stretch */
+         {  dim j
+;if(0 && stretch > 1)
+fprintf(stderr, "vid %d str %d val %.4f\n", (int) v->vid, (int) stretch, ru[i].value)
+         ;  for (j=0;j<stretch;j++)
+            ru[i-j].ord = 1 + (i+1 + i-stretch) / 2.0
+         ;  stretch = 1
+      ;  }
+         else
+         stretch++
+   ;  }
+      qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_index)
+   ;  for (i=0;i<v->n_ivps;i++)
+      v->ivps[i].val = ru[i].ord
+;if(0)fprintf(stderr, "vid %d id %d value from %.4g to %.1f\n", (int) v->vid, (int) v->ivps[i].idx, (double) ru[i].value, (double) ru[i].ord)
 ;  }
 
 
@@ -530,8 +567,6 @@ enum
 ,  MY_OPT_DOT
 ,  MY_OPT_SUBSET_MEET
 ,  MY_OPT_SUBSET_DIFF
-,  MY_OPT_CONTENT
-,  MY_OPT_CONTENTX
 ,  MY_OPT_NOTES
 ,  MY_OPT_FINGERPRINT
 ,  MY_OPT_SPARSE
@@ -560,6 +595,8 @@ enum
 ,  MY_OPT_NW
 ,  MY_OPT_HELP
 ,  MY_OPT_VERSION
+,  MY_OPT_RUN_NACODE
+,  MY_OPT_FLEXNASP
 ,  MY_OPT_AMOIXA
 }  ;
 
@@ -687,6 +724,18 @@ mcxOptAnchor options[]
    ,  NULL
    ,  "compute edge weight as Spearman rank correlation score"
    }
+,  {  "--runnacode"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  MY_OPT_RUN_NACODE
+   ,  NULL
+   ,  "trigger na branch for cosine/pearson/spearman"
+   }
+,  {  "--flexnasp"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  MY_OPT_FLEXNASP
+   ,  NULL
+   ,  "update spearman ranks on NA-cleaned data"
+   }
 ,  {  "--zero-as-na"
    ,  MCX_OPT_DEFAULT
    ,  MY_OPT_ZEROASNA
@@ -777,23 +826,11 @@ mcxOptAnchor options[]
    ,  NULL
    ,  "compute arc weight SQRT(<self * other>) / || self ||"
    }
-,  {  "--content"
-   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
-   ,  MY_OPT_CONTENT
-   ,  NULL
-   ,  "compute fantastic mr formula"
-   }
 ,  {  "--no-write"
    ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
    ,  MY_OPT_NW
    ,  NULL
    ,  "exit after computation of correlations"
-   }
-,  {  "-content"
-   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
-   ,  MY_OPT_CONTENTX
-   ,  "(v)verage (c)osine (e)uclid (i)ntersect (m)edian"
-   ,  "compute fantastic mr formula with parts specified"
    }
 ,  {  "--notes"
    ,  MCX_OPT_HIDDEN
@@ -915,7 +952,6 @@ mcxOptAnchor options[]
 
 static mclTab* tab_g = NULL;
 static mcxbool sym_g = TRUE;
-static mcxbits contentx_g = 0;
 static mcxenum fingerprint_g = 0;
 static mcxbool progress_g = TRUE;
 
@@ -1012,7 +1048,7 @@ static mclx* read_data
                ;  continue
             ;  }
 
-               if (p - o == 0)
+               if (p - o == 0)   /* this case is an empty column (<TAB><TAB>) */
                val = 0.0
             ;  else if (p - o == 3 && (!strncasecmp(o, "NaN", 3) || !strncasecmp(o, "inf", 3)))
                val = 0.0
@@ -1033,7 +1069,10 @@ static mclx* read_data
                ;  n_cols = 0
             ;  }
 
-               if (n_cols >= scratch->n_ivps)
+               if (have_na && (bits & ARRAY_SPEARMAN))
+               val = FLT_MAX
+
+            ;  if (n_cols >= scratch->n_ivps)
                mclvCanonicalExtend(scratch, scratch->n_ivps * 1.44, 0.0)
             ;  scratch->ivps[n_cols].val = val
 
@@ -1122,7 +1161,7 @@ static mclx* read_data
 ;  }
 
 
-double mydiv
+static double mydiv
 (  pval a
 ,  pval b
 )
@@ -1143,205 +1182,22 @@ static double ivp_get_double
 ;  }
 
 
-static double get_array_content_score
-(  const mclx* tbl
-,  dim c
-,  dim d
-,  mclv* meet_c
-)
-   {  mclv* vecc, *vecd, *meet_d
-   ;  double euclid = 1.0, meet_fraction = 1.0, score , sum_meet_c, sum_meet_d
-   ;  double iqrc, iqrd
-   ;  double reduction_c = 1.0, reduction_d = 1.0
-   ;  double median = 1.0, medianc = 1.0, mediand = 1.0
-   ;  double ip = 1.0, cd = 1.0, csn = 1.0
-   ;  double mean = 1.0, meanc = 1.0, meand = 1.0
-
-   ;  vecc = mclvClone(tbl->cols+c)
-   ;  vecd = mclvClone(tbl->cols+d)
-   ;  meet_d = mcldMeet(vecd, meet_c, NULL)
-
-            /* the only purpose is here is to reweight the scores in meet_c */
-   ;  sum_meet_c = mclvSum(meet_c)
-   ;  sum_meet_d = mclvSum(meet_d)
-
-   ;  if (!sum_meet_c || !sum_meet_d)
-      return 0.0
-
-   ;  if (mxseql && mxseqr)
-      {  const mclv* c_start = mxseql->cols+c
-      ;  const mclv* c_end   = mxseqr->cols+c
-      ;  const mclv* d_start = mxseql->cols+d
-      ;  const mclv* d_end   = mxseqr->cols+d
-
-      ;  mclv* width_c =  mclvBinary(c_end, c_start, NULL, fltSubtract)
-      ;  mclv* width_d =  mclvBinary(d_end, d_start, NULL, fltSubtract)
-
-      ;  mclv* rmin   = mclvBinary(c_end, d_end, NULL, fltMin)
-      ;  mclv* lmax   = mclvBinary(c_start, d_start, NULL, fltMax)
-      ;  mclv* delta  = mclvBinary(rmin, lmax, NULL, fltSubtract)
-      ;  mclv* weight_c, *weight_d
-
-      ;  mclvSelectGqBar(delta, 0.0)
-      ;  weight_c = mclvBinary(delta, width_c, NULL, mydiv)
-      ;  weight_d = mclvBinary(delta, width_d, NULL, mydiv)
-
-      ;  mclvBinary(meet_c, weight_c, meet_c, fltMultiply)
-      ;  mclvBinary(meet_d, weight_d, meet_d, fltMultiply)
-
-;if(0&&c!=d)
-mclvaDump(width_c,stdout,5,"\n",0),mclvaDump(width_d,stdout,5,"\n",0)
-
-      ;  mclvFree(&width_c)
-      ;  mclvFree(&width_d)
-      ;  mclvFree(&rmin)
-      ;  mclvFree(&lmax)
-      ;  mclvFree(&delta)
-      ;  mclvFree(&weight_c)
-      ;  mclvFree(&weight_d)
-
-      ;  reduction_c = mclvSum(meet_c) / sum_meet_c
-      ;  reduction_d = mclvSum(meet_d) / sum_meet_d
-   ;  }
-
-      score = 1.0
-
-               /* A and B are vectors; denote the indices on which both
-                * A and B are nonzero by A/\\B
-                * A* denotes the subset of entries of A restricted to A/\\B
-                * B* denotes the subset of entries of B restricted to A/\\B
-                * Then:
-                * median:  min(median(A), median(B))
-                * average: min(avg(A*), avg(B*))
-                * cosine:  cosine(A*, B*)
-                * euclid:  sqrt(sumsq(A*) / sumsq(A))
-                * isect:   #A* / #A
-                *
-                *         |||||
-                *       |||||||||
-                *    ||||||||||||||||
-                * ||||||||||||||||||||||||||||||||||||||
-                *
-                *               |||||
-                *             |||||||||
-                *          ||||||||||||||||
-                *     ||||||||||||||||||||||||||||||||||||||||
-                *
-                *     ----------------------------------
-               */
-   ;  if (contentx_g & CONTENT_MEDIAN)
-      {  mclvSortDescVal(vecc)
-      ;  mclvSortDescVal(vecd)
-      ;  medianc = mcxMedian(vecc->ivps, vecc->n_ivps, sizeof vecc->ivps[0], ivp_get_double, &iqrc)
-      ;  mediand = mcxMedian(vecd->ivps, vecd->n_ivps, sizeof vecd->ivps[0], ivp_get_double, &iqrd)
-      ;  median = MCX_MIN(medianc, mediand)
-      ;  score *= median
-   ;  }
-      else if (contentx_g & CONTENT_AVERAGE)
-      {  meanc = meet_c->n_ivps ? mclvSum(meet_c) / meet_c->n_ivps : 0.0
-      ;  meand = meet_d->n_ivps ? mclvSum(meet_d) / meet_d->n_ivps : 0.0
-      ;  mean  = MCX_MIN(meanc, meand)
-      ;  score *= mean
-   ;  }
-
-      if (contentx_g & CONTENT_COSINE)
-      {  ip = mclvIn(meet_c, meet_d)
-      ;  cd = sqrt(mclvPowSum(meet_c, 2.0) * mclvPowSum(meet_d, 2.0))
-      ;  csn = cd ? ip / cd : 0.0
-      ;  score *= csn
-   ;  }
-
-      if (contentx_g & CONTENT_EUCLID)
-      {  euclid = reduction_c ? sqrt(mclvPowSum(meet_c, 2.0) / mclvPowSum(vecc, 2.0)) : 0.0
-      ;  score *= euclid
-   ;  }
-
-      if (contentx_g & CONTENT_INTERSECT)
-      {  meet_fraction = meet_c->n_ivps * 1.0 / vecc->n_ivps
-      ;  score *= meet_fraction
-   ;  }
-
-      if (0)
-      fprintf
-      (  stdout
-      ,  "%10d%10d%10d%10d%10d%10g%10g%10g%10g%10g%10g%10g%15g\n"
-      ,  (int) c
-      ,  (int) d
-      ,  (int) (vecc->n_ivps - meet_c->n_ivps)
-      ,  (int) (vecd->n_ivps - meet_d->n_ivps)
-      ,  (int) meet_c->n_ivps
-      ,  score
-      ,  mean
-      ,  csn
-      ,  euclid
-      ,  meet_fraction
-      ,  reduction_c
-      ,  reduction_d
-      ,  median
-      )
-
-
-   ;  mclvFree(&meet_d)
-   ;  mclvFree(&vecc)
-   ;  mclvFree(&vecd)
-
-   ;  return score
-;  }
-
-
-
-
-#if 0
-         {  mclv* meet_d = mcldMeet2(vecd, meet_c, NULL)
-         ;  double ip   =  mclvIn(meet_c, meet_d)
-         ;  double cd   =  sqrt(mclvPowSum(meet_c, 2.0) * mclvPowSum(meet_d, 2.0))
-         ;  double csn  =  cd ? ip / cd : 0.0
-         ;  double meanc = mclvSum(meet_c) / meet_c->n_ivps
-         ;  double meand = mclvSum(meet_d) / meet_d->n_ivps
-         ;  double mean =  MCX_MIN(meanc, meand)
-
-         ;  double euclid =   0
-                           ?  1.0
-                           :  (  mean
-                              ?  sqrt(mclvPowSum(meet_c, 2.0) / mclvPowSum(vecc, 2.0))
-                              :  0.0
-                              )
-         ;  score       =  mean * csn * euclid  * (meet_c->n_ivps * 1.0 / vecc->n_ivps)
-
-   ;if (0 && score)
-   fprintf(stdout, "c=%lu d=%lu meet=%d mean=%5g csn=%5g euclid=%5g score=%5g\n", (ulong) c, (ulong) d, (int) meet_c->n_ivps, mean, csn, euclid, score)
-         ;  nom = 1                    /* nonsensical; document */
-         ;  if (!vecd->n_ivps)
-            offending = d              /* nonsensical; document */
-         ;  mclvFree(&meet_d)
-      ;  }
-#endif
-
-
-     /* Pearson correlation coefficient:
-      *                     __          __   __ 
-      *                     \           \    \  
-      *                  n  /_ x y   -  /_ x /_ y
-      *   -----------------------------------------------------------
-      *      ___________________________________________________________
-      *     /       __        __ 2                __        __ 2       |
-      * \  /  /     \   2     \       \     /     \   2     \       \ 
-      *  \/   \   n /_ x   -  /_ x    /  *  \   n /_ y   -  /_ y    / 
-     */
-
 static dim get_correlation
-(  const mclx* tbl
-,  const mclx* mxna
+(  struct abacus* abc
 ,  dim c
 ,  dim d
-,  mclv* Nssqs
-,  mclv* sums
 ,  double* scorep
 ,  double* nomp
 ,  dim* offendingp
-,  mcxbits bits
+,  struct rank_unit* ru
 )
-   {  double N  = MCX_MAX(N_ROWS(tbl), 1)      /* fixme; bit odd */
+   {  const mclx* tbl   =  abc->tbl
+   ;  const mclx* mxna  =  abc->na
+   ;  const mclv* Nssqs =  abc->Nssqs
+   ;  const mclv* sums  =  abc->sums
+   ;  mcxbits bits      =  abc->bits
+
+   ;  double N  = MCX_MAX(N_ROWS(tbl), 1)      /* fixme; bit odd */
    ;  double nom = 1.0, score = 0
    ;  dim offending = c
    ;  dim n_reduced = 0
@@ -1350,21 +1206,15 @@ static dim get_correlation
 
    ;  if (bits & ARRAY_COSINE)
       {  mcxbool reduced= mxna->cols[c].n_ivps > 0 || mxna->cols[d].n_ivps > 0
-      ;  double ip      =  mclv_inner_dot(vecc, vecd, N)
+      ;  double ip      =  mclv_inner_dot(vecc, vecd, N)    /* fixme, this N is double */
       ;  double nomleft = Nssqs->ivps[c].val
       ;  double nomright= Nssqs->ivps[d].val
 
-      ;  if (reduced)
-         {  mclv* merge = mcldMerge(mxna->cols+c, mxna->cols+d, NULL)
-         ;  mclv* veccx = mcldMinus(vecc, merge, NULL)
-         ;  mclv* vecdx = mcldMinus(vecd, merge, NULL)
-
-         ;  nomleft     = N * mclvPowSum(veccx, 2.0)
-         ;  nomright    = N * mclvPowSum(vecdx, 2.0)
-
-         ;  mclvFree(&merge)
-         ;  mclvFree(&veccx)
-         ;  mclvFree(&vecdx)
+      ;  if (reduced || (bits & ARRAY_RUN_NACODE))
+         {  dim n_meet  = mcldCountSet(mxna->cols+c, mxna->cols+d, MCLD_CT_MEET)
+         ;  double N2   = N * 1.0 - n_meet
+         ;  nomleft     = N2 * nomleft  / N           /* test this code */
+         ;  nomright    = N2 * nomright / N
       ;  }
 
          nom         =  sqrt(nomleft * nomright) / N
@@ -1396,17 +1246,6 @@ static dim get_correlation
       ;  nom         =  sqrt(Nssqs->ivps[c].val / N)
       ;  score       =  nom ? sqrt(ip > 0 ? ip : 0) / nom : 0.0
       ;  offending   =  c
-   ;  }
-
-      else if (bits & ARRAY_CONTENT)
-      {  mclv* meet_c = mcldMeet2(vecc, vecd, NULL)
-      ;  if
-         (  3 * meet_c->n_ivps >= vecc->n_ivps
-         || 3 * meet_c->n_ivps >= vecd->n_ivps
-         )
-         score = get_array_content_score(tbl, c, d, meet_c)
-      ;  nom = 1
-      ;  mclvFree(&meet_c)
    ;  }
 
       else if (bits & ARRAY_FINGERPRINT)
@@ -1441,30 +1280,43 @@ static dim get_correlation
       ;  double ip      =  mclv_inner_dot(vecc, vecd, N)
       ;  double nomleftx
 
-      ;  if (reduced)
+                        /* This code uses the original ranks by default.
+                         * Use --flexnasp to recompute ranks on shared segment.
+                        */
+      ;  if (reduced || (bits & ARRAY_RUN_NACODE))
          {  mclv* merge = mcldMerge(mxna->cols+c, mxna->cols+d, NULL)
          ;  mclv* veccx = mcldMinus(vecc, merge, NULL)
          ;  mclv* vecdx = mcldMinus(vecd, merge, NULL)
 
-         ;  double s1x  =  mclvSum(veccx)
-         ;  double Nsq1x=  N * mclvPowSum(veccx, 2.0)       /* fixme: still use this N ? */
+                        /* this code may run in the absence of NA (ARRAY_RUN_NACODE)*/
+         ;  if (bits & ARRAY_NA_FLEXNASP)
+            {  mclv_spearman(veccx, ru)
+            ;  mclv_spearman(vecdx, ru)
+         ;  }
+
+            double N2   =  1.0 * N - merge->n_ivps
+         ;  double s1x  =  mclvSum(veccx)    /* not the same as s1 due to rank transform */
+         ;  double Nsq1x=  N2 * mclvPowSum(veccx, 2.0)
 
          ;  double s2x  = mclvSum(vecdx)
-         ;  double Nsq2x= N * mclvPowSum(vecdx, 2.0)
+         ;  double Nsq2x= N2 * mclvPowSum(vecdx, 2.0)
+         ;  ip          = mclv_inner_dot(veccx, vecdx, N - merge->n_ivps)
 
+;if(0)fprintf(stderr, "N2 %4d %4d %4d\n", (int) c, (int) d, (int) N2)
          ;  n_reduced++
 
          ;  nomleftx =  sqrt(Nsq1x - s1x * s1x)
          ;  nom      =  nomleftx * sqrt(Nsq2x - s2x*s2x)
-         ;  score    =  nom ? ((N*ip - s1x*s2x) / nom) : 0.0
+         ;  score    =  nom ? ((N2*ip - s1x*s2x) / nom) : 0.0
          ;  offending=  nomleftx ? d : c              /* prepare in case !nom */
 
-;if(0)fprintf(stderr, "vec %d have %d vec %d have %d nom %.2f", (int) c, (int) veccx->n_ivps,  (int) d, (int) vecdx->n_ivps, nom)
-;if(0)fprintf(stderr, " sum1 %.2f sum2 %.2f Nip %.2f N=%d ip=%.2f score %g\n", s1x, s2x, (double) N * ip, (int) N, ip, score)
+;if(0)fprintf(stderr, "v%d sz%d v%d sz%d nom %.2f", (int) c, (int) veccx->n_ivps,  (int) d, (int) vecdx->n_ivps, nom)
+;if(0)fprintf(stderr, " s1 %.2f s2 %.2f Nip %.2f N=%d ip=%.2f score %g\n", s1x, s2x, (double) N2 * ip, (int) N2, ip, score)
          ;  mclvFree(&merge)
          ;  mclvFree(&veccx)
          ;  mclvFree(&vecdx)
       ;  }
+
          else
          {  double s2   =  sums->ivps[d].val
          ;  nom  =  nomleft * sqrt(Nssqs->ivps[d].val - s2*s2)
@@ -1481,24 +1333,28 @@ static dim get_correlation
 ;  }
 
 
-dim do_range_do
-(  const mclx* tbl
-,  mclx* res
-,  mclx* mxna
-,  double cutoff
+static dim do_range_do
+(  struct abacus* abc
 ,  dim start
 ,  dim end
-,  mclv* Nssqs
-,  mclv* sums
-,  mcxbits bits
 ,  mcxbool lower_diagonal
 ,  dim thread_id
+,  struct rank_unit* ru
 )
    {  dim c, p = 0
    ;  int n_mod =  MCX_MAX(1+ (MCX_MAX(1, n_thread_l) * 2 * (end - start -1))/40, 1)
+   ;  dim n_reduced  =  0
+
+   ;  const mclx* tbl   = abc->tbl
+   ;  const mclx* mxna  =  abc->na
+   ;  const mclv* Nssqs =  abc->Nssqs
+   ;  const mclv* sums  =  abc->sums
+   ;  mclx* res      =  abc->res
+   ;  double cutoff  =  abc->cutoff
+   ;  mcxbits bits   =  abc->bits
+
    ;  mclv* scratch  =  mclvCopy(NULL, tbl->dom_cols)
-   ;  dim n_reduced = 0
-   ;  unsigned mink = bits & ARRAY_MINKOWSKI
+   ;  unsigned mink  =  bits & ARRAY_MINKOWSKI
 
    ;  for (c=start;c<end;c++)
       {  ofs s = 0
@@ -1514,7 +1370,7 @@ dim do_range_do
          ;  dim offending
 
 ;if(0)fprintf(stderr, "%d\t%d\n", (int) c, (int) d)
-         ;  n_reduced += get_correlation(tbl, mxna, c, d, Nssqs, sums, &score, &nom, &offending, bits)
+         ;  n_reduced += get_correlation(abc, c, d, &score, &nom, &offending, ru)
 
          ;  if ((bits & ARRAY_PEARSON) && !nom && tbl->dom_cols->ivps[offending].val < 1.5)
             {  char* label = tab_g ? mclTabGet(tab_g, offending, NULL) : NULL
@@ -1565,29 +1421,24 @@ dim do_range_do
 ;  }
 
 
-dim do_range
-(  const mclx* tbl
-,  mclx* res
-,  mclx* mxna
-,  double cutoff
+static dim do_range
+(  struct abacus* abc
 ,  dim start
 ,  dim end
-,  mclv* Nssqs
-,  mclv* sums
-,  mcxbits bits
 ,  dim thread_id
+,  struct rank_unit* ru
 )
    {  dim n_reduced = 0, i
 
-   ;  if (!end || end > N_COLS(tbl))
-      end = N_COLS(tbl)
+   ;  if (!end || end > N_COLS(abc->tbl))
+      end = N_COLS(abc->tbl)
    
    ;  for (i=start;i<end;i++)
-      {  if (res->dom_cols->ivps[i].val > 1.5)
+      {  if (abc->res->dom_cols->ivps[i].val > 1.5)
          {  mcxErr(me, "overlap in range %u-%u", (unsigned) start, (unsigned) end)
          ;  break
       ;  }
-         res->dom_cols->ivps[i].val = 2.0
+         abc->res->dom_cols->ivps[i].val = 2.0
    ;  }
 
       if (1 && (support_modalities & MODE_JOBINFO))
@@ -1595,53 +1446,25 @@ dim do_range
       ;  return 0
    ;  }
 
-      n_reduced
-      =  do_range_do
-         (  tbl
-         ,  res
-         ,  mxna
-         ,  cutoff
-         ,  start
-         ,  end
-         ,  Nssqs
-         ,  sums
-         ,  bits
-         ,  TRUE
-         ,  thread_id
-         )
-   ;  if (!sym_g)          /* result is not symmetric, so compute upper diagonal separately */
-      n_reduced
-      += do_range_do
-         (  tbl
-         ,  res
-         ,  mxna
-         ,  cutoff
-         ,  start
-         ,  end
-         ,  Nssqs
-         ,  sums
-         ,  bits
-         ,  FALSE
-         ,  thread_id
-         )
+      n_reduced = do_range_do(abc, start, end, TRUE, thread_id, ru)
+
+                      /* result is not symmetric, so compute upper diagonal separately */
+   ;  if (!sym_g)
+      n_reduced += do_range_do(abc, start, end, FALSE, thread_id, ru)
+
    ;  return n_reduced
 ;  }
 
 
 typedef struct
-{  const mclx* tbl
-;  mclx*    res
-;  mclx*    mxna
-;  double   cutoff
+{  struct abacus* abc
+;  struct rank_unit* ru
 ;  dim      job_lo1
 ;  dim      job_lo2
 ;  dim      job_hi1
 ;  dim      job_hi2
 ;  dim      job_size
-;  mclv*    Nssqs
-;  mclv*    sums
 ;  dim      n_reduced
-;  mcxbits  bits
 ;  dim      thread_id
 ;
 }  array_data   ;
@@ -1654,14 +1477,14 @@ static void* array_thread
 
    ;  if (d->job_lo2 > d->job_hi1)
       {  d->n_reduced
-         =  do_range(d->tbl, d->res, d->mxna, d->cutoff, d->job_lo1, d->job_hi2, d->Nssqs, d->sums, d->bits, d->thread_id)
+         =  do_range(d->abc, d->job_lo1, d->job_hi2, d->thread_id, d->ru)
 ;if (0) fprintf(stderr, "thread %d %d-%d\n", (int) d->thread_id, (int) d->job_lo1, (int) d->job_hi2)
    ;  }
       else
       {  d->n_reduced
-         += do_range(d->tbl, d->res, d->mxna, d->cutoff, d->job_lo1, d->job_lo2, d->Nssqs, d->sums, d->bits, d->thread_id)
+         += do_range(d->abc, d->job_lo1, d->job_lo2, d->thread_id, d->ru)
       ;  d->n_reduced
-         += do_range(d->tbl, d->res, d->mxna, d->cutoff, d->job_hi1, d->job_hi2, d->Nssqs, d->sums, d->bits, d->thread_id)
+         += do_range(d->abc, d->job_hi1, d->job_hi2, d->thread_id, d->ru)
 ;if (0)
 fprintf
 (  stderr
@@ -1677,7 +1500,7 @@ fprintf
 ;  }
 
 
-mclx* normalise
+static mclx* normalise
 (  mclx* tbl
 ,  const char* mode
 )
@@ -1699,7 +1522,7 @@ mclx* normalise
 ;  }
 
 
-void write_the_table
+static void write_the_table
 (  mclx* result
 ,  mcxIO* xf
 ,  int digits
@@ -1910,6 +1733,16 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          ;  break
          ;
 
+            case MY_OPT_FLEXNASP
+         :  main_modalities |= ARRAY_NA_FLEXNASP
+         ;  break
+         ;
+
+            case MY_OPT_RUN_NACODE
+         :  main_modalities |= ARRAY_RUN_NACODE
+         ;  break
+         ;
+
             case MY_OPT_PEARSON
          :  main_modalities |= ARRAY_PEARSON
          ;  break
@@ -1952,31 +1785,8 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
             break
          ;
 
-            case MY_OPT_CONTENTX
-         :  main_modalities |= ARRAY_CONTENT
-         ;  sym_g = FALSE
-         ;  {  const char* c = opt->val
-            ;  for(;c[0];c++)
-               switch(c[0])
-               {  case  'v' : contentx_g |= CONTENT_AVERAGE ;  break
-               ;  case  'c' : contentx_g |= CONTENT_COSINE  ;  break
-               ;  case  'e' : contentx_g |= CONTENT_EUCLID  ;  break
-               ;  case  'i' : contentx_g |= CONTENT_INTERSECT; break
-               ;  case  'm' : contentx_g |= CONTENT_MEDIAN  ;  break
-               ;  default: mcxDie(1, me, "unsupported mode -content mode [%c]", (int) (unsigned char) c[0])
-            ;  }
-            }
-            break
-         ;
-
             case MY_OPT_NW
          :  support_modalities |= MODE_NOWRITE
-         ;  break
-         ;
-
-            case MY_OPT_CONTENT
-         :  main_modalities |= ARRAY_CONTENT
-         ;  sym_g = FALSE
          ;  break
          ;
 
@@ -2007,15 +1817,15 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          :  case MY_OPT_TAXI
          :  case MY_OPT_L00
          :  
-            minkowski = 1.0
+            g_minkowski = 1.0
          ;  if (anch->id == MY_OPT_L00)
-            minkowski = 0.0
+            g_minkowski = 0.0
          ;  else if (anch->id == MY_OPT_EUCLID)
-            minkowski = 2.0
+            g_minkowski = 2.0
          ;  else if (anch->id == MY_OPT_MINKOWSKI)
-            minkowski = atof(opt->val)
-         ;  if (minkowski < 0)
-            minkowski = 2.0
+            g_minkowski = atof(opt->val)
+         ;  if (g_minkowski < 0)
+            g_minkowski = 2.0
          ;  main_modalities |= ARRAY_MINKOWSKI
          ;  break
          ;
@@ -2103,9 +1913,6 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
 
    ;  mcxOptFree(&opts)
 
-   ;  if ((main_modalities & ARRAY_CONTENT) && !contentx_g)
-      contentx_g = CONTENT_DEFAULT
-
    ;  if (n_thread_l && (start_g || end_g))
       mcxDie(1, me, "-start and -end do not mix with -t -J or -j")
                                     /* dangersign: start_g, threads, and groups */ 
@@ -2155,11 +1962,12 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
 
       {  dim i
       ;  dim N_na = 0
+      ;  struct rank_unit* ru = NULL
       ;  mclx* mxna  =  NULL
       ;  mclx* tbl   =
-                                                   /* fixme skeleton read makes subsequent code bit brittle */
-               read_table                          /* fixme docme what is ARRAY_CONTENT about? */
-               ?  (  (support_modalities & MODE_JOBINFO && !(main_modalities & ARRAY_CONTENT))
+                                 /* fixme skeleton read makes subsequent code bit brittle */
+               read_table
+               ?  (  support_modalities & MODE_JOBINFO
                   ?  mclxReadSkeleton(xfin, 0, FALSE)
                   :  mclxRead(xfin, EXIT_ON_FAIL)
                   )
@@ -2184,7 +1992,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                                                              * interaction with mxna computation later
                                                             */
       ;  if
-         (  !(main_modalities & (ARRAY_CONTENT | ARRAY_FINGERPRINT))
+         (  !(main_modalities & ARRAY_FINGERPRINT)
          && !(support_modalities & (MODE_SPARSE | MODE_ZEROASNA))
          )
          {  dim n_entries_in = mclxNrofEntries(tbl), n_entries_table = 0
@@ -2230,14 +2038,16 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          ;  mcxIOfree(&xfna)
       ;  }
 
+                                             /* tbcont: perhaps decomission transformations
+                                                like this - leave it to R etc. */
          if (strchr(mode_normalise, 'z'))
          tbl = normalise(tbl, mode_normalise)
 
                                              /* fixme funcify */
+                                             /* tbcont: what about NA values? */
       ;  if (support_modalities & MODE_RANKTRANSFORM)
          {  dim d
-         ;  rank_unit* ru
-            =  mcxNAlloc
+         ;  ru = mcxNAlloc
                (  N_ROWS(tbl) + 1            /* one extra for sentinel */
                ,  sizeof(rank_unit)
                ,  rank_unit_init
@@ -2245,29 +2055,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                )
          ;  for (d=0;d<N_COLS(tbl);d++)
             {  mclv* v = tbl->cols+d
-            ;  dim stretch = 1
-            ;  dim i
-            ;  for (i=0;i<v->n_ivps;i++)
-               {  ru[i].index = v->ivps[i].idx
-               ;  ru[i].value = v->ivps[i].val
-               ;  ru[i].ord = -14
-            ;  }
-               qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_value)
-            ;  ru[v->n_ivps].value = ru[v->n_ivps-1].value * 1.1    /* sentinel out-of-bounds value */
-            ;  for (i=0;i<v->n_ivps;i++)
-               {  if (ru[i].value != ru[i+1].value)    /* input current stretch */
-                  {  dim j
-                  ;  for (j=0;j<stretch;j++)
-                     ru[i-j].ord = 1 + (i+1 + i-stretch) / 2.0
-                  ;  stretch = 1
-               ;  }
-                  else
-                  stretch++
-            ;  }
-               qsort(ru, v->n_ivps, sizeof ru[0], rank_unit_cmp_index)
-            ;  for (i=0;i<v->n_ivps;i++)
-               v->ivps[i].val = ru[i].ord
-;if(0)fprintf(stderr, "vid %d id %d value from %.4g to %.1f\n", (int) v->vid, (int) v->ivps[i].idx, (double) ru[i].value, (double) ru[i].ord)
+            ;  mclv_spearman(v, ru)
          ;  }
          }
 
@@ -2276,7 +2064,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
 
       ;  if (support_modalities & MODE_ZEROASNA)
          {  dim i
-         ;  if (main_modalities & (ARRAY_COSINESKEW | ARRAY_SUBSET_MEET | ARRAY_SUBSET_DIFF | ARRAY_CONTENT | ARRAY_FINGERPRINT))
+         ;  if (main_modalities & (ARRAY_COSINESKEW | ARRAY_SUBSET_MEET | ARRAY_SUBSET_DIFF | ARRAY_FINGERPRINT))
             mcxDie(1, me, "--zero-as-na only supported with --spearman or --pearson or --cosine")
 /* fixme: zero-as-na supported when exactly? */
          ;  if (!(main_modalities & (ARRAY_SPEARMAN | ARRAY_PEARSON | ARRAY_COSINE)))
@@ -2287,7 +2075,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          ;  mcxTell(me, "have %d NAs from zero", (int) mclxNrofEntries(mxna))
       ;  }
          else
-         {  if (main_modalities & (ARRAY_SUBSET_DIFF | ARRAY_SUBSET_MEET | ARRAY_CONTENT | ARRAY_FINGERPRINT))
+         {  if (main_modalities & (ARRAY_SUBSET_DIFF | ARRAY_SUBSET_MEET | ARRAY_FINGERPRINT))
             mclxUnary(tbl, fltxCopy, NULL)    /* this removes zeroes from the matrix */
          ;  else
             {  dim i
@@ -2328,14 +2116,22 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
          )
 
       ;  {  dim n_reduced =0
-;if(0)fprintf(stderr, "%d %d\n", (int) n_thread_l, (int) n_group_G)
+         ;  struct abacus abc
+
+         ;  abc.tbl  =  tbl
+         ;  abc.res  =  res
+         ;  abc.na   =  mxna
+         ;  abc.cutoff =cutoff
+         ;  abc.Nssqs = Nssqs
+         ;  abc.sums =  sums
+         ;  abc.bits =  main_modalities
+
          ;  if (n_thread_l * n_group_G <= 1)
-            n_reduced = do_range(tbl, res, mxna, cutoff, start_g, end_g, Nssqs, sums, main_modalities, 0)
+            n_reduced = do_range(&abc, start_g, end_g, 0, ru)
 
          ;  else
             {  struct jobinfo ji
             ;  dim t_this_group = 0, t_max = 0, t = 0
-
                            /* Computation of the group of threads for a job
                             * is somewhat complicated by our mini-job balancing as
                             * described above.
@@ -2356,7 +2152,7 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                ,  n_thread_l
                ,  n_group_G
                ,  i_group
-               ,  (main_modalities & (ARRAY_FINGERPRINT | ARRAY_CONTENT | ARRAY_SUBSET_MEET | ARRAY_SUBSET_DIFF))
+               ,  (main_modalities & (ARRAY_FINGERPRINT | ARRAY_SUBSET_MEET | ARRAY_SUBSET_DIFF))
                )
 
             ;  while (ji.dvd_joblo2 < ji.dvd_jobhi1)
@@ -2365,20 +2161,15 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
                ;  if (!ji_step(&ji, t++, t_this_group))
                   continue
 
-               ;  d->tbl      =  tbl
-               ;  d->res      =  res
-               ;  d->mxna     =  mxna
-               ;  d->cutoff   =  cutoff
-               ;  d->job_lo1  =  ji.dvd_joblo1
-               ;  d->job_lo2  =  ji.dvd_joblo2
-               ;  d->job_hi1  =  ji.dvd_jobhi1
-               ;  d->job_hi2  =  ji.dvd_jobhi2
-               ;  d->job_size =  ji.dvd_jobsize
-               ;  d->Nssqs    =  Nssqs
-               ;  d->sums     =  sums
-               ;  d->bits     =  main_modalities
-               ;  d->n_reduced=  0
-               ;  d->thread_id=  t_this_group
+               ;  d->abc = &abc
+               ;  d->job_lo1     =  ji.dvd_joblo1
+               ;  d->job_lo2     =  ji.dvd_joblo2
+               ;  d->job_hi1     =  ji.dvd_jobhi1
+               ;  d->job_hi2     =  ji.dvd_jobhi2
+               ;  d->job_size    =  ji.dvd_jobsize
+               ;  d->n_reduced   =  0
+               ;  d->thread_id   =  t_this_group
+               ;  d->ru          =  mcxNAlloc(N_ROWS(tbl)+1, sizeof(rank_unit), rank_unit_init, EXIT_ON_FAIL)
 
                ;  if (pthread_create(threads_array+t_this_group, &t_attr, array_thread, d))
                   mcxDie(1, me, "error creating thread %d", (int) t_this_group)
@@ -2471,24 +2262,5 @@ puts("isect:   #A* / #A                      same as above, ignoring weights");
    ;  mclxFree(&mxseql)
    ;  return 0
 ;  }
-
-
-
-/*
-   M use median
-   V use average
-   S use sum(fabs)
-   E use sqrt(ssq)
-   N use #entries
-   A  vector A
-   a  vector A*
-   B  vector B
-   b  vector B*
-   c  cosine(a,b)
-   +
-   /
-   *
-   r
-*/
 
 

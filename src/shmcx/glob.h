@@ -33,7 +33,6 @@ typedef struct zgglob_t* zgglob_p;
  * The 'type' in the four routines below is the user interface type,
  * not the internal storage type.
 */
-zgglob_p zgNew(int type, void* object)  ;
 int zgPush(int type, void* object)  ;
 void* zgGetOb(zgglob_p glob,  int type)  ;
 int zgGetType(zgglob_p glob)  ;

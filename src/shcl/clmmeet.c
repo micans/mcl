@@ -1,5 +1,4 @@
-/*   (C) Copyright 2001, 2002, 2003, 2004, 2005, 2006 Stijn van Dongen
- *   (C) Copyright 2007, 2008, 2009, 2010, 2011  Stijn van Dongen
+/*   (C) Copyright 2007-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or

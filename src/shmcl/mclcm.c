@@ -327,7 +327,7 @@ const char* usagelines[];
 
 const char* me = "mclcm";
 
-void usage
+static void usage
 (  const char**
 )  ;
 
@@ -371,7 +371,7 @@ static double hdp_g           =  0.0;
 static mclv* start_col_sums_g =  NULL;
 
 
-void write_clustering
+static void write_clustering
 (  mclx* cl
 ,  const mclx* clprev
 ,  mcxIO* xfcone
@@ -413,7 +413,7 @@ void write_clustering
    }
 
 
-void help
+static void help
 (  mcxOptAnchor* options
 ,  mcxTing* shared
 )

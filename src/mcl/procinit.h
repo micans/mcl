@@ -37,11 +37,13 @@ void  mclSetProgress
 void mclShowSettings (FILE* fp, mclProcParam* mpp, mcxbool user);
 void mclShowSchemes(mcxbool print_skid);
 
+#if 0
 void doBool(const char *string, mclProcParam* mp);
 int  doInfoFlag(const char *string, mclProcParam* mp);
 int  flagWithArg(const int a, const char *string);
 void toggle(int* i, const char* s);
-void usage();
+void usage(void);
+#endif
 
 
 #endif

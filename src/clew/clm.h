@@ -26,6 +26,7 @@ typedef struct
 {  double   efficiency
 ;  double   massfrac
 ;  double   areafrac
+;  double   modularity
 ;
 }  clmPerformanceTable   ;
 
@@ -101,7 +102,7 @@ mclMatrix*  clmComponents
 
 
 mcxstatus clmPerformance
-(  const mclMatrix* mx
+(  mclMatrix* mx                 /* Loops may be added / removed */
 ,  const mclMatrix* cl
 ,  clmPerformanceTable* pf
 )  ;

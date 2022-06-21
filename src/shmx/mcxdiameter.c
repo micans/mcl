@@ -33,6 +33,7 @@
 #include <time.h>
 
 #include "mcx.h"
+#include "mcxdiameter.h"
 
 #include "tingea/types.h"
 #include "tingea/ding.h"
@@ -127,7 +128,7 @@ fprintf(stdout, "pivot %d node %d d %d dead %d pri %d\n", (int) vec->vid, (int) 
 
 #define SEENx(mx, idx)  (mx->dom_cols->ivps[idx].val)
 
-dim diamFlood2
+static dim diamFlood2
 (  mclx* mx
 ,  ofs root
 ,  dim extent
@@ -753,7 +754,7 @@ mcxDispHook* mcxDispHookDiameter
 ;  }
 
 
-void cttyUpdateDS
+static void cttyUpdateDS
 (  mclx* down
 ,  mclx* up
 ,  mclv* domain
@@ -795,7 +796,7 @@ void cttyUpdateDS
     *    -  uses mx->cols[i].val for annotation.
    */
 
-dim cttyFlood2
+static dim cttyFlood2
 (  mclx* mx
 ,  ofs root
 ,  dim extent
@@ -852,7 +853,7 @@ dim cttyFlood2
    new accumulator encoded in up->cols[X].val
 */
 
-void compute_scores_up_ec              /* edge centrality */
+static void compute_scores_up_ec              /* edge centrality */
 (  mclx* down
 ,  mclx* up       /* transpose of down for now */
 ,  mclx* edge
@@ -908,7 +909,7 @@ void compute_scores_up_ec              /* edge centrality */
    new accumulator encoded in up->cols[X].val
 */
 
-void compute_scores_up_vc              /* vertex centrality */
+static void compute_scores_up_vc              /* vertex centrality */
 (  mclx* down
 ,  mclx* up       /* transpose of down for now */
 ,  mclv* order

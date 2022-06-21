@@ -56,6 +56,7 @@ extern unsigned n_threads_g;
 
 #define     TOKEN_LIST               "list"
 #define     TOKEN_TELL               "tell"
+#define     TOKEN_TYPE               "type"
 #define     TOKEN_OPLIST             "ops"
 #define     TOKEN_HELP               "help"
 #define     TOKEN_INFO               "info"
@@ -63,7 +64,7 @@ extern unsigned n_threads_g;
 #define     TOKEN_SEARCH             "grep"
 #define     TOKEN_VARS               "vars"
 #define     TOKEN_QUIT               "quit"
-#define     TOKEN_DONG               "vb"
+#define     TOKEN_VB                 "vb"
 
 #define     TOKEN_IDENTITY           "id"
 #define     TOKEN_ALLONE             "jj"

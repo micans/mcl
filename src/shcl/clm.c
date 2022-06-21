@@ -1,5 +1,4 @@
-/*   (C) Copyright 1999, 2000, 2001, 2002, 2003, 2004 Stijn van Dongen
- *   (C) Copyright 2005, 2006, 2007 Stijn van Dongen
+/*   (C) Copyright 2008-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -53,7 +52,6 @@ const char* clm_syntax =
    "Usage: clm <mode> [--nop] [options] [files]\n"
    "       clm <mode> -h (for mode specific options)"
    ;
-
 
 enum
 {  ID_MATE = 0
@@ -151,7 +149,7 @@ mcxOptAnchor clmSharedOptions[] =
    ,  MCX_OPT_DEFAULT
    ,  CLM_DISP_NOP
    ,  NULL
-   ,  "this option has no affect but changing the argument count"
+   ,  "this option has no effect but changing the argument count"
    }
 ,  {  "-h"
    ,  MCX_OPT_DEFAULT
@@ -175,12 +173,12 @@ mcxOptAnchor clmSharedOptions[] =
 }  ;
 
 
-mcxbits  mcx_debug_g     =  0;
-unsigned mcx_progress_g  =  0;
-mcxbool  mcx_test_g      =  FALSE;
+mcxbits  clm_debug_g     =  0;
+unsigned clm_progress_g  =  0;
+mcxbool  clm_test_g      =  FALSE;
 
 
-mcxstatus sharedArgHandle
+static mcxstatus sharedArgHandle
 (  int optid
 ,  const char* val
 ,  mcxDispHook*   hook
@@ -228,27 +226,27 @@ mcxstatus sharedArgHandle
       ;
 
          case CLM_DISP_TEST
-      :  mcx_test_g = TRUE
+      :  clm_test_g = TRUE
       ;  break
       ;
 
          case CLM_DISP_PROGRESS
-      :  mcx_progress_g = atoi(val)
+      :  clm_progress_g = atoi(val)
       ;  break
       ;
 
          case CLM_DISP_PROGRESS2
-      :  mcx_progress_g = 1
+      :  clm_progress_g = 1
       ;  break
       ;
 
          case CLM_DISP_DEBUG
-      :  mcx_debug_g = atoi(val)
+      :  clm_debug_g = atoi(val)
       ;  break
       ;
 
          case CLM_DISP_DEBUG2
-      :  mcx_debug_g = -1u
+      :  clm_debug_g = -1u
       ;  break
       ;
 

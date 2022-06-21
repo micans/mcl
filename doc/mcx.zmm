@@ -46,6 +46,7 @@
 \'def{mclcm}{\bf{mclcm}}
 \'def{mcx}{\bf{mcx}}
 \'def{mcxi}{\bf{mcxi}}
+\'def{script#1}{\bf{\1}}
 
 \set{{modes}{vw}}{}{
    {clm}       {\bf{clm}}
@@ -230,4 +231,5 @@ edges that occur in both best-neighbour lists for the two incident nodes.
 
 \def{abc}{\sc{ABC}}
 \def{MCL}{\sc{MCL}}
+\def{RCL}{\sc{RCL}}
 

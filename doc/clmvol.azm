@@ -19,37 +19,33 @@
 
 \disclaim_clm{vol}
 
+
 \sec{synopsis}{SYNOPSIS}
 \par{
    \clm{vol}
-   \synoptopt{-fraction}{num}{nff factor}
    \synoptopt{-o}{fname}{output file}
+   \synoptopt{-imx}{fname}{read network}
+   \synoptopt{--self}{include self-comparisons}
+   \synoptopt{-write-rcl}{fname}{write rcl network}
    <cl file>+
    }
 
 \sec{description}{DESCRIPTION}
 
 \par{
-   \clm{vol} computes a score for each node, which at a minimum is equal to one.
+   \clm{vol} computes a score for each node, which is expressed as a promille.
    The output is in the form of a matrix containing a single column.  The score
-   correlates with what is deemed to be volatile behaviour.  For all pairs of
+   inversely correlates with what is deemed to be volatile behaviour.  For all pairs of
    clusterings the set of all intersections is computed, and these  are
    considered in turn.
-   
-   An intersection is deemed to be volatile if the size of the intersection is
-   less than half the size of the smallest of the two clusters.  In that case,
-   for each node in the intersection its volatility score is incremented by one
-   over the size of the intersection.
-
-   The size comparison can be made more stringent by increasing the
-   \genopt{-fraction}{<frac>} option, which is by default set to \v{0.5}.
-   Volatility occurs if the size of the intersection is less than
-   \usearg{<frac>} times the size of the smallest cluster.  If the
-   \genopt{-fraction} value is increased all the way up to 1.0, the implication
-   is that an intersection is considered volatile unless one of the two
-   clusteres considered is a subset of the other.
    }
 
+\par{
+   The list of cluster files can be split in two parts by inserting a double
+   hyphen (\tt{--}) inbetween the parts. Comparisons will be between all pairs
+   where one clustering is in the first part and the other clustering is in the
+   second part.
+   }
 
 \sec{author}{AUTHOR}
 \par{
@@ -61,11 +57,20 @@
 
 \'begin{itemize}{\mcx_itemopts}
 
-\item{\defopt{-fraction}{num}{nff factor}}
-\car{See the discussion at \secref{description}.
-   }
-
 \item{\defopt{-o}{fname}{output file}}
+
+\item{\defopt{-imx}{fname}{read network}}
+
+\items{
+   {\defopt{-write-rcl}{fname}{write rcl network}}
+   {\defopt{--self}{include self-comparisons}}
+}
+\car{
+   Specifying the file name causes the Restricted Contingency Linkage network to be computed
+   and saved to that file. If \useopt{--self} is specified each clusters is compared to itself
+   as well as to other clusterings, effectively incorporating the standard cluster co-ocurrence
+   edge weight as a contribution to the \RCL network.
+   }
 
 \end{itemize}
 

@@ -1,6 +1,4 @@
-/*   (C) Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005 Stijn van Dongen
- *   (C) Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012 Stijn van Dongen
- *   (C) Copyright 2013, 2014  Stijn van Dongen
+/*   (C) Copyright 1999-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -690,7 +688,7 @@ struct sparse_sel
 }  ;
 
 
-double sparse_sel_cb
+static double sparse_sel_cb
 (  const mclv* vec
 ,  void* data
 )
@@ -1578,6 +1576,30 @@ double mclxMass
    ;  for (d=0;d<N_COLS(m);d++)
       mass += mclvSum(m->cols+d)
    ;  return mass
+;  }
+
+
+void mclxNrofEntriesLUD
+(  const mclx*     m
+,  dim* L
+,  dim* U
+,  dim* D
+)
+   {  dim i,j
+   ;  dim l = 0, u = 0, d = 0
+   ;  for (i=0;i<N_COLS(m);i++)
+      {  mclv* v = m->cols+i
+      ;  pnum col = v->vid
+      ;  for (j=0;j<v->n_ivps;j++)
+         {  pnum row = v->ivps[j].idx
+         ;  l += col  < row
+         ;  u += col  > row
+         ;  d += col == row
+      ;  }
+      }
+      *L = l
+   ;  *U = u
+   ;  *D = d
 ;  }
 
 

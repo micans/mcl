@@ -38,12 +38,14 @@ typedef struct
 ;  mclv*             homgVec
 ;  double            lap
 
-;  int               n_cols
+;  int               i_cols         /* for progress bar */
 
 ;  float*            bob_low        /* initial pruning */
 ;  float*            bob_final      /* final result    */
 ;  dim*              bob_expand     /* size after expansion */
 ;  volatile dim      bob_sparse
+;  mclx*             flow_chr       /* N ct max x 8 */
+;  dim               i_ite          /* which iterand is this */
 ;
 }  mclExpandStats    ;
 
@@ -95,12 +97,14 @@ mclMatrix* mclExpand
 
 mclExpandStats* mclExpandStatsNew
 (  dim   n_cols
+,  mcxbool make_flow_chr
 )  ;  
 
 
 void mclExpandParamDim
 (  mclExpandParam*  mxp
 ,  const mclMatrix* mx
+,  mcxbool make_flow_chr
 )  ;
 
 

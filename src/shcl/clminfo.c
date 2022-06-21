@@ -1,5 +1,4 @@
-/*   (C) Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007 Stijn van Dongen
- *   (C) Copyright 2008, 2009, 2010, 2011, 2012 Stijn van Dongen
+/*   (C) Copyright 2001-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -217,7 +216,7 @@ static mcxstatus infoArgHandle
 ;  }
 
 
-void do_stack
+static void do_stack
 (  mclx* mx
 ,  mcxIO* xfstack
 ,  mcxIO* xfout
@@ -294,7 +293,7 @@ static mcxstatus infoMain
 
       if (inflation)
       {  mclxInflate(mx, inflation)
-      ;  mcxTingPrintAfter(ginfo, "inflation=%.2f\n", (double) inflation)
+      ;  mcxTingPrintAfter(ginfo, "inflation=%.2f", (double) inflation)
    ;  }
 
       mclxAdjustLoops(mx, mclxLoopCBmax, NULL)
@@ -344,7 +343,7 @@ static mcxstatus infoMain
             {  clmGranularityTable tbl
             ;  clmPerformanceTable pftable
             ;  mcxTing* linfo = mcxTingNew(ginfo->str)
-            ;  mcxTingPrintAfter(linfo, " source=%s", xfcl->fn->str)
+            ;  mcxTingPrintAfter(linfo, " src=%s", xfcl->fn->str)
             ;  if (st.n_level > 1)
                mcxTingPrintAfter(linfo, ":%03d", (int) (j+1))
 

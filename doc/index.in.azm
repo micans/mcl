@@ -108,9 +108,7 @@
 \mkentry{mcl}{1}{the mcl manual page}
 \mkentry{mclfaq}{7}{the mcl FAQ}
 \mkentry{mcxio}{5}{the mcl matrix format specification}
-\mkentry{mclpipeline}{1}{generic pipeline (parsing/matrix creation/clustering/display)}
 \mkentry{mcx}{1}{interface to basic matrix operations}
-\mkentry{mcxassemble}{1}{prepare input matrix from cooccurrence scores}
 \mkentry{mcxdump}{1}{dump matrices, optionally map indices to labels}
 \mkentry{mcxarray}{1}{transform array data to MCL matrices}
 \mkentry{mcxconvert}{1}{convert between ascii/binary storage types}
@@ -118,7 +116,6 @@
 
 
 \utsection{Dealing with clustering results}
-\mkentry{clmformat}{1}{display clusterings in browsable format}
 \mkentry{clmdist}{1}{compute distances between clusterings}
 \mkentry{clminfo}{1}{performance measures for clusterings}
 \mkentry{clmmeet}{1}{compute intersection of clusterings}
@@ -135,7 +132,6 @@
 \mkentry{mcx}{1}{interface to basic matrix operations}
 \mkentry{mcxsubs}{1}{extract submatrices by specifiying sets of nodes and clusters}
 \mkentry{mcxmap}{1}{remap matrix indices / relabel graph nodes}
-\mkentry{mcxassemble}{1}{prepare input matrix from cooccurrence scores}
 \utend
 
 \${html}{\@{

@@ -70,6 +70,9 @@ int main
          ;  if (ok && (v_g & V_STACK))
             zsList(0)
 
+         ;  if (!ok)
+            mcxExit(1)
+
          ;  mcxTingEmpty(ops, 20)
       ;  }
       }

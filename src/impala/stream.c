@@ -1,5 +1,4 @@
-/*   (C) Copyright 2005, 2006, 2007, 2008, 2009, 2010, 2011 Stijn van Dongen
- *   (C) Copyright 2012, 2013 Stijn van Dongen
+/*   (C) Copyright 2005-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -49,6 +48,7 @@
 #include "stream.h"
 #include "vector.h"
 #include "iface.h"
+#include "io.h"
 
 #include "tingea/compile.h"
 #include "tingea/types.h"
@@ -68,9 +68,6 @@ const char* module = "mclxIOstreamIn";
 
 #define MCLXIO_STREAM_CTAB_RO (MCLXIO_STREAM_CTAB_STRICT | MCLXIO_STREAM_CTAB_RESTRICT)
 #define MCLXIO_STREAM_RTAB_RO (MCLXIO_STREAM_RTAB_STRICT | MCLXIO_STREAM_RTAB_RESTRICT)
-
-#define MCLXIO_STREAM_ETCANY (MCLXIO_STREAM_ETC | MCLXIO_STREAM_ETC_AI | MCLXIO_STREAM_SIF)
-#define MCLXIO_STREAM_235ANY (MCLXIO_STREAM_235 | MCLXIO_STREAM_235_AI)
 
 #define DEBUG  0
 #define DEBUG2 0
@@ -312,6 +309,7 @@ static mcxstatus read_etc
                ;  break
             ;  }
                state->etcbuf_ofs += n_char_read
+;if(0)fprintf(stderr, "start found %lu\n", iface->x)
             ;  if (iface->map_c->max_seen+1 < iface->x+1)      /* note mixed-sign comparison */
                iface->map_c->max_seen = iface->x
             ;  state->x_prev = iface->x
@@ -357,11 +355,15 @@ static mcxstatus read_etc
       ;  }
 
          if (bits & (MCLXIO_STREAM_235_AI | MCLXIO_STREAM_235))
-         {  if
+         {  
+;if(0)fprintf(stderr, "what's buf it's [%s]\n", state->etcbuf->str+state->etcbuf_ofs);
+            if
             (  (  tryvalue
                && 2 != sscanf(state->etcbuf->str+state->etcbuf_ofs, "%lu:%lf%n", &(iface->y), value, &n_char_read)
                )
-            || 1 != sscanf(state->etcbuf->str+state->etcbuf_ofs, "%lu%n", &(iface->y), &n_char_read)
+            || ( ! tryvalue
+               && 1 != sscanf(state->etcbuf->str+state->etcbuf_ofs, "%lu%n", &(iface->y), &n_char_read)
+               )
             )
             {  char* s = state->etcbuf->str+state->etcbuf_ofs
             ;  while(isspace((uchar) s[0]))
@@ -376,7 +378,7 @@ static mcxstatus read_etc
          ;  }
             else
             {
-;if(DEBUG3)fprintf(stdbug, "hit at %d\n", (int) state->etcbuf_ofs);
+;if(DEBUG3)fprintf(stdbug, "hit at %d (value %f) (read %d)\n", (int) state->etcbuf_ofs, *value, (int)n_char_read);
                state->etcbuf_ofs += n_char_read
             ;  if (iface->map_r->max_seen+1 < iface->y+1)      /* note mixed-sign comparison */
                iface->map_r->max_seen = iface->y
@@ -814,8 +816,10 @@ static mclx* make_mx_from_pars
    ;  dim i
 
    ;  if (bits & MCLXIO_STREAM_235ANY)
-      {  if (streamer->cmax_235 > 0 && dc_max_seen < streamer->cmax_235 - 1)
+      {  if (streamer->cmax_235 > 0 && dc_max_seen+1 < streamer->cmax_235)
          dc_max_seen = streamer->cmax_235-1
+      ;  if (streamer->rmax_235 > 0 && dr_max_seen+1 < streamer->rmax_235)
+         dr_max_seen = streamer->rmax_235-1
    ;  }
       else if (bits & MCLXIO_STREAM_123)
       {  if (streamer->cmax_123 > 0 && dc_max_seen+1 < streamer->cmax_123)
@@ -899,6 +903,10 @@ static void free_pars
 ;  }
 
 
+      /* Todo. (1) Describe all possible states in which this can be called;
+       * (2) Ensure state consistency with checks and messages.
+       * Some (a lot) of these checks happen now in mcxload.
+      */
 mclx* mclxIOstreamIn
 (  mcxIO*   xf
 ,  mcxbits  bits
@@ -930,7 +938,19 @@ mclx* mclxIOstreamIn
    ;  unsigned long n_ite = 0
    ;  mclx* mx = NULL
 
-   ;  if (!ivpmerge)
+   ;  mcxbool  iovb     =  mclxIOgetQMode("MCLXIOVERBOSITY")
+   ;  mcxbool  progress =  iovb && mcxLogGet(MCX_LOG_GAUGE | MCX_LOG_IO)
+
+
+   ;  if (mirror && !symmetric)
+      {  mcxErr(me, "mirror mode needs symmetric mode (shared-tab-logic)")
+      ;  if (ON_FAIL == EXIT_ON_FAIL)
+         mcxDie(1, me, "fini")
+      ;  mcxTingFree(&linebuf)
+      ;  return NULL
+   ;  }
+
+      if (!ivpmerge)
       ivpmerge = mclpMergeMax
 
    ;  if (symmetric)
@@ -956,15 +976,15 @@ mclx* mclxIOstreamIn
                                  /* fixme: put the block below in a subroutine */
    ;  while (1)
       {  if (abc + one23 + longlist > TRUE)   /* OUCH */
-         {  mcxErr(module, "multiple stream formats specified")
+         {  mcxErr(me, "multiple stream formats specified")
          ;  break
       ;  }
          if (!symmetric && streamer->tab_sym_in)
-         {  mcxErr(module, "for now disallowed, single tab, different domains")
+         {  mcxErr(me, "for now disallowed, single tab, different domains")
          ;  break
       ;  }
          if ((!one23 && !abc && !longlist))
-         {  mcxErr(module, "not enough to get going")
+         {  mcxErr(me, "not enough to get going")
          ;  break
       ;  }
 
@@ -995,10 +1015,12 @@ mclx* mclxIOstreamIn
       ;  iface.x =  0
       ;  iface.y =  0
 
-      ;  if (n_ite % 20000 == 0)
-         fputc('.', stderr)               /* fixme conditional to sth */
-      ;  if (n_ite % 1000000 == 0)
-         fprintf(stderr, " %ldM\n", (long) (n_ite / 1000000))
+      ;  if (progress)
+         {  if (n_ite % 20000 == 0)
+            fputc('.', stderr)               /* fixme conditional to sth */
+         ;  if (n_ite % 1000000 == 0)
+            fprintf(stderr, " %ldM\n", (long) (n_ite / 1000000))
+      ;  }
 
                         /* 
                          * -  the read routines largely manage iface, including
@@ -1075,6 +1097,15 @@ mclx* mclxIOstreamIn
             {  mcxErr(me, "x-extend fails")
             ;  break
          ;  }
+
+         /* shared-tab-logic
+          * Code below works because pars_realloc elsewhere depends on iface.map_c->max_seen
+          * and in symmetric mode map_c and map_r are the same thing.
+          * For now we exclude the possibility of longlist + mirror with a combination
+          * of code in mcxload and here (check at start of this routine).
+          * For longlist + mirror either use -ri max to add reverse image, or
+          * use mcxi to check the network is undirected.
+         */
             if (mirror && mclpARextend(iface.pars+y, x, value))
             {  mcxErr(me, "y-extend fails")
             ;  break

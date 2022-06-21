@@ -161,10 +161,8 @@ option.}
 }
 \cpar{Input manipulation options}{
    \synoptopt{-pi}{<num>}{pre-inflation}
-   \synoptopt{-ph}{<num>}{pre-inflation, max-bound}
    \synoptopt{-if}{<num>}{start-inflation}
    \synoptkvp{--discard-loops}{<y/n>}{discard y/n loops in input}
-   \synoptopt{--sum-loops}{set loops to sum of other arcs weights}
    \synoptopt{-c}{<num>}{reweight loops}
 }
 \cpar{Clustering processing options}{
@@ -454,68 +452,12 @@ option.}
    automatic naming constructions employed by \mcl if the \genopt{-o} option is
    not used.}
 
-
-\""{ Too experimental to document for real.
-
-   \items{
-      {\""defopt {-shadow}{<mode>}{apply shadowing}}
-      {\""defopt {-shadow-s}{<num>}{boost factor (experimental)}}
-      {\""defopt {--shadow-vl}{shadow distant nodes}}
-   }
-
-   \cpar{EXPERIMENTAL}{
-      \it{These options are intended and useful for hierarchical
-      clustering with} \mysib{mclcm}.
-      \useopt{--shadow-vl} is the same as \useopt{-shadow}{vl}
-      and is at present the best mode to choose.
-      }
-
-   \par{
-      Use these to weaken the connectivity of certain
-      classes of nodes. This means that the effect of the edges
-      in which they participate on the final clustering result is diminished.
-      This is done such that the extent to which a node exhibits certain
-      characteristics is correlated with the extent to which its connectivity is
-      weakened. The different types of characteristics that can be regulated
-      are}
-
-   \begin{itemize}{
-      {flow}{compact}
-      {interitem}{0}
-      {textindent}{4}
-   }
-   \item{\bf{vl}}   value low - nodes for which the average value of its edges
-               is low compared with the same number across its neighbours.
-   \item{\bf{vh}}   value high - nodes for which the average value of its edges
-               is high compared with the same number across its neighbours.
-   \item{\bf{el}}   edge low - nodes for which the number of neighbours
-               is low compared with the same number across its neighbours.
-   \item{\bf{eh}}   edge high - nodes for which the number of neighbours
-               is high compared with the same number across its neighbours.
-   \end{itemize}   
-
-   \par{The characteristics above, e.g. \bf{vl}, correspond to the modes
-      that can be passed to the \genopt{-shadow} argument.  The first mode \bf{vl}
-      is the one most likely to be useful.  Combining different modes is possible
-      but may lead to unbalanced clusterings.  Using the mode \bf{el} in \mclcm
-      may similarly lead to unbalanced hierachies.}
-
-   \par{
-      The boost factor can be set e.g. to 2.0 to increase the effect of shadowing.
-      The default setting is 1.0.
-      }
-}
-
-
-
 \items{
    {\defopt{-c}{<num>}{reweight loops}}
-   {\defopt{--sum-loops}{set loops to sum of other arcs weights}}
 }
 \car{
    With the \genopt{-c}{<num>} option, as the final step of loop computation
-   (i.e. after initialization and shadowing) all loop weights are multiplied by
-   \genopt{<num>}, if supplied.
+   all loop weights are multiplied by \genopt{<num>}, if supplied.
    }
 
 \item{\defkvp{--discard-loops}{<y/n>}{discard loops in input}}
@@ -817,7 +759,6 @@ option.}
 
 \items{
    {\defopt{-pi}{<num>}{pre-inflation}}
-   {\defopt{-ph}{<num>}{pre-inflation, max-bound}}
 }
 \car{
    If used, \mcl will apply inflation one time to the input graph
@@ -828,21 +769,6 @@ option.}
    Homogeneity is achieved for values \genarg{<num>} less than one,
    heterogeneity for values larger than one.
    Values to try are normally in the range \m{[2.0,10.0]}.}
-
-\par{
-   The \genopt{-ph} option is special in that it does not rescale
-   columns to be stochastic. Instead, it rescales columns so that
-   the maximum value found in the column stays the same after
-   inflation was applied. There is little significance to this,
-   and what little there is is undocumented.
-   }
-
-
-\""{
-   This is for use in conjunction with
-   \genkvp{--shadow}{vl}, as the latter option is affected by
-   absolute differences in edge weights.
-}
 
 
 \item{\defopt{-if}{<num>}{start-inflation}}
@@ -1628,7 +1554,8 @@ with value 0.8.}
 
 \par{
    Tim Hughes contributed several good bug reports for mcxassemble,
-   mcxdeblast and zoem (a workhorse for \clmformat).}
+   mcxdeblast and zoem.
+   }
 
 \sec{seealso}{SEE ALSO}
 
@@ -1659,18 +1586,33 @@ with value 0.8.}
 \sec{references}{REFERENCES}
 
 \par{
-   \reference{gcbfs}
-   Stijn van Dongen, \it{Graph Clustering by Flow Simulation}.
-   PhD thesis, University of Utrecht, May 2000.\|
-   \httpref{http://www.library.uu.nl/digiarchief/dip/diss/1895620/inhoud.htm}}
-
-\par{
    \reference{gcvdup}
    Stijn van Dongen, \it{Graph Clustering Via a Discrete Uncoupling Process},
    SIAM Journal on Matrix Analysis and Applications, 30(1):121-141, 2008.
    \httpref{http://link.aip.org/link/?SJMAEL/30/121/1}
    }
 
+\par{
+   \reference{eaflsdopf}
+   Enright A.J., Van Dongen S., Ouzounis C.A.
+   \it{An efficient algorithm for large-scale detection of protein families},
+   Nucleic Acids Research 30(7):1575-1584 (2002).}
+
+\par{
+   \reference{gcbfs}
+   Stijn van Dongen, \it{Graph Clustering by Flow Simulation}.
+   PhD thesis, University of Utrecht, May 2000.\|
+   \httpref{http://www.library.uu.nl/digiarchief/dip/diss/1895620/inhoud.htm}}
+
+\par{
+   \reference{umtecfn}
+   Stijn van Dongen and Cei Abreu-Goodger, \it{Using mcl to extract clusters from networks},
+   in \it{Bacterial Molecular Networks: Methods and Protocols},
+   Methods in Molecular Biology, Vol 804, pages 281\-295 (2012). PMID\~22144159.\|
+   \httpref{http://www.ncbi.nlm.nih.gov/pubmed/22144159}}
+
+
+\""{
 \par{
    \reference{cafg}
    Stijn van Dongen. \it{A cluster algorithm for graphs}.
@@ -1692,12 +1634,7 @@ with value 0.8.}
    Institute for Mathematics and Computer Science in the Netherlands,
    Amsterdam, May 2000.\|
    \httpref{http://www.cwi.nl/ftp/CWIreports/INS/INS-R0012.ps.Z}}
-
-\par{
-   \reference{eaflsdopf}
-   Enright A.J., Van Dongen S., Ouzounis C.A.
-   \it{An efficient algorithm for large-scale detection of protein families},
-   Nucleic Acids Research 30(7):1575-1584 (2002).}
+}
 
 \sec{notes}{NOTES}
 

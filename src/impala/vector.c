@@ -1,6 +1,4 @@
-/*   (C) Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005 Stijn van Dongen
- *   (C) Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012 Stijn van Dongen
- *   (C) Copyright 2013 Stijn van Dongen
+/*   (C) Copyright 1999-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -123,7 +121,7 @@ mclVector* mclvInit
  * This routine should always work also for non-conforming vectors
 */
 
-mclVector* mclvInstantiate
+static mclVector* mclvInstantiate
 (  mclVector*     dst_vec
 ,  dim            new_n_ivps
 ,  const mclIvp*  src_ivps
@@ -257,7 +255,7 @@ mclVector*  mclvResize
 ;  }
 
 
-void mclvRuntime
+static void mclvRuntime    /* fixme useless? */
 (  const mclVector* vec
 ,  const char* caller
 )
@@ -1479,7 +1477,7 @@ double mclvIdxVal
 ,  long        idx
 ,  ofs*        p_offset
 )  
-   {  ofs     offset   =  mclvGetIvpOffset(vec, idx, -1)
+   {  ofs     offset   =  mclvGetIvpOffset(vec, idx, -1)       /* fixme: should use p_offset */
    ;  double  value    =  0.0
 
    ;  if (p_offset)

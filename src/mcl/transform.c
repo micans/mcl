@@ -385,7 +385,7 @@ static void tf_do_mcl
 ;  }
 
 
-void mclgTFgraph
+static void mclgTFgraph
 (  mclx* mx
 ,  pnum  mode
 ,  pval  val

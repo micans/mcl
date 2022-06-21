@@ -1,6 +1,4 @@
-/*   (C) Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005 Stijn van Dongen
- *   (C) Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012  Stijn van Dongen
- *   (C) Copyright 2013 Stijn van dongen
+/*   (C) Copyright 1999-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -191,7 +189,7 @@ static double loop_adjust_force
 
 
 
-void mclxIOinfoFree
+static void mclxIOinfoFree
 (  void*  info_v
 )
    {  mclxIOinfo* info = info_v
@@ -200,7 +198,7 @@ void mclxIOinfoFree
 ;  }
 
 
-mcxstatus mclxIOinfoReset
+static mcxstatus mclxIOinfoReset
 (  void*  info_v
 )
    {  mclxIOinfo* info = info_v
@@ -225,7 +223,7 @@ int mclxIOformat
 ;  }
 
 
-mclxIOinfo* mclxIOinfofy
+static mclxIOinfo* mclxIOinfofy
 (  mcxIO* xf
 )
    {  mclxIOinfo* info  =  xf->usr
@@ -281,7 +279,7 @@ static void tell_wrote_native
 ;  }
 
 
-unsigned long get_env_flags
+static unsigned long get_env_flags
 (  const char* opt
 )
    {  unsigned long val = 0
@@ -292,7 +290,7 @@ unsigned long get_env_flags
 ;  }
 
 
-unsigned long get_quad_mode
+static unsigned long get_quad_mode
 (  const char* opt
 )
    {  unsigned long val = 0
@@ -1758,7 +1756,7 @@ mcxstatus mclvEmbedRead
 
 
 
-mclpAR* mclpReaDaList
+static mclpAR* mclpReaDaList
 (  mcxIO   *xf
 ,  mclpAR  *ar
 ,  mclpAR  *transform
@@ -1902,7 +1900,7 @@ mcxstatus mclvEmbedWrite
  * fixme this interface is obsolete
 */
 
-mcxstatus mclvbWrite
+static mcxstatus mclvbWrite
 (  const mclv      *vec
 ,  mcxIO                *xfout
 ,  mcxOnFail            ON_FAIL
@@ -2556,6 +2554,7 @@ void mclxDebug
 )
    {  mcxIO* xf = mcxIOnew(name, "w")
    ;  if (!mcxIOopen(xf, RETURN_ON_FAIL))
+      return
    ;  fprintf(xf->fp, "[mclxDebug] [%s]\n", msg)
    ;  mclxWrite(mx, xf, valdigits, RETURN_ON_FAIL)
    ;  mcxIOfree(&xf)

@@ -59,7 +59,7 @@ void usage
 (  const char**
 )  ;
 
-mclv* reduce_v
+static mclv* reduce_v
 (  const mclv* u
 )
    {  mclv* v = mclvClone(u)
@@ -130,7 +130,7 @@ static double mclv_inner
 ;  }
 
 
-double pearson
+static double pearson
 (  const mclv* v1
 ,  const mclv* v2
 ,  const mclv* sums
@@ -149,7 +149,7 @@ double pearson
 ;  }
 
 
-void add_edge
+static void add_edge
 (  mclx* m
 ,  ofs c
 ,  ofs d
@@ -165,7 +165,7 @@ void add_edge
 
 
 
-double fltxCos
+static double fltxCos
 (  pval     v
 ,  void*    not_used
 )
@@ -380,118 +380,5 @@ const char* usagelines[] =
 {  NULL
 }  ;
 
-
-
-#if 0
-
-
-0) in below, is it possible to improve to the point
-   where for z we do not even need to constrct V(SHORT), but could just
-   navigate into appropriate parts of a graph or tree structure? Probably tough
-   ... either todo[] or avoid[] is bound to become large, but one of them is
-   needed.  A tree structure with provable separation properties (allowing us
-   to skip large parts of search space) is orthogonal to this approach, a
-   hypothetical alien concept with no hooks to fit.
-
-   Parallelisation
-      a) immediately by partitioning into disjoint subgraphs (requiring 2)
-      b) 3) below is paralleziable by node sets.
-      c) 2)
-
-   Is 1) threadable? Perhaps if y is instead taken in bunches of y[t];
-
-
-1) compute a delta graph.
-   How much could below gain us?
-
-      {  V(SHORT) <- ()
-         V(LONG)  <- ()
-
-         TODO     <- V()
-
-         while (TODO) {
-
-            next z from TODO
-
-            todo <- V(SHORT)                    # search all that came before: initialise to complete vector.
-            V(SHORT) += z
-
-                                 # note: probably best to randomise TODO.
-            while (todo) {
-
-               THREAD y over todo[todo != 0] {
-
-                  compute distance(x,y)
-
-                  if d(y,z) < delta then   
-                     add (y,z) to SHORT            # update y-column - thread-safe, one y per thread.
-                     add (z,y) to SHORT            # threads all pin on z; stick in thread-local ivp array.
-                     rm LONG(y,*) from todo        #
-                              # http://stackoverflow.com/questions/8315931/does-writing-the-same-value-to-the-same-memory-location-cause-a-data-race
-                              # setting to zero should work ...
-                                                   #     LONG(y*,*) and LONG(y**,*) may intersect
-
-                  if d(y,z) > 2 delta then
-                     add (y,z) to LONG             # update y-column - thread-safe, one y per thread.
-                     add (z,y) to LONG             # threads all pin on z; stick in thread-local ivparray.
-                     rm SHORT(y,*) from todo       #
-                                                   # see above; setting to 0.0 should work.
-
-               ?  if (y,z) > 3 delta then
-                     add (SHORT(y,*),z) to LONG
-               }
-
-               # add thread-local SHORT(z,) and LONG(z,) arrays to column z;
-               # combine in single ivp array vectorFromIvps.
-            }
-         }
-      }
-
-
-2)    Compute the union of two disjoint delta graphs.
-
-      {  V(SHORT) <- (V_1,)
-         V(LONG)  <- (V_1,)
-
-         TODO     <- V_2()
-
-         while (TODO) {
-
-            next z from TODO
-
-            todo <- left(SHORT)
-
-            while (todo) {
-               next y from todo
-
-               if d(y,z) < delta then   
-                  rm LONG(y,*) from todo
-                  add (y,z) to SHORT
-
-               if (y,z) > 2 delta then
-                  add (y,z) to LONG
-                  rm  SHORT(y,*) from todo
-            }
-         }
-      }
-
-
-      Or is there any use in using 
-
-
-
-3)    Extend a delta graph to a delta + epsilon graph.
-      assume epsilon < delta. Can we utilise the epsilon graph?
-      Yes, given a pair x,y with d(x,y) > delta, we need only
-      consider
-         epsilon(delta(x,*), *) / delta(x,*)
-
-
-
-
-
-understand slink!
-
-#endif
 
 

@@ -274,7 +274,7 @@ struct newicky
 }  ;
 
 
-void* newicky_init
+static void* newicky_init
 (  void* nkp
 )
    {  struct newicky* nk = nkp
@@ -333,7 +333,7 @@ static void compute_trivial_count
 ;  }
 
 
-void compute_branch_factors
+static void compute_branch_factors
 (  mclxCat* cat
 ,  mcxbits  bits
 )
@@ -405,7 +405,7 @@ void compute_branch_factors
 #endif
 
 
-void open_node
+static void open_node
 (  mcxTing* pivot
 ,  mcxbool  json
 )

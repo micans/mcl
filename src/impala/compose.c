@@ -1,6 +1,4 @@
-/*   (C) Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005 Stijn van Dongen
- *   (C) Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012 Stijn van Dongen
- *   (C) Copyright 2013 Stijn van Dongen
+/*   (C) Copyright 1999-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -28,7 +26,7 @@ struct mclIOV
 }  ;
 
 
-void*  mclIOVinit_v
+static void*  mclIOVinit_v
 (  void*   iovp
 )
    {  mclIOV* iov = (mclIOV*) iovp
@@ -213,7 +211,7 @@ struct compose_data
 
 
 
-void compose_thread
+static void compose_thread
 (  mclx* m2
 ,  dim colidx
 ,  void* data

@@ -71,20 +71,16 @@
    following format:}
 
 \verbatim{\:/
-d  d1  d2  N  v  name1  name2  [v50,v75,v90,v95,v99]}
+d  d1  d2  N  name1  name2}
 
 \car{
-   where \v{dT} is the distance between the two clusterings, \v{d1} is the
+   where \v{d} is the distance between the two clusterings, \v{d1} is the
    distance from the first clustering to the greatest common subclustering
    (alternatively called GCS, intersection, or meet) of the two clusterings,
    \v{d2} is similarly the distance from the second clustering to the GCS,
    \v{N} is the number of nodes in the set over which the clusterings are
-   defined, \v{name1} is the name of the file containing the first clustering,
-   \v{name2} is the name of the file containing the second clustering, and
-   \v{vXX} is the number of \it{volatile nodes} at stringency factor \v{0.XX}
-   (i.e. 0.5 for \v{v50}).  Refer to \clmref{vol} for a definition of
-   \it{volatile node}.
-
+   defined, and \v{name1} and \v{name2} are the names of the files from which the
+   clusterings were taken.
 }
 
 \sec{options}{OPTIONS}
@@ -170,7 +166,8 @@ d  d1  d2  N  v  name1  name2  [v50,v75,v90,v95,v99]}
 \par{
    \sjd is a metric distance on the space of partitions of
    a set of a given fixed cardinality. It has the following linearity
-   property. Let \p1 and \p2 be partitions, then}
+   property (shared with the Variation of Information metric and the Mirkin distance).
+   Let \p1 and \p2 be partitions, then}
 
 \par{
    \sjd(\p1, \p2) = \sjd(\p1, \D) + \sjd(\p2, \D)}
@@ -185,7 +182,7 @@ d  d1  d2  N  v  name1  name2  [v50,v75,v90,v95,v99]}
    which the non-trivial triangle inequality is proven).}
 
 \par{
-   Because it is useful to know whether one partition (or clustering)
+   As it is useful to know whether one partition (or clustering)
    is almost a subclustering of the other, \clm{dist} returns the
    two constituents \sjd(\p1,\D) and \sjd(\p2,\D).}
 
@@ -340,10 +337,9 @@ k=3 |        |        |   4,4  |
    would be reason to choose the \v{k=2} setting.}
 
 \par{
-   Note that you need not feel uncomfortable with the clusterings
-   still being different at high resource levels, if ever so slightly.
+   It is not an issue if clusterings still change even at high resource levels.
    In all likelihood, there are anyway nodes which are not in any core of
-   attraction, and that are on the boundary between two or more clusterings.
+   attraction, and that are on the boundary between two or more clusters.
    They may go one way or another, and these are the nodes which
    will go different ways even at high resource levels.
    Such nodes may be stable in clusterings obtained for lower inflation

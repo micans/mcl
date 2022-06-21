@@ -3,9 +3,9 @@
 
 include $(top_srcdir)/include/include.am
 
-bin_PROGRAMS = mcx mcxsubs mcxmap mcxassemble mcxarray \
-						mcxdump mcxload mcxrand
-noinst_PROGRAMS = mcxtest2 mcxtest mcxminusmeet mcxmm mcxmetric
+bin_PROGRAMS = mcx mcxsubs mcxmap mcxarray \
+						mcxdump mcxload
+noinst_PROGRAMS = mcxtest2 mcxtest mcxminusmeet mcxmm mcxmetric mcxrand mcxassemble
 
 EXTRA_DIST = fake mcx.h mcxconvert.h mcxminusmeet.c mcxquery.h mcxdiameter.h mcxclcf.h mcxerdos.h mcxcollect.h mcxtab.h mcxfp.h mcxalter.h
 

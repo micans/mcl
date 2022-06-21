@@ -1,8 +1,38 @@
 
- -  mcxarray unit tests
 
- -  mcxsubs reimplement; mcxi or lex/yacc
-  - consider also tf()
+ -  read matrix market format, optionally gzipped.
+    https://www.gnu.org/software/autoconf-archive/ax_check_zlib.html
+
+ -  integration/unit test
+      mcxarray
+      mcxload  (ahem, see testing)
+      binary format
+    autogenerate. idempotency, some sort of invariant check.
+      mcxload axes
+         -  auto-extension of tabs
+         -  keeping track of maximum index seen (symmetric/directed)
+         -  strict / restrict / extend
+         -  dropping/ignoring of data (restrict)
+         -  labels vs numbers
+         -  symmetric vs directed domains (tabs)
+         -  symmetric vs directed edges
+         -  values vs novalues
+         -  with --expect-values should they always be present?
+            auto-detect values should be possible.
+         -  lots of fixmes in code
+
+ -  per-node and per-cluster modularity
+
+ -  mcxsubs reimplement; mcxi and/or lex/yacc. cellatac one use case.
+ -  consider also mcxalter/tf()
+
+ '  statsReset moved. fresh mcl valgrind
+ '  check mclvIdxVal offset use
+
+ -  mclxVectorDispatch; matrix argument not const. This for e.g. mclxSymReduceDispatch,
+    but perhaps consider the latter and similar (knn reductions) for purge. certainly shrug etc.
+
+ -  update/point README compile instructions
 
  -  mcx{load,dump} restrict tab: report intersect and difference (useful sanity-check feedback for user).
 

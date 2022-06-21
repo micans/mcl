@@ -1,6 +1,4 @@
-/*   (C) Copyright 2001, 2002, 2003, 2004, 2005 Stijn van Dongen
- *   (C) Copyright 2006, 2007, 2008, 2009, 2010 Stijn van Dongen
- *   (C) Copyright 2011, 2012, 2013  Stijn van Dongen
+/*   (C) Copyright 2001-2022 Stijn van Dongen
  *
  * This file is part of MCL.  You can redistribute and/or modify MCL under the
  * terms of the GNU General Public License; either version 3 of the License or
@@ -31,6 +29,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
 
 #include "clm.h"
 #include "report.h"
@@ -47,6 +46,7 @@
 #include "clew/cat.h"
 
 #include "tingea/types.h"
+#include "tingea/alloc.h"
 #include "tingea/err.h"
 #include "tingea/opt.h"
 #include "tingea/minmax.h"
@@ -81,6 +81,23 @@ static double mclx_choose_sum
 ;  }
 
 
+static double flt_decrement
+(  pval     flt
+,  void*    arg
+)
+   {  double factor = *((double*)arg)
+   ;  if (flt > 1.01)
+      return flt - 1.0
+   ;  else
+      return 0.01111111 * factor
+         /* edges (their nodes) may never co-cluster
+          * we put such edges at a sentinel value of about 0.011111.
+          * The returned number will be divided by factor.
+         */
+;  }
+
+
+
 enum
 {  DIST_SPLITJOIN 
 ,  DIST_VARINF
@@ -103,19 +120,21 @@ enum
 ,  DIST_OPT_MODE
 ,  DIST_OPT_INDEX
 ,  DIST_OPT_CHAIN
-,  DIST_OPT_WHEEL
 ,  DIST_OPT_SORT
 ,  DIST_OPT_NORMALISE
 ,  DIST_OPT_MCI
 ,  DIST_OPT_DIGITS
-,  DIST_OPT_FACTOR
+,  DIST_OPT_SELF
 }  ;
 
 
 enum
 {  VOL_OPT_OUTPUT = CLM_DISP_UNUSED
-,  VOL_OPT_FACTOR
-,  VOL_OPT_SMOOTH
+,  VOL_OPT_IMX
+,  VOL_OPT_RCL
+,  VOL_OPT_SELF
+,  VOL_OPT_GI
+,  VOL_OPT_SKEW
 }  ;
 
 static mcxOptAnchor volOptions[] =
@@ -125,17 +144,35 @@ static mcxOptAnchor volOptions[] =
    ,  "<fname>"
    ,  "output file name"
    }
-,  {  "-fraction"
-   ,  MCX_OPT_HASARG
-   ,  VOL_OPT_FACTOR
+,  {  "-rcl-skew"
+   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
+   ,  VOL_OPT_SKEW
    ,  "<num>"
-   ,  "stringency factor: require |meet| >= <num> * |cls-size| (default 0.5)"
+   ,  "skew x in [0-1] as x^num"
    }
-,  {  "--smooth"
-   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
-   ,  VOL_OPT_SMOOTH
+,  {  "--self"
+   ,  MCX_OPT_DEFAULT
+   ,  VOL_OPT_SELF
    ,  NULL
-   ,  "use 1 - |meet| / min(|cl1|, |cl2|) as contribution"
+   ,  "include self-compares (for rcl use)"
+   }
+,  {  "-gi"
+   ,  MCX_OPT_HASARG
+   ,  VOL_OPT_GI
+   ,  "i/N"
+   ,  "compute job i out of N jobs total"
+   }
+,  {  "-imx"
+   ,  MCX_OPT_HASARG
+   ,  VOL_OPT_IMX
+   ,  "<fname>"
+   ,  "read network"
+   }
+,  {  "-write-rcl"
+   ,  MCX_OPT_HASARG
+   ,  VOL_OPT_RCL
+   ,  "<fname>"
+   ,  "output (cross-ensemble) restricted contingency linkage matrix"
    }
 ,  {  NULL ,  0 ,  0 ,  NULL, NULL}
 }  ;
@@ -172,17 +209,17 @@ static mcxOptAnchor distOptions[] =
    ,  "<num>"
    ,  "number of trailing digits for floats"
    }
+,  {  "--self"
+   ,  MCX_OPT_DEFAULT | MCX_OPT_HIDDEN
+   ,  DIST_OPT_SELF
+   ,  NULL
+   ,  "include self-compares (e.g. for heatmaps)"
+   }
 ,  {  "--chain"
    ,  MCX_OPT_DEFAULT
    ,  DIST_OPT_CHAIN
    ,  NULL
    ,  "only compare consecutive clusterings"
-   }
-,  {  "--one-to-many"
-   ,  MCX_OPT_DEFAULT
-   ,  DIST_OPT_WHEEL
-   ,  NULL
-   ,  "compare first clustering against all the rest"
    }
 ,  {  "--sort"
    ,  MCX_OPT_DEFAULT
@@ -196,27 +233,24 @@ static mcxOptAnchor distOptions[] =
    ,  NULL
    ,  "NOT IMPLEMENTED normalise criterion (applicable for --vi and default split/join)"
    }
-,  {  "-fraction"
-   ,  MCX_OPT_HASARG | MCX_OPT_HIDDEN
-   ,  DIST_OPT_FACTOR
-   ,  "<num>"
-   ,  "stringency factor: require |meet| >= <num> * |cls-size| (default 0.5)"
-   }
 ,  {  NULL ,  0 ,  0 ,  NULL, NULL}
 }  ;
 
 
-static mcxIO*  xfout    =  (void*) -1;
+static mcxIO*  xfout    =  NULL;
+static mcxIO*  xfrcl    =  NULL;
+static mcxIO*  xfimx    =  NULL;
 static int digits       =  -1;
 static int mode_g       =  -1;
 static mcxbool i_am_vol =  FALSE;   /* node faithfulness */
-static double  nff_fac  =  FLT_MAX;
-static mcxbool consecutive_g = -1;
-static mcxbool mci_g = -1;
-static mcxbool wheel_g = -1;
-static mcxbool split_g = -1;
-static mcxbool sort_g = -1;
-static mcxbool vol_smooth_g = FALSE;
+static mcxbool consecutive_g = FALSE;
+static mcxbool mci_g    =  FALSE;
+static mcxbool split_g  =  FALSE;
+static mcxbool self_g   =  FALSE;
+static mcxbool sort_g   =  FALSE;
+static double skew_g    =  1.0;
+static unsigned job_N   =  0;
+static unsigned job_i   =  0;
 
 
 static mcxstatus distInit
@@ -225,12 +259,6 @@ static mcxstatus distInit
    {  xfout =  mcxIOnew("-", "w")
    ;  mode_g = 0
    ;  digits = 2
-   ;  nff_fac     =  0.5
-   ;  consecutive_g = FALSE
-   ;  mci_g = FALSE
-   ;  wheel_g = FALSE
-   ;  sort_g = FALSE
-   ;  split_g = FALSE
    ;  return STATUS_OK
 ;  }
 
@@ -239,12 +267,9 @@ static mcxstatus volInit
 (  void
 )
    {  xfout       =  mcxIOnew("-", "w")
+   ;  xfrcl       =  mcxIOnew("out.rcl", "w")
    ;  i_am_vol    =  TRUE
-   ;  nff_fac     =  0.5
    ;  consecutive_g = FALSE
-   ;  mci_g = FALSE
-   ;  wheel_g = FALSE
-   ;  sort_g = FALSE
    ;  return STATUS_OK
 ;  }
 
@@ -254,18 +279,38 @@ static mcxstatus volArgHandle
 ,  const char* val
 )
    {  switch(optid)
-      {  case VOL_OPT_FACTOR
-      :  nff_fac = atof(val)
-      ;  break
-      ;
-
-         case VOL_OPT_OUTPUT
+      {  case VOL_OPT_OUTPUT
       :  mcxIOnewName(xfout, val)
       ;  break
       ;
 
-         case VOL_OPT_SMOOTH
-      :  vol_smooth_g = TRUE
+         case VOL_OPT_SELF
+      :  self_g = TRUE
+      ;  break
+      ;
+
+         case VOL_OPT_SKEW
+      :  skew_g = atof(val)
+      ;  break
+      ;
+
+         case VOL_OPT_RCL
+      :  mcxIOnewName(xfrcl, val)
+      ;  break
+      ;
+
+         case VOL_OPT_GI
+      :  if
+         (  2 != sscanf(val, "%u/%u", &job_i, &job_N)
+         || job_N == 0
+         || job_i >= job_N
+         )
+         mcxDie(1, me, "unable to parse [%s] as i/N, i<N", val)
+      ;  break
+      ;
+
+         case VOL_OPT_IMX
+      :  xfimx = mcxIOnew(val, "r")
       ;  break
       ;
 
@@ -292,8 +337,8 @@ static mcxstatus distArgHandle
       ;  break
       ;
 
-         case DIST_OPT_WHEEL
-      :  wheel_g = TRUE
+         case DIST_OPT_SELF
+      :  self_g = TRUE
       ;  break
       ;
 
@@ -309,11 +354,6 @@ static mcxstatus distArgHandle
 
          case DIST_OPT_SORT
       :  sort_g = TRUE
-      ;  break
-      ;
-
-         case DIST_OPT_FACTOR
-      :  nff_fac = atof(val)
       ;  break
       ;
 
@@ -346,13 +386,28 @@ static mcxstatus distArgHandle
 ;  }
 
 
+static double flt_add_if_left
+(  pval lft
+,  pval rgt
+)
+   {  return lft ?  lft + rgt : 0.0
+;  }
+
+
 static mcxstatus distMain
 (  int                  argc
 ,  const char*          argv[]
 )
    {  int               i
    ;  int a             =  0
-   ;  mclx* nff_scores  =  NULL
+   ;  mclx* vol_scores  =  NULL
+   ;  mclx* mxrcl       =  NULL
+   ;  double one        =  1.0
+   ;  dim n_comparisons =  0
+   ;  dim n_todo_total  =  0
+   ;  dim n_clusterings =  0
+   ;  dim n_thisjob     =  0
+   ;  dim job_milestone =  0
    ;  mcxIO* xfin       =  mcxIOnew("-", "r")
    ;  mcxbits bits      =  MCLX_PRODUCE_PARTITION | MCLX_REQUIRE_DOMSTACK
 
@@ -378,7 +433,15 @@ static mcxstatus distMain
 
    ;  mcxIOopen(xfout, EXIT_ON_FAIL)
 
-   ;  for (a=0;a<argc;a++)
+   ;  if (xfimx)
+      {  mcxIOopen(xfimx, EXIT_ON_FAIL)
+      ;  mcxIOopen(xfrcl, EXIT_ON_FAIL)
+      ;  mxrcl = mclxReadx(xfimx, EXIT_ON_FAIL, MCLX_REQUIRE_GRAPH)
+      ;  mclxUnary(mxrcl, fltxConst, &one)
+      ;  mcxIOclose(xfimx)  /* fixme layout */
+      ;  mcxIOfree(&xfimx)
+   ;  }
+      for (a=0;a<argc;a++)
       {  mcxstatus status
       ;  if (!strcmp(argv[a], "--"))
          {  stptr = &st2
@@ -400,118 +463,114 @@ static mcxstatus distMain
 
    ;  mcxIOfree(&xfdebug)
 
-   ;  if (sort_g)
+   ;  if (sort_g)                     /* fixme only works for single stack */
       mclxCatSortCoarseFirst(&st)
 
    ;  if (i_am_vol && st.n_level)
-      nff_scores
+      vol_scores
       =  mclxCartesian
          (  mclvCanonical(NULL, 1, 1.0)
          ,  mclvClone(st.level[0].mx->dom_rows)
          ,  1.0
          )
 
-   ;  if (mci_g)
+   ;  if (mci_g)     /* tbcont idea is to output mcl matrix with distances */
+
+   ;  n_todo_total =
+      consecutive_g ? stptr1->n_level -1
+      : split_g ? stptr1->n_level * stptr2->n_level
+      : self_g ? stptr1->n_level + (stptr1->n_level * (stptr1->n_level-1)) / 2
+      : (stptr1->n_level * (stptr1->n_level-1)) / 2
+   ;  n_clusterings = 
+      split_g ? stptr1->n_level + stptr2->n_level
+      : stptr1->n_level
+
+   ;  if (clm_progress_g && job_i == 0)
+      mcxTell(me, "starting %d comparisons on %d clusterings", (int) n_todo_total, (int) n_clusterings)
 
    ;  for (i=0;i<stptr1->n_level;i++)
       {  mclx* c1       =  stptr1->level[i].mx
-      ;  int j, jstart  =  split_g ? 0 : i+ 1
-      ;  for (j=jstart; j<stptr2->n_level;j++)
+      ;  int j, jstart  =  split_g ? 0 : i+ (self_g ? 0 : 1)
+      ;  for (j=jstart; j<stptr2->n_level;j++)     /* note stptr2 changes if split_g */
          {  mclx* c2  =  stptr2->level[j].mx
          ;  mclx* meet12, *meet21
          ;  double dist1d, dist2d
          ;  dim dist1i, dist2i
-         ;  dim n_volatile = 0
-         ;  dim nff[5] = { 0, 0, 0, 0, 0 }
+         ;  dim mod_id = job_N ? n_comparisons % job_N : 0
 
+         ;  n_comparisons++
+         ;  if (job_N && mod_id != job_i)
+            continue
+
+         ;  n_thisjob++
          ;  meet12 =  clmContingency(c1, c2)
          ;  meet21 =  mclxTranspose(meet12)
 
-         ;  {  dim k
-            ;  for (k=0;k<N_COLS(meet12);k++)
+         ;  if (i_am_vol)
+            {  dim k
+            ;  if (clm_progress_g)
+               {  if (!job_N)
+                  {  if (i && j==jstart)
+                     fputc('\n', stderr)
+                  ;  fputc('.', stderr)
+               ;  }
+                  else    /* bit of nonsense, but I crave signs of progress */
+                  {  dim mile = (n_thisjob * job_N * 10.0 -1.0) / (n_todo_total + job_N)
+                  ;  if (mile > job_milestone)
+                     {  fputc(" .,=+<>()-"[mile % 10], stderr)
+                     ;  job_milestone = mile
+                  ;  }
+                  }
+            ;  }
+               for (k=0;k<N_COLS(meet12);k++)
                {  dim l
                ;  mclv* ct = meet12->cols+k
                ;  mclv* c1mem = c1->cols+k
                ;  mclv* c2mem = NULL
+
                ;  for (l=0;l<ct->n_ivps;l++)
                   {  ofs c2id = ct->ivps[l].idx
                   ;  double meet_sz = ct->ivps[l].val
                   ;  c2mem = mclxGetVector(c2, c2id, EXIT_ON_FAIL, c2mem)
                   ;  mclp* tivp = NULL
                   ;  dim m
-                  ;  if (vol_smooth_g)
-                     {  mclv* meet = mcldMeet(c1mem, c2mem, NULL)
-                     ;  dim minsize = MCX_MIN(c1mem->n_ivps, c2mem->n_ivps)
-                     ;  for (m=0;m<meet->n_ivps;m++)
-                        {  tivp = mclvGetIvp(nff_scores->cols+0, meet->ivps[m].idx, tivp)
-                        ;  tivp->val += 1.0 - 1.0 * meet->n_ivps / (1.0 * minsize)
+                  ;  mclv* meet = mcldMeet(c1mem, c2mem, NULL)
+                  ;  mclv* nbvec = NULL
+                  ;  dim minsize = MCX_MIN(c1mem->n_ivps, c2mem->n_ivps)
+                  ;  if (mxrcl)
+                     mclvMakeConstant(meet, pow(1.0 * meet->n_ivps / (1.0 * minsize), skew_g))
+
+                  ;  for (m=0;m<meet->n_ivps;m++)
+                     {  dim thenode = meet->ivps[m].idx
+                     ;  tivp = mclvGetIvp(vol_scores->cols+0, thenode, tivp)
+                     ;  tivp->val += pow(1.0 * meet->n_ivps / (1.0 * minsize),skew_g)
+                     ;  if (mxrcl)
+                        {  nbvec = mclxGetVector(mxrcl, thenode, EXIT_ON_FAIL, nbvec)
+                        ;  mclvBinary(nbvec, meet, nbvec, flt_add_if_left)
                      ;  }
-                  ;  }
-                     else if
-                     (  meet_sz < nff_fac * c1mem->n_ivps
-                     && meet_sz < nff_fac * c2mem->n_ivps
-                     )
-                     {  mclv* meet = mcldMeet(c1mem, c2mem, NULL)
-                     ;  if (i_am_vol)
-                        for (m=0;m<meet->n_ivps;m++)
-                        {  tivp = mclvGetIvp(nff_scores->cols+0, meet->ivps[m].idx, tivp)
-                        ;  tivp->val += 1 / (double) meet->n_ivps
-                     ;  }
-                        n_volatile += meet->n_ivps
-                     ;  if (meet->n_ivps != meet_sz)
-                        mcxErr(me, "meet size difference")
-                     ;  mclvFree(&meet)
-                  ;  }
-                     if
-                     (  meet_sz < 0.5 * c1mem->n_ivps
-                     && meet_sz < 0.5 * c2mem->n_ivps
-                     )
-                     nff[0] += meet_sz
-                  ;  if
-                     (  meet_sz < 0.75 * c1mem->n_ivps
-                     && meet_sz < 0.75 * c2mem->n_ivps
-                     )
-                     nff[1] += meet_sz
-                  ;  if
-                     (  meet_sz < 0.90 * c1mem->n_ivps
-                     && meet_sz < 0.90 * c2mem->n_ivps
-                     )
-                     nff[2] += meet_sz
-                  ;  if
-                     (  meet_sz < 0.95 * c1mem->n_ivps
-                     && meet_sz < 0.95 * c2mem->n_ivps
-                     )
-                     nff[3] += meet_sz
-                  ;  if
-                     (  meet_sz < 0.99999 * c1mem->n_ivps
-                     && meet_sz < 0.99999 * c2mem->n_ivps
-                     )
-                     nff[4] += meet_sz
+                     }
+                     mclvFree(&meet)
                ;  }
                }
-               if (i_am_vol)  /* hacked; refactor later */
-               continue
+               mclxFree(&meet12)  /* ugly, duplicate, due to continue. TBFxd */
+            ;  mclxFree(&meet21)  /* ugly, duplicate, due to continue. TBFxd */
+            ;  continue
          ;  }
 
-            if (mode_g == DIST_SPLITJOIN)
+           else
+           {if (mode_g == DIST_SPLITJOIN)
                clmSJDistance(c1, c2, meet12, meet21, &dist1i, &dist2i)
             ,  fprintf
                (  xfout->fp
-               ,  "d=%lu\td1=%lu\td2=%lu\tnn=%ld\tc1=%ld\tc2=%ld\tv=%ld\tn1=%s\tn2=%s\tvol=[%ld,%ld,%ld,%ld,%ld]"
+               ,  "d=%lu\td1=%lu\td2=%lu\tnn=%ld\tc1=%ld\tc2=%ld\tn1=%s\tn2=%s\t"
                ,  (ulong) (dist1i + dist2i)
                ,  (ulong) dist1i
                ,  (ulong) dist2i
                ,  (long) N_ROWS(c1)
                ,  (long) N_COLS(c1)
                ,  (long) N_COLS(c2)
-               ,  (long) n_volatile
                ,  stptr1->level[i].fname->str
                ,  stptr2->level[j].fname->str
-               ,  (long) nff[0]
-               ,  (long) nff[1]
-               ,  (long) nff[2]
-               ,  (long) nff[3]
-               ,  (long) nff[4]
                )
 
          ;  else if (mode_g == DIST_VARINF)
@@ -569,19 +628,55 @@ static mcxstatus distMain
                fprintf(xfout->fp, "\ttag=%s", e)
             ;  fputc('\n', xfout->fp)
          ;  }
+           }
 
             mclxFree(&meet12)
          ;  mclxFree(&meet21)
          ;  if (consecutive_g)
             break
       ;  }
-         if (wheel_g)
-         break
+      }
+
+    ; if (clm_progress_g && job_i == 0)
+      mcxTell(me, "[%d]", (int) n_comparisons)
+
+    ; if (i_am_vol && n_comparisons)
+      {  double factor = n_comparisons / 1000.0
+      ;  mclxUnary(vol_scores, flt_decrement, &factor)
+      ;  mclxUnary(vol_scores, fltxScale, &factor)
+
+      ;  if (clm_progress_g && !job_N) fputc('\n', stderr)
+
+      ;  mclxaWrite(vol_scores, xfout, 4, RETURN_ON_FAIL)
+      ;  mclxFree(&vol_scores)
+      ;  mcxIOclose(xfout)
+
+      ;  if (mxrcl)
+         {  mclxUnary(mxrcl, flt_decrement, &factor)
+         ;  mclxUnary(mxrcl, fltxScale, &factor)
+         ;  mclxWrite(mxrcl, xfrcl, 6, RETURN_ON_FAIL)
+         ;  mcxIOfree(&xfrcl)
+         ;  mclxFree(&mxrcl)
+      ;  }
+      }
+
+      {  dim j
+			;	 for (j=0;j<st.n_level;j++)
+         {  mclxAnnot* an = st.level+j
+         ;  mclxFree(&an->mx)
+         ;  mcxTingFree(&an->fname)
+      ;  }
+         if (st.level) mcxFree(st.level)
+			;	 for (j=0;j<st2.n_level;j++)
+         {  mclxAnnot* an = st2.level+j
+         ;  mclxFree(&an->mx)
+         ;  mcxTingFree(&an->fname)
+      ;  }
+         if (st2.level) mcxFree(st2.level)
+      ;  mcxIOfree(&xfin)
+      ;  mcxIOfree(&xfout)    /* fixme: survey code for vol+dist consistent memory freeing */
    ;  }
 
-      if (i_am_vol)
-      {  mclxaWrite(nff_scores, xfout, 4, RETURN_ON_FAIL)
-   ;  }
       return STATUS_OK
 ;  }
 

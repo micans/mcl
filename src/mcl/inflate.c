@@ -69,7 +69,7 @@ void mclxInflateBoss
       ;  pthread_create
          (  &threads_inflate[i]
          ,  &pthread_custom_attr
-         ,  (void *(*)(void*)) mclvInflateLine
+         ,  mclvInflateLine
          ,  (void *) a
          )
    ;  }
@@ -81,7 +81,7 @@ void mclxInflateBoss
 ;  }
 
 
-void  mclvInflateLine
+void* mclvInflateLine
 (  void *arg
 )
    {  mclvInflateLine_arg *a=  (mclvInflateLine_arg *)  arg
@@ -96,6 +96,7 @@ void  mclvInflateLine
       ;  vecPtr++
    ;  }
       free(a)
+   ;  return NULL
 ;  }
 
 

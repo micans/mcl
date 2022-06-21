@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "mcx.h"
+#include "mcxconvert.h"
 
 #include "tingea/io.h"
 #include "tingea/types.h"

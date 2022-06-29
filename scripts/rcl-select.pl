@@ -13,7 +13,7 @@
 # Only reads STDIN, which should be the output of clm close in --sl mode.  That
 # output encodes the single-linkage join order of a tree.  The script further
 # requires a prefix for file output and a list of resolution sizes.
-
+#
 # --- The first mode of output ---
 # The output is a list of flat clusterings, one for each resolution size.
 # These clusterings usually share clusters between them (i.e. clusters do not
@@ -313,6 +313,7 @@ sub read_full_tree {
   my $header = <>;
   chomp $header;
   my $header_expect = "link\tval\tNID\tANN\tBOB\txcsz\tycsz\txycsz\tiss\tlss\tannid\tbobid";
+  $::N_leaves = 0;    # yes fix up global variable when refactoring.
 
   die "Join order header line not recognised (expect [$header_expect])" unless $header eq $header_expect;
   print STDERR "-- constructing tree:\n";
@@ -347,6 +348,7 @@ sub read_full_tree {
         ,  val => 1000
         ,  ival => 1000
         } ;
+        $::N_leaves++;
      }
      if ($ycsz == 1) {
         $bob =~ /leaf_(\d+)/ || die "Missing leaf (Bob) on line $.\n";
@@ -363,6 +365,7 @@ sub read_full_tree {
         ,  val => 1000
         ,  ival => 1000
         } ;
+        $::N_leaves++ unless $bob eq $ann;
      }
 
      # LSS: largest sub split. keep track of the maximum size of the smaller of
@@ -423,6 +426,8 @@ sub read_full_tree {
      $::L++;
   }
 print STDERR "\n" if $. >= 1000;
+  my $N = scalar (keys %::nodes);
+  print STDERR "-- Have $::N_leaves nodes in join order input\n";
   return [ grep { $::nodes{$_}{size} > 1 } sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree ];
 }
 
@@ -481,7 +486,6 @@ sub flat_cls_collect {
           push @items, @{$::nodes{$nodename}{items}};
 
           if ($nodename ne $name) {
-          # if (defined($flatpick{$name})) 
             push @{$flatpick{$name}{children}}, $nodename;
                # the above depends on the fact that anytime we find items,
                # we are guaranteed that nodename is an immediate subclustering
@@ -552,6 +556,56 @@ die "suprisingly no items for [$ni]\n" if !defined($::nodes{$ni}{items});
   }
 }
 
+
+sub printheatnode {
+
+  my ($pick, $fh, $level, $nodelist, $ni, $parent, $prefix) = @_;
+
+  my @items    = @{$::nodes{$ni}{items}};
+
+  my $sizelimit = $::reslimit;
+
+  my @children = grep { $::nodes{$_}{size} >= $sizelimit } @{$pick->{$ni}{children}};
+  my %childrenitems = map { ($_, 1) } ( map { @{$::nodes{$_}{items}} } @children );
+  my $ival = $::nodes{$ni}{ival};
+  my $ivalminusone = $ival > 0 ? $ival-1 : 0;
+  my $up    = $parent ? $ival - $::nodes{$parent}{ival} : $ival;
+
+  if (!@children) {
+    local $" = ' ';
+    my $N = @items;
+    if ($N) {
+      print $fh "$level\tcls\t$ival\t$N\t$N\t$prefix\t@items\n";
+      return 'x' . sprintf("%04d", $::hmorder++) . "_$level" . ':' . $up;
+    }
+    else {
+      return "";
+    }
+  }
+  else {
+    my @missing = ();
+    my @newick = ();
+    my $index = "A";
+    for (@items) {
+      push @missing, $_ unless defined($childrenitems{$_});
+    }
+    my $I = @items;
+    my $N = @missing;
+    my $l = $level+1;
+
+      # We print this even if $N == 0. One needed consequence is that all and
+      # only residual classes have the letter 'A' in them.
+    print $fh "$l\tresidual\t$ival\t$I\t$N\t$prefix" . "_$index\t@missing\n";
+    $index++;
+
+    for my $nj (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @children ) {
+      printheatnode($pick, $fh, $level+1, [ @$nodelist, $ni ], $nj, $ni, "$prefix" . "_$index");
+      $index++;
+    }
+  }
+}
+
+
 # fixme datasize: embed check/definition properly.
 
 sub print_hierarchy {
@@ -582,6 +636,40 @@ sub print_hierarchy {
   {   printlistnode($pick, \*RESLIST, 1, [], $n, '');
   }
   close(RESLIST);
+}
+
+
+sub print_heatmap_order2 {
+
+  my ($heatname, $pick) = @_;
+     # Forked from print_hierarchy
+  my @huh = grep { !defined($pick->{$_}{level}) } keys %$pick;
+
+  die "No level for @huh\n" if @huh;
+
+  my $sizelimit = $::reslimit;
+  my @toplevelnames = sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} }
+                      grep { $pick->{$_}{level} == 1 && $::nodes{$_}{size} >= $sizelimit } keys %$pick;
+print STDERR "@toplevelnames\n";
+  my %toplevelchildren = map { ($_, 1) } ( map { @{$::nodes{$_}{items}} } @toplevelnames );
+  my @toplevelmissing = ();
+
+  for (0..($::N_leaves-1)) {
+    push @toplevelmissing, $_ if ! defined($toplevelchildren{$_});
+  }
+  open(HEATLIST, ">$heatname") || die "Cannot open $heatname for writing";
+  local $" = ' ';
+  my $N = @toplevelmissing;
+
+  my $index = "A";
+  print HEATLIST "level\ttype\tjoinval\tN1\tN2\tnesting\tnodes\n";
+  print HEATLIST "1\tresidual\t0\t$::N_leaves\t$N\t$index\t@toplevelmissing\n";
+
+  for my $n (@toplevelnames)
+  { $index++;
+    printheatnode($pick, \*HEATLIST, 1, [], $n, '', $index);
+  }
+  close(HEATLIST);
 }
 
 sub get_sibling {
@@ -734,7 +822,7 @@ sub dump_subtree {
 
 
 if ($::prefix =~ s/^\+//) {
-  my $toplevelstack = read_full_tree();
+  my $toplevelstack = read_full_tree();     # this creates $::nodes, needed by dump_subtree.
   dump_subtree($::prefix, $::reslimit);
   exit 0;
 }
@@ -761,7 +849,10 @@ hich_dump($hichpick, $flatpick);
 my $flatname = "$::prefix.hi.$::resolutiontag.txt";
 print_hierarchy('flat', $flatname, $flatpick, $datasizes->[0]);
 
+my $hcname = "$::prefix.hc.$::resolutiontag.txt";
+print_hierarchy('hier', $hcname, $hichpick, $datasizes->[0]);
 
-my $hichname = "$::prefix.hic.$::resolutiontag.txt";
-print_hierarchy('hier', $hichname, $hichpick, $datasizes->[0]);
+my $hmname = "$::prefix.hm.$::resolutiontag.txt";
+$::hmorder = 1;
+print_heatmap_order2($hmname, $flatpick);
 

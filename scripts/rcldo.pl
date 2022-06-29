@@ -5,6 +5,12 @@ use warnings;
 
 my $mode = shift || die "Need mode";
 
+  # Out of pure laziness and spite these are global for now so I don't need to pass them into
+  # newick(). TODO revisit when code stabilises.
+my %hm_tree  = ();
+my %hm_nodes = ( root => { level => 0, type => 'cls', ival => 0, print => 0 } );
+my $hm_order  =  1;
+
 
 if ($mode eq 'cumgra') {
   cumgra();
@@ -20,16 +26,18 @@ elsif ($mode eq 'clstag') {
   print "$tag\n";
 }
 elsif ($mode eq 'heatannot' || $mode eq 'heatannotcls') {
-  die "Need <annotationfile> <partitionhierarchyfile> <tabfile>\n" unless @ARGV == 3;
-  my ($ct, $celltypes) = read_node_annotation_table($ARGV[0]);
-  my $tab = read_tab($ARGV[2]);
+  die "Need <annotationfile> <partitionhierarchyfile> <tabfile> <outputbase>\n" unless @ARGV == 4;
+  my ($fnannot, $fnhier, $fntab, $fnbase) = @ARGV;
+  my ($dfannot, $termlist) = read_node_annotation_table($fnannot);
+  my $tab = read_tab($fntab);
   my $dispatch = $mode eq 'heatannot' ? 'rclph' : 'cls';
-  read_partition_hierarchy($dispatch, $ARGV[1], $ct, $celltypes, $tab);
+  read_partition_hierarchy($dispatch, $fnhier, $dfannot, $termlist, $tab, $fnbase);
 }
 else {
   die "Unknown mode $mode\n";
 }
 
+$::median_warning = 0;
 
 sub get_tag {
 
@@ -117,15 +125,15 @@ sub read_node_annotation_table {
   my @header = split "\t", $header;
   die "No leading tab $header" unless $header[0] eq "";
   shift @header;
-  my %ct = ();
+  my %dfannot = ();
   while (<CT>) {
     chomp;
     my @F = split "\t";
     my $cell = shift @F;
     die "Cardinal error $.\n" unless @F == @header;
-    $ct{$cell} = attach_annotation(\@header, [@F]);
+    $dfannot{$cell} = attach_annotation(\@header, [@F]);
   } close(CT);
-  return (\%ct, \@header);
+  return (\%dfannot, \@header);
 }
 
 sub read_tab {
@@ -141,29 +149,140 @@ sub read_tab {
   return \%tab;
 }
 
+sub get_median {
+  my $ref = shift;
+  my $N = @$ref;
+  if (!$N) {
+    print STDERR "## warning empty array for median\n" if $::median_warning++ < 10;
+    return 0;
+  }
+  my $i = int(($N+1)/2);
+  $i = $N-1 if $i >= $N;
+  return $ref->[$i];
+}
+
+
+  # Used for sorting nodes in dendrogram to ensure same sorting as in input.
+  # e.g. A   B_A   B_B_A   B_B_C  ..... ....   AB_A
+  # TODO revisit this make it less fuzzy.
+sub bycluskey {
+  return length($a) <=> length($b) || $a cmp $b;
+}
+
+
+sub hm_newick {
+  my ($lim, $depth, $key, $branchlength) = @_;
+          # Dangersign NewickSelection.
+          # Below is brittle. The idea is that we never stop at
+          # internal nodes, but only filter on size once at a leaf node. This
+          # ensures (with clearest/simplest/tightest coupling) that our
+          # dendrogram matches the table filtering.  However, the
+          # implementation needs to be more explicit about this (e.g.
+          # is_internal).  The hm_tree, hm_nodes data structures need more
+          # scrutitinising.
+  my @children = grep { !defined($hm_nodes{$_}{size}) || $hm_nodes{$_}{size} >= $lim } sort bycluskey keys %{$hm_tree{$key}};
+  if (!@children) {
+    die "No info for childless node $key\n" unless defined($hm_nodes{$key});
+    die "Leaf key error for $key $hm_order\n" if defined($hm_nodes{$key}) && !defined($hm_nodes{$key}{ival});
+    my ($ival, $level, $type) = map { $hm_nodes{$key}{$_} } qw(ival level type);
+    my $up = $ival - $branchlength;
+# print STDERR "l\t$depth\t$key\t$branchlength\t$ival\t$up\n";
+    return 'x' . sprintf("%04d", $hm_order++) . ".$key" . ':' . $up;
+  }
+  else {
+              # TODO: check ival/pival, definition of up.
+    my $ival = $branchlength;
+    if (defined($hm_nodes{$key}) && !defined($hm_nodes{$key}{ival})) {
+      my @huh = keys %{$hm_nodes{$key}};
+      die "Internal key error for $key $hm_order [@huh]\n"
+    }
+    $ival = $hm_nodes{$key}{ival} if defined($hm_nodes{$key});
+    my $up = $ival - $branchlength;
+# print STDERR "i\t$depth\t$key\t$branchlength\t$ival\t$up\n";
+    my @newick = ();
+    for my $child (@children) {
+      my $nwk = hm_newick($lim, $depth+1, $child, $branchlength + $up);
+      push @newick, $nwk;
+    }
+    return "(" . (join ",", @newick) . "):$up";
+  }
+}
+
 
 sub read_partition_hierarchy {
 
   my $inputmode = shift;
   my $datafile = shift;
-  my $ct  = shift;
-  my $celltypes = shift;
+  my $dfannot  = shift;
+  my $termlist = shift;
   my $tab = shift;
-  my $lim = $ENV{RCLPLOT_HEAT_LIMIT} || 10;
+  my $fnbase   = shift;
+
+  my $lim = $ENV{RCLPLOT_HEAT_LIMIT} || 80;
+  my $restful = defined($ENV{RCLPLOT_HEAT_NOREST}) ? 0 : 1;
 
   open(CLS, "<$datafile") || die "No partition input file\n";
   my %cls = ();
   my $toplevel = 'root';
+  my $nwk = "(";
+
+  my %dfuniverse = ();
+  my $NU = keys %$dfannot;
+  print STDERR "-- computing term universe for $NU terms\n";
+
+  for my $term (@$termlist) {
+    for (sort keys %$dfannot ) {
+      die "No $term score for $_\n" unless defined($dfannot->{$_}{$term});
+      $dfuniverse{$term} += $dfannot->{$_}{$term};
+    }
+  }
+
+  open (GLORIOUS, ">$fnbase.sum.txt") || die "Cannot open frequency output table $fnbase.fq.txt\n";
+  open (FQ, ">$fnbase.fq.txt") || die "Cannot open frequency output table $fnbase.fq.txt\n";
+  open (MP, ">$fnbase.mp.txt") || die "Cannot open mean probability output table $fnbase.mp.txt\n";
+  open (NWK, ">$fnbase.nwk")   || die "Cannot open Newick output table $fnbase.nwk\n";
+  print STDERR "-- computing cluster/term aggregate scores \n";
 
   local $" = "\t";
-  print "Type\tSize\t@$celltypes\n";
+  print FQ "Type\tJoinval\tSize\t@$termlist\n";
+  print MP "Type\tJoinval\tSize\t@$termlist\n";
+  print GLORIOUS "Type\tJoinval\tSize\t@$termlist\n";
+
+  my @bglevel = map { log($dfuniverse{$_}) / log(10) } @$termlist;
+  my @bgsum   = map { $dfuniverse{$_} } @$termlist;
+
+  print MP "NA\tNA\tNA\t@bglevel\n";
+  print FQ "NA\tNA\tNA\t@bglevel\n";
+  print GLORIOUS "NA\tNA\t$NU\t@bgsum\n";
 
     # level, type(rest/cls), Ncls, Nmiss, elements
   while (<CLS>) {
     chomp;
-    my ($level, $type, $N1, $N2, $elems) = (1, 'cls', 0, 0, "");
+    if ($. == 1 && $inputmode eq 'rclph') {
+      die "Header [$_] not matched\n" unless $_ eq "level\ttype\tjoinval\tN1\tN2\tnesting\tnodes";
+      next;
+    }
+    my ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = (1, 'cls', 0, 0, "A", "");
     if ($inputmode eq 'rclph') {
-      ($level, $type, $N1, $N2, $elems) = split "\t";
+      ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = split "\t";
+      $hm_nodes{$nesting}{ival}  = $joinval;
+      $hm_nodes{$nesting}{level} = $level;
+      $hm_nodes{$nesting}{type}  = $type;
+      $hm_nodes{$nesting}{size}  = $N2;
+      $hm_nodes{$nesting}{print} = 1;
+      $hm_tree{$nesting} = {};
+                                                # _A are the residual clusters; their joinval is the
+                                                # joinval for the parent cluster (which we need).
+                                                # Hence we need a _A residual cluster for
+                                                # every non-leaf RCL cluster, even if it is empty.
+      while ($nesting =~ s/^(.*)(_.+?)$/$1/) {
+        $hm_tree{$1}{"$1$2"} = 1;               # Dangersign format dependency.
+        if ($2 eq '_A') {                       # Dangersign even more so.
+          $hm_nodes{$1}{ival}  = $joinval;
+        }
+        $nesting = $1;
+      }
+      $hm_tree{'root'}{$nesting} = 1;
     }
     elsif ($inputmode eq 'cls') {
       $elems = $_;
@@ -171,27 +290,53 @@ sub read_partition_hierarchy {
     else {
       die "Pity\n";
     }
-    my @elems = $elems ? map { $tab->{$_} } split /\s+/, $elems : ();
+    my @elems = length($elems) ? map { $tab->{$_} } split /\s+/, $elems : ();
+    die "Error cls input $.\n" unless $inputmode eq 'cls' || $N2 == @elems;
+
     $N2 = $N1 = @elems unless $N2;    # This is for mode 'cls'.
+    next unless $N2 >= $lim;          # Dangersign; NewickSelection dependency.
+
+    if (@elems <= 1) {
+      print STDERR "## small cluster [$level $type $joinval $N1 $N2 $elems]\n";
+    }
+
     my %df = ();
-    for my $t (@$celltypes) {
-      $df{$t} = 0;
+    for my $t (@$termlist) {
+      my $sum = 0;
       for my $e (@elems) {
         next if $e eq 'dummy';
-die "No $e $t\n" unless defined($ct->{$e}{$t});
-        $df{$t} += $ct->{$e}{$t};
+        die "No $e $t\n" unless defined($dfannot->{$e}{$t});
+        $sum += $dfannot->{$e}{$t};
       }
+      $df{$t}{fq} = log(($sum/$N2) / ($dfuniverse{$t}/$NU));
+      $df{$t}{mp} = $sum ? -log($sum/$N2) / log(10) : 5;
+      $df{$t}{sum} = $sum;
     }
-    my @values = map { $df{$_} } @$celltypes;
-    print "$type\t$N2\t@values\n" if $N2 >= $lim;
+    my @values_fq = map { $df{$_}{fq} } @$termlist;
+    my @values_mp = map { $df{$_}{mp} } @$termlist;
+    my @values_gl = map { $df{$_}{sum}} @$termlist;
+    print FQ "$type\t$joinval\t$N2\t@values_fq\n";
+    print MP "$type\t$joinval\t$N2\t@values_mp\n";
+    print GLORIOUS "$type\t$joinval\t$N2\t@values_gl\n";
+
   } close(CLS);
+
+  if ($inputmode eq 'rclph') {
+    my $nwk = hm_newick($lim, 0, 'root', 0, 0);
+    print NWK "($nwk)\n";
+  }
+
+  close(NWK);
+  close(FQ);
+  close(MP);
+  close(GLORIOUS);
 }
 
 
 sub read_cls {
   my $clsfile = shift;
-  my $ct  = shift;
-  my $celltypes = shift;
+  my $dfannot  = shift;
+  my $termlist = shift;
   my $tab = shift;
 
   open(CLS, "<$clsfile") || die "No cls\n";
@@ -211,9 +356,9 @@ sub read_cls {
     }
     my @elems = map { $tab->{$_} } split /\s+/, $F[7];
     my %df = ();
-    for my $t (@$celltypes) {
+    for my $t (@$termlist) {
       for my $e (@elems) {
-        $df{$t} += $ct->{$e}{$t};
+        $df{$t} += $dfannot->{$e}{$t};
       }
     }
     my $N = @elems;

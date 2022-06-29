@@ -71,6 +71,9 @@ rcl.sh qc  TAG      create (1) heat map of clustering discrepancies and (2) gran
 rcl.sh qc2 TAG      create scatter plot of cluster sizes versus induced mean eccentricity of nodes.
 rcl.sh heatannot TAG  -a annotationfile -c rclheatmapfile (output from rcl select, TAG/rcl.hm*)
 rcl.sh heatannotcls TAG  -a annotationfile -c clustering (in mcl matrix format)
+                    These two modes create a heatmap from an annotation file, where each
+                    node is scored for the same list of traits. Scores are added for each trait and
+                    each cluster by adding all scores for that trait for all nodes in the cluster.
 EOH
   exit $e
 }
@@ -185,7 +188,7 @@ if [[ $themode == 'mcl' ]]; then
   echo "-- Running mcl for inflation values in ($INFLATION)"
   for I in $(tr -s ' ' '\n' <<< "$INFLATION" | sort -rn); do
     echo -n "-- inflation $I start .."
-    mcl $network -I $I -t $cpu --i3 -odir $projectdir
+    mcl $network -I $I -t $cpu --i3 -odir $projectdir ${RCL_MCL_OPTIONS:-}
     echo " done"
   done 2> $projectdir/log.mcl
   echo $projectdir/out.*.I* | tr ' ' '\n' > $projectdir/rcl.lsocls
@@ -278,6 +281,7 @@ elif [[ $themode == 'select' ]]; then
   # export RCL_RES_PLOT_LIMIT=${RCL_RES_PLOT_LIMIT-500}
 
   rcl-select.pl $pfx $RESOLUTION < $pfx.join-order
+  # rcl-select.22-178.pl $pfx $RESOLUTION < $pfx.join-order
 
   echo "-- saving resolution cluster files and"
   echo "-- displaying size of the 20 largest clusters"
@@ -496,23 +500,74 @@ if [[ $themode == heatannotcls ]]; then
   CLUSTERING=$mybase.thecls.txt
   mcxdump -imx $clsinput --dump-rlines --no-values > $CLUSTERING
 fi
-rcldo.pl $themode $ANNOTATION $CLUSTERING $projectdir/rcl.tab > $mybase.txt
-echo "-- file $mybase.txt created"
+
+how=created
+if test_absence $mybase.fq.txt return; then
+  # rcldo.pl $themode $ANNOTATION $CLUSTERING $projectdir/rcl.tab > $mybase.txt
+  rcldo.pl $themode $ANNOTATION $CLUSTERING $projectdir/rcl.tab $mybase
+else
+  how=reused
+fi
+echo "-- file $mybase.fq.txt $how"
 
   R --slave --quiet --silent --vanilla <<EOR
 suppressPackageStartupMessages(library(circlize, warn.conflicts=FALSE))
 suppressPackageStartupMessages(library(ComplexHeatmap, warn.conflicts=FALSE))
-mycol = colorRamp2(c(0, 5, 10, 20, 40, 80), c("darkblue", "purple", "red", "orange", "green", "yellow"))
-g  <- read.table("$mybase.txt", header=T, sep="\t")
-g2 <- g[,3:ncol(g)]
-pdf("$mybase.pdf", width = ${RCLPLOT_X:-8}, height = ${RCLPLOT_Y:-8})
-ht <- Heatmap(t(g2), name = "mat", cluster_rows = FALSE, cluster_columns=FALSE, col=mycol, row_names_gp = gpar(fontsize = ${RCLPLOT_YFTSIZE:-8}))
-options(repr.plot.width = ${RCLPLOT_HM_X:-20}, repr.plot.height = ${RCLPLOT_HM_Y:-14}, repr.plot.res = 100)
+suppressPackageStartupMessages(library(DECIPHER, warn.conflicts=FALSE))           # For newick read
+col_mp    = colorRamp2(c(0, 1, 2, 3, 4, 5), c("darkred", "orange", "lightgoldenrod", "white", "lightblue", "darkblue"))
+col_logit = colorRamp2(c(-2, -1, 0, 1, 2, 4, 6)-4, c("darkblue", "lightblue", "white", "lightgoldenrod", "orange", "red", "darkred"))
+col_freq  = colorRamp2(c(-5,-3,0,1,2,3,5), c("darkblue", "lightblue", "white", "lightgoldenrod", "orange", "red", "darkred"))
+
+g  <- read.table("$mybase.sum.txt", header=T, sep="\t")
+type_bg = as.numeric(g[1,4:ncol(g)])
+g2 <- as.matrix(g[2:nrow(g),4:ncol(g)])
+termsz <- as.numeric(g[1,4:ncol(g)])
+clssz  <- g[2:nrow(g),3]
+totalclssz <- g\$Size[1]
+g3 <- apply(g2, 2, function(x) { x / (clssz/totalclssz)})
+g4 <- apply(g3, 1, function(y) { log(y / termsz) })
+#g3 <- apply(g2, 2, function(x) { x / clssz })
+#g4 <- apply(g3,1, function(y) { -log(totalclssz * y / termsz) })
+
+pdf("$mybase.fq.pdf", width = ${RCLPLOT_X:-8}, height = ${RCLPLOT_Y:-8})
+
+myclr <- col_freq
+
+r  <- FALSE             # Either FALSE or a dendrogram ...
+
+if ("$themode" == 'heatannot') {
+  r  <- ReadDendrogram("$mybase.nwk")
+  if (nobs(r) != ncol(g4)) {
+    print(paste("Check rcl.sh select/heatannot runs had matching parameters RCLPLOT_HEAT_LIMIT RCLPLOT_HEAT_NOREST"))
+    stop(sprintf("Dendrogram has %d elements, table $mybase.sum.txt has %d elements", nobs(r), ncol(g4)))
+  }
+  # fixme: check dendrogram order AGAIN.
+  g4 <- g4[,order(order.dendrogram(r))]
+}
+
+  ## the first value is the first residual cluster, usually much larger than the rest.
+clr_size = colorRamp2(c(0, median(g\$Size[-1]), max(g\$Size[-c(1,2)])), c("white", "lightgreen", "darkgreen"))
+clr_type = colorRamp2(c(0, median(type_bg), max(type_bg)), c("white", "plum1", "purple4"))
+size_ha  = HeatmapAnnotation(Size = g\$Size[-1], col=list(Size=clr_size))
+type_ha  = HeatmapAnnotation(Type = type_bg, col=list(Type=clr_type), which='row')
+ht <- Heatmap(g4, name = "${RCLHM_NAME:-Heat}",
+  column_title = "${RCLHM_XTITLE:-Clusters}", row_title = "${RCLHM_YTITLE:-Annotation}",
+  cluster_rows = ${RCLHM_ROWCLUSTER:-FALSE},
+  cluster_columns= r,
+  top_annotation = size_ha,
+  right_annotation = type_ha,
+  col=myclr,
+  row_names_gp = gpar(fontsize = ${RCLPLOT_YFTSIZE:-8}),
+  show_column_names = FALSE,
+  row_labels=lapply(rownames(g4), function(x) { substr(x, 1, ${RCLPLOT_YLABELMAX:-20}) }))
+
+options(repr.plot.width = ${RCLPLOT_HM_X:-20}, repr.plot.height = ${RCLPLOT_HM_Y:-16}, repr.plot.res = 100)
 ht = draw(ht)
 invisible(dev.off())
 EOR
 
-echo "-- file $mybase.pdf created"
+echo "-- file $mybase.fq.pdf created"
+echo "-- file $mybase.mp.pdf created"
 
 fi
 

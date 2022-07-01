@@ -526,32 +526,32 @@ clssz  <- g[2:nrow(g),3]
 totalclssz <- g\$Size[1]
 g3 <- apply(g2, 2, function(x) { x / (clssz/totalclssz)})
 g4 <- apply(g3, 1, function(y) { log(y / termsz) })
-#g3 <- apply(g2, 2, function(x) { x / clssz })
-#g4 <- apply(g3,1, function(y) { -log(totalclssz * y / termsz) })
-
-pdf("$mybase.fq.pdf", width = ${RCLPLOT_X:-8}, height = ${RCLPLOT_Y:-8})
-
-myclr <- col_freq
+h4 <- t(apply(g2, 2, function(x) { -log10(x / (clssz)) }))
 
 r  <- FALSE             # Either FALSE or a dendrogram ...
-
 if ("$themode" == 'heatannot') {
   r  <- ReadDendrogram("$mybase.nwk")
   if (nobs(r) != ncol(g4)) {
-    print(paste("Check rcl.sh select/heatannot runs had matching parameters RCLPLOT_HEAT_LIMIT RCLPLOT_HEAT_NOREST"))
     stop(sprintf("Dendrogram has %d elements, table $mybase.sum.txt has %d elements", nobs(r), ncol(g4)))
   }
-  # fixme: check dendrogram order AGAIN.
-  g4 <- g4[,order(order.dendrogram(r))]
+  # used to have/need this: complete dendrogram/matrix ordering understanding still pending.
+  # g4 <- g4[,order(order.dendrogram(r))]
 }
+
+for (transform in c("fq", "mp")) {
+pdf(sprintf("$mybase.%s.pdf", transform), width = ${RCLPLOT_X:-8}, height = ${RCLPLOT_Y:-8})
+
+myclr <- col_freq
+obj <- g4
+if (transform == "mp") { myclr <- col_mp; obj <- h4 }
 
   ## the first value is the first residual cluster, usually much larger than the rest.
 clr_size = colorRamp2(c(0, median(g\$Size[-1]), max(g\$Size[-c(1,2)])), c("white", "lightgreen", "darkgreen"))
 clr_type = colorRamp2(c(0, median(type_bg), max(type_bg)), c("white", "plum1", "purple4"))
-size_ha  = HeatmapAnnotation(Size = g\$Size[-1], col=list(Size=clr_size))
-type_ha  = HeatmapAnnotation(Type = type_bg, col=list(Type=clr_type), which='row')
-ht <- Heatmap(g4, name = "${RCLHM_NAME:-Heat}",
-  column_title = "${RCLHM_XTITLE:-Clusters}", row_title = "${RCLHM_YTITLE:-Annotation}",
+size_ha  = HeatmapAnnotation("Cluster size" = g\$Size[-1], col=list("Cluster size"=clr_size))
+type_ha  = HeatmapAnnotation("Annot" = type_bg, col=list("Annot"=clr_type), which='row')
+ht <- Heatmap(obj, name = "${RCLHM_NAME:-Heat}",
+  column_title = "${RCLHM_XTITLE:-Clusters}", # row_title = "${RCLHM_YTITLE:-Annotation}",
   cluster_rows = ${RCLHM_ROWCLUSTER:-FALSE},
   cluster_columns= r,
   top_annotation = size_ha,
@@ -559,11 +559,12 @@ ht <- Heatmap(g4, name = "${RCLHM_NAME:-Heat}",
   col=myclr,
   row_names_gp = gpar(fontsize = ${RCLPLOT_YFTSIZE:-8}),
   show_column_names = FALSE,
-  row_labels=lapply(rownames(g4), function(x) { substr(x, 1, ${RCLPLOT_YLABELMAX:-20}) }))
+  row_labels=lapply(rownames(obj), function(x) { substr(x, 1, ${RCLPLOT_YLABELMAX:-20}) }))
 
 options(repr.plot.width = ${RCLPLOT_HM_X:-20}, repr.plot.height = ${RCLPLOT_HM_Y:-16}, repr.plot.res = 100)
 ht = draw(ht)
 invisible(dev.off())
+}
 EOR
 
 echo "-- file $mybase.fq.pdf created"

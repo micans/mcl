@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use Scalar::Util qw(looks_like_number);
 
 my $mode = shift || die "Need mode";
 
@@ -18,6 +19,11 @@ if ($mode eq 'cumgra') {
 elsif ($mode eq 'distwrangle') {
   distwrangle();
 }
+elsif ($mode eq 'label') {
+  die "Need <tabfile>\n" unless @ARGV == 1;
+  my $tabfile = shift;
+  labelwrangle($tabfile);
+}
 elsif ($mode eq 'clstag') {
   die "Need file name\n" unless @ARGV == 1;
   my $tag = get_tag(@ARGV);
@@ -30,7 +36,7 @@ elsif ($mode eq 'heatannot' || $mode eq 'heatannotcls') {
   my ($fnannot, $fnhier, $fntab, $fnbase) = @ARGV;
   my ($dfannot, $termlist) = read_node_annotation_table($fnannot);
   my $tab = read_tab($fntab);
-  my $dispatch = $mode eq 'heatannot' ? 'rclph' : 'cls';
+  my $dispatch = $mode eq 'heatannot' ? 'rclhm' : 'cls';
   read_partition_hierarchy($dispatch, $fnhier, $dfannot, $termlist, $tab, $fnbase);
 }
 else {
@@ -47,6 +53,49 @@ sub get_tag {
   return $1;
 }
 
+
+sub labelwrangle {
+  my $tabfile = shift;
+  my $tab = read_tab($tabfile);
+  
+  my $header = <>;
+  chomp $header;
+  my @header = split "\t", $header;
+  my $N = @header;
+  my %mapcount = ();
+
+  my $node_index = 0;
+  for (@header) {
+    last if $_ eq 'nodes';
+    $node_index++;
+  }
+  die "No nodes column found\n" unless $node_index < $N;
+  while (<>) {
+    chomp;
+            # -1 below is to retain empty fields.
+    my @F = split "\t", $_, -1;
+    my $NF = @F;
+    die "Column count mismatch ($N/$NF) on line $.\n" unless $N == $NF;
+    my $nodelist = $F[$node_index];
+    my @labels = ();
+    for my $n (split " ", $nodelist, -1) {
+      die "Weird entry [$n] on line $.\n" unless $n =~ /^[0-9]+$/;
+      die "[$n] not present in tab on line $.\n" unless defined($tab->{$n});
+      push @labels, $tab->{$n};
+      $mapcount{$n}++;
+    }
+    $F[$node_index] = join " ", @labels;
+    local $" = "\t";
+    print "@F\n";
+  }
+  my %hist = ( 0 => 0 );
+  for (values %mapcount) {
+    $hist{$_}++;
+  }
+  for (sort { $a <=> $b } keys %hist) {
+    printf STDERR "%6d keys were mapped %d times\n", $hist{$_}, $_;
+  }
+}
 
 sub distwrangle {
 
@@ -224,7 +273,6 @@ sub read_partition_hierarchy {
   open(CLS, "<$datafile") || die "No partition input file\n";
   my %cls = ();
   my $toplevel = 'root';
-  my $nwk = "(";
 
   my %dfuniverse = ();
   my $NU = keys %$dfannot;
@@ -238,32 +286,26 @@ sub read_partition_hierarchy {
   }
 
   open (GLORIOUS, ">$fnbase.sum.txt") || die "Cannot open frequency output table $fnbase.fq.txt\n";
-  open (FQ, ">$fnbase.fq.txt") || die "Cannot open frequency output table $fnbase.fq.txt\n";
-  open (MP, ">$fnbase.mp.txt") || die "Cannot open mean probability output table $fnbase.mp.txt\n";
   open (NWK, ">$fnbase.nwk")   || die "Cannot open Newick output table $fnbase.nwk\n";
   print STDERR "-- computing cluster/term aggregate scores \n";
 
   local $" = "\t";
-  print FQ "Type\tJoinval\tSize\t@$termlist\n";
-  print MP "Type\tJoinval\tSize\t@$termlist\n";
   print GLORIOUS "Type\tJoinval\tSize\t@$termlist\n";
 
   my @bglevel = map { log($dfuniverse{$_}) / log(10) } @$termlist;
   my @bgsum   = map { $dfuniverse{$_} } @$termlist;
 
-  print MP "NA\tNA\tNA\t@bglevel\n";
-  print FQ "NA\tNA\tNA\t@bglevel\n";
   print GLORIOUS "NA\tNA\t$NU\t@bgsum\n";
 
     # level, type(rest/cls), Ncls, Nmiss, elements
   while (<CLS>) {
     chomp;
-    if ($. == 1 && $inputmode eq 'rclph') {
+    if ($. == 1 && $inputmode eq 'rclhm') {
       die "Header [$_] not matched\n" unless $_ eq "level\ttype\tjoinval\tN1\tN2\tnesting\tnodes";
       next;
     }
     my ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = (1, 'cls', 0, 0, "A", "");
-    if ($inputmode eq 'rclph') {
+    if ($inputmode eq 'rclhm') {
       ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = split "\t";
       $hm_nodes{$nesting}{ival}  = $joinval;
       $hm_nodes{$nesting}{level} = $level;
@@ -308,27 +350,19 @@ sub read_partition_hierarchy {
         die "No $e $t\n" unless defined($dfannot->{$e}{$t});
         $sum += $dfannot->{$e}{$t};
       }
-      $df{$t}{fq} = log(($sum/$N2) / ($dfuniverse{$t}/$NU));
-      $df{$t}{mp} = $sum ? -log($sum/$N2) / log(10) : 5;
       $df{$t}{sum} = $sum;
     }
-    my @values_fq = map { $df{$_}{fq} } @$termlist;
-    my @values_mp = map { $df{$_}{mp} } @$termlist;
     my @values_gl = map { $df{$_}{sum}} @$termlist;
-    print FQ "$type\t$joinval\t$N2\t@values_fq\n";
-    print MP "$type\t$joinval\t$N2\t@values_mp\n";
     print GLORIOUS "$type\t$joinval\t$N2\t@values_gl\n";
 
   } close(CLS);
 
-  if ($inputmode eq 'rclph') {
+  if ($inputmode eq 'rclhm') {
     my $nwk = hm_newick($lim, 0, 'root', 0, 0);
     print NWK "($nwk)\n";
   }
 
   close(NWK);
-  close(FQ);
-  close(MP);
   close(GLORIOUS);
 }
 

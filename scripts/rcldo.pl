@@ -13,8 +13,8 @@ my %hm_nodes = ( root => { level => 0, type => 'cls', ival => 0, print => 0 } );
 my $hm_order  =  1;
 
 
-if ($mode eq 'cumgra') {
-  cumgra();
+if ($mode eq 'granul') {
+  granul();
 }
 elsif ($mode eq 'distwrangle') {
   distwrangle();
@@ -119,7 +119,7 @@ sub distwrangle {
 }
 
 
-sub cumgra {
+sub granul {
 
   my @x = 0..80;
 
@@ -304,7 +304,7 @@ sub read_partition_hierarchy {
       die "Header [$_] not matched\n" unless $_ eq "level\ttype\tjoinval\tN1\tN2\tnesting\tnodes";
       next;
     }
-    my ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = (1, 'cls', 0, 0, "A", "");
+    my ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = (1, 'cls', 0, 0, 0, "A", "");
     if ($inputmode eq 'rclhm') {
       ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = split "\t";
       $hm_nodes{$nesting}{ival}  = $joinval;
@@ -364,46 +364,6 @@ sub read_partition_hierarchy {
 
   close(NWK);
   close(GLORIOUS);
-}
-
-
-sub read_cls {
-  my $clsfile = shift;
-  my $dfannot  = shift;
-  my $termlist = shift;
-  my $tab = shift;
-
-  open(CLS, "<$clsfile") || die "No cls\n";
-  my $header = <CLS>;
-  chomp $header;
-  my %cls = ();
-  my $toplevel = 'root';
-  die "Header error\n" unless $header eq "level\tsize\tjoinval\tpctloss\tup\tdown\tnesting\tnodes";
-  while (<CLS>) {
-    chomp;
-    my @F = split "\t";
-    my $nesting = $F[6];
-    next if $nesting eq 'root';
-    if ($nesting !~ /^$toplevel/) {
-      print "\n";
-      $toplevel = $nesting;
-    }
-    my @elems = map { $tab->{$_} } split /\s+/, $F[7];
-    my %df = ();
-    for my $t (@$termlist) {
-      for my $e (@elems) {
-        $df{$t} += $dfannot->{$e}{$t};
-      }
-    }
-    my $N = @elems;
-    my @o = sort { $df{$b} <=> $df{$a} } keys %df;
-    my $result = join "\t", map { my $t = $o[$_]; "$t\t$df{$t}" } 0..1;
-    my $score  = sprintf("%.2f", $df{$o[0]} / $df{$o[1]});
-    $nesting =~ s/L\d+_//g;
-    $nesting =~ s/::/:/g;
-    my $margin = defined($ENV{RCL_MARGIN}) ? $ENV{RCL_MARGIN} : 40;
-    printf "%-*s\t%s\t%s\n", $margin, $nesting, $score, $result;
-  } close(CLS);
 }
 
 

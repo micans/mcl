@@ -4,7 +4,82 @@ use strict;
 use warnings;
 use Scalar::Util qw(looks_like_number);
 
-my $mode = shift || die "Need mode";
+%::help = ( clstag => <<EOH
+clstag FILENAME
+    FILENAME will generally contain a clustering in mcl matrix format.
+    Expects FILENAME to contain the pattern [rI]\\d{2,}, that is, the letter
+    r or I followed by at least two digits; these are taken to encode either
+    a resolution parameter (Leiden) or an inflation parameter (mcl).
+    This outputs the number found. If the environment variable RCLPLOT_PARAM_SCALE
+    is set the result is first divided by 10 ** RCLPLOT_PARAM_SCALE .
+EOH
+    ,       label => <<EOH
+label TABFILE <STDIN>
+    Reads STDIN.  Expects a header line containing a column name 'nodes'.  Each
+    field in the nodes column is expected to be a space-separated list of
+    indexes. This mode replaces the indexes with the corresponding labels and
+    copies the rest of the input verbatim.
+    TABFILE: mcl tab file containing label mapping.
+EOH
+    ,       distwrangle => <<EOH
+distwrangle NUM <STDIN>
+    Reads STDIN which should be clmdist output.  Each line of that output
+    refers to two file names, both encoding clusterings.  The file names are
+    parsed for resolution parameter information as under clstag.
+    NUM: total number of nodes
+EOH
+    ,       granul => <<EOH
+granul FILENAME
+    FILENAME should contain a clustering in mcl matrix format.  expects
+    FILENAME to contain the same infix as described under clstag (r\\d{2,} or
+    I\\d{2,}).  Outputs cumulative fractional proportion of nodes contained in
+    cluster of size <= x.
+    Used by: rcl.sh qc
+EOH
+    ,       'heatannot[cls]' => <<EOH
+heatannot[cls] ANNOTATIONFILE PARTITIONFILE TABFILE outputbase
+    ANNOTATIONFILE e.g. output as from celltypist (however, tab-separated rather than csv)
+      A rectangular matrix; column names are terms, row names are cell barcodes, the data
+      are scores for each barcode/term combination.
+    PARTITIONFILE Either an rcl output file rcl.hm.* (heatmap-ready data produced by
+      rcl.sh select) in mode heatannot
+      or an mcl clustering in mode heatannotcls
+    TABFILE mcl tab file containing label mapping.
+    outputbase prefix for output
+    Used by: rcl-qc.sh heatannot[cls]
+EOH
+);
+
+sub help {
+  my $mode = shift;
+  if (defined($::help{$mode})) {
+    print "$::help{$mode}\n";
+    exit 0;
+  }
+  else {
+    if ($mode eq 'all') {
+print <<EOH;
+Usage:
+$::help{clstag}
+$::help{label}
+$::help{distwrangle}
+$::help{granul}
+$::help{'heatannot[cls]'}
+EOH
+      exit 0;
+    }
+    else {
+      print <<EOH;
+Available modes:
+  clstag label granul distwrangle heatannot heatannotcls
+  Use rcldo.pl MODE for descriptions
+EOH
+      exit 1;
+    }
+  }
+}
+
+my $mode = shift || help('all');
 
   # Out of pure laziness and spite these are global for now so I don't need to pass them into
   # newick(). TODO revisit when code stabilises.
@@ -12,6 +87,12 @@ my %hm_tree  = ();
 my %hm_nodes = ( root => { level => 0, type => 'cls', ival => 0, print => 0 } );
 my $hm_order  =  1;
 
+  # This depends on all modes needing at least one argument.
+if (!@ARGV) {
+                           # it makes sense in a limited and specific way.
+  $mode = 'heatannot[cls]' if $mode eq 'heatannot' || $mode eq 'heatannotcls';
+  help($mode);
+}
 
 if ($mode eq 'granul') {
   granul();
@@ -32,6 +113,7 @@ elsif ($mode eq 'clstag') {
   print "$tag\n";
 }
 elsif ($mode eq 'heatannot' || $mode eq 'heatannotcls') {
+  die "Need file name\n" unless @ARGV == 1;
   die "Need <annotationfile> <partitionhierarchyfile> <tabfile> <outputbase>\n" unless @ARGV == 4;
   my ($fnannot, $fnhier, $fntab, $fnbase) = @ARGV;
   my ($dfannot, $termlist) = read_node_annotation_table($fnannot);
@@ -78,11 +160,16 @@ sub labelwrangle {
     die "Column count mismatch ($N/$NF) on line $.\n" unless $N == $NF;
     my $nodelist = $F[$node_index];
     my @labels = ();
-    for my $n (split " ", $nodelist, -1) {
-      die "Weird entry [$n] on line $.\n" unless $n =~ /^[0-9]+$/;
-      die "[$n] not present in tab on line $.\n" unless defined($tab->{$n});
-      push @labels, $tab->{$n};
-      $mapcount{$n}++;
+    if ($nodelist eq '-') {
+      push @labels, '-';
+    }
+    else {
+      for my $n (split " ", $nodelist, -1) {
+        die "Weird entry [$n] on line $.\n" unless $n =~ /^[0-9]+$/;
+        die "[$n] not present in tab on line $.\n" unless defined($tab->{$n});
+        push @labels, $tab->{$n};
+        $mapcount{$n}++;
+      }
     }
     $F[$node_index] = join " ", @labels;
     local $" = "\t";
@@ -365,5 +452,6 @@ sub read_partition_hierarchy {
   close(NWK);
   close(GLORIOUS);
 }
+
 
 

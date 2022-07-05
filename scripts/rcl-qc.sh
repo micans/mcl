@@ -28,15 +28,22 @@ do_force=false        # -F (for mode 'tree')
 function usage() {
   local e=$1
   cat <<EOH
-This program provides qc/reporting modes additional to rcl.sh, where TAG is an
-rcl project directory. It has some in-line R code to create plots (not pretty,
-but there are reasons, e.g. file transformations are needed before the R code
-can be invoked).  Should you find it useful and wish to change the R code, you
-can simply make those changes in (bespoke copies of) this program.
+This program provides qc/reporting modes additional to rcl.sh, where TAG is an rcl project
+directory. It has some in-line R code to create plots (not pretty, but there are reasons, e.g. file
+transformations are needed before the R code can be invoked).  Should you find it useful and wish to
+change the R code, you can simply make those changes in (bespoke copies of) this program.  Several
+options can be changed from the command line:
+
+  RCLPLOT_YFTSIZE=6 RCLHM_XTITLE="My Title" rcl-qc.sh heatannot TAG -a file1 -c file2
+
+Options that can not be set this way currently are colour schemes, some dimensions as well as many
+other things.  To find out what options can be set I'm afraid the best solution is to look inside
+the script. Suggestions/patches / wholesale better ideas are welcome.
 
 rcl-qc.sh qc  TAG      create (1) heat map of clustering discrepancies and (2) granularity plot.
 
 rcl-qc.sh qc2 TAG      create scatter plot of cluster sizes versus induced mean eccentricity of nodes.
+                       This is compute intensive and benefits from multiple CPUs (-p option).
 
 rcl-qc.sh heatannot    TAG  -a annotationfile -c rclheatmapfile (output from rcl select, TAG/rcl.hm*)
 rcl-qc.sh heatannotcls TAG  -a annotationfile -c clustering (in mcl matrix format)
@@ -44,6 +51,15 @@ rcl-qc.sh heatannotcls TAG  -a annotationfile -c clustering (in mcl matrix forma
                        These two modes create a heatmap from an annotation file, where each
                        node is scored for the same list of traits. Scores are added for each trait and
                        each cluster by adding all scores for that trait for all nodes in the cluster.
+
+                       Annotation file should be rectangular tab-separated, with a header line
+                       for the trait/class names and with row names the same as the labels in TAG/rcl.tab.
+                       Thus row names represent nodes/cells/barcodes, and A[i,j] is the score for
+                       class j for node i.
+
+                       Additional options:
+                       -x infix     adds infix to the output file.
+
 R libraries required:
 qc and qc2: ggplot2 viridis
 heatannot and heatannotcls: circlize ComplexHeatmap DECIPHER

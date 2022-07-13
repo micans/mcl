@@ -17,12 +17,15 @@
 
 set -euo pipefail
 
-themode=              # first argument, mode 'qc' 'qc2' 'heatannot' or 'heatannotcls'
+themode=              # first argument, mode 'qc' 'qc2' 'heatannot'
 projectdir=           # second argument, for all modes.
 infix='infix'         # -x infix, a secondary tag
 cpu=1                 # -p NUM
 ANNOTATION=           # -a FNAME annotation file
-CLUSTERING=           # -c FNAME clustering file
+CLUSTERING=           # -c FNAME clustering file (mcl format)
+HIERARCHY=            # -h FNAME hierarchy file  (rcl.hm*)
+COUNTMATRIX=          # -d FNAME data file
+GENENAMES=            # -g FNAME row names for COUNTMATRIX
 do_force=false        # -F (for mode 'tree')
 
 function usage() {
@@ -45,10 +48,10 @@ rcl-qc.sh qc  TAG      create (1) heat map of clustering discrepancies and (2) g
 rcl-qc.sh qc2 TAG      create scatter plot of cluster sizes versus induced mean eccentricity of nodes.
                        This is compute intensive and benefits from multiple CPUs (-p option).
 
-rcl-qc.sh heatannot    TAG  -a annotationfile -c rclheatmapfile (output from rcl select, TAG/rcl.hm*)
-rcl-qc.sh heatannotcls TAG  -a annotationfile -c clustering (in mcl matrix format)
+rcl-qc.sh heatannot    TAG  -a annotationfile -h rclhierarchyfile (output from rcl select, TAG/rcl.hm*)
+rcl-qc.sh heatannot    TAG  -a annotationfile -c clustering (in mcl matrix format)
 
-                       These two modes create a heatmap from an annotation file, where each
+                       This mode creates a heatmap from an annotation file, where each
                        node is scored for the same list of traits. Scores are added for each trait and
                        each cluster by adding all scores for that trait for all nodes in the cluster.
 
@@ -60,9 +63,15 @@ rcl-qc.sh heatannotcls TAG  -a annotationfile -c clustering (in mcl matrix forma
                        Additional options:
                        -x infix     adds infix to the output file.
 
+rcl-qc.sh quickmark    TAG -d countmatrixfile -g generownamesfile -h rclhierarchyfile
+rcl-qc.sh quickmark    TAG -d countmatrixfile -g generownamesfile -c clustering
+
+                       Additional options:
+                       -x infix     adds infix to the output file.
+
 R libraries required:
 qc and qc2: ggplot2 viridis
-heatannot and heatannotcls: circlize ComplexHeatmap DECIPHER
+heatannot: circlize ComplexHeatmap DECIPHER
 
 MCL sibling programs required:
 mcx mcxdump rcldo.pl clxdo
@@ -70,7 +79,7 @@ EOH
   exit $e
 }
 
-MODES="qc qc2 heatannot heatannotcls"
+MODES="qc qc2 heatannot quickmark"
 
 function require_mode() {
   local mode=$1
@@ -125,7 +134,7 @@ function test_absence () {
 
 require_mode "${1-}"          # themode now set
 shift 1
-if grep -qFw $themode <<< "qc qc2 heatannot heatannotcls"; then
+if grep -qFw $themode <<< "qc qc2 heatannot quickmark"; then
   require_tag $themode "${1-}"   # projectdir now set
   shift 1
 fi
@@ -138,16 +147,19 @@ require_file "$pfx.tab" "tab file $pfx.nitems is missing"
 echo -- "$themode $projectdir $@" >> $pfx.qcline
 
 
-while getopts :a:c:p:x:F opt
+while getopts :a:c:d:g:h:p:x:F opt
 do
     case "$opt" in
     a) ANNOTATION=$OPTARG ;;
     c) CLUSTERING=$OPTARG ;;
+    d) COUNTMATRIX=$OPTARG ;;
+    g) GENENAMES=$OPTARG ;;
+    h) HIERARCHY=$OPTARG ;;
     p) cpu=$OPTARG ;;
     x) infix=$OPTARG ;;
     F) do_force=true ;;
-    :) echo "Flag $OPTARG needs argument" exit 1 ;;
-    ?) echo "Flag $OPTARG unknown" exit 1 ;;
+    :) echo "Flag $OPTARG needs argument"; exit 1 ;;
+    ?) echo "Flag $OPTARG unknown"; exit 1 ;;
    esac
 done
 
@@ -190,7 +202,7 @@ if [[ $themode == 'qc' ]]; then
   out_heat_pdf=${out_heat_txt%.txt}.pdf
   ( echo -e "d\tP1\tP2"; clm dist "${cls[@]}" | rcldo.pl distwrangle $(cat $pfx.nitems) ) > $out_heat_txt # \
 
-  R --slave --quiet --silent --vanilla <<EOR
+  R --no-echo --quiet --silent --vanilla <<EOR
 library(ggplot2, warn.conflicts=FALSE)
 library(viridis, warn.conflicts=FALSE)
 
@@ -223,7 +235,7 @@ EOR
   for fname in "${cls[@]}"; do
     clxdo gra $fname | tr -s ' ' '\n' | tail -n +2 | rcldo.pl granul $fname $(cat $pfx.nitems)
   done > "$out_gra_txt"
-  R --slave --quiet --silent --vanilla <<EOR
+  R --no-echo --quiet --silent --vanilla <<EOR
 library(ggplot2, warn.conflicts=FALSE)
 
 mytheme = theme(plot.title = element_text(hjust = 0.5),
@@ -282,7 +294,7 @@ elif [[ $themode == 'qc2' ]]; then
 
   out_qc2_pdf=$pfx.qc2all.pdf
 
-  R --slave --quiet --silent --vanilla <<EOR
+  R --no-echo --quiet --silent --vanilla <<EOR
 library(ggplot2, warn.conflicts=FALSE)
 library(viridis, warn.conflicts=FALSE)
 d <- read.table("$pfx.qc2all.txt")
@@ -302,40 +314,48 @@ EOR
   echo "-- file $out_qc2_pdf created"
 
 
-elif [[ $themode == 'heatannot' || $themode == 'heatannotcls' ]]; then
+elif [[ $themode == 'heatannot' ]]; then
 
-require_opt $themode -c "$CLUSTERING" "an rcl.hm.*.txt file or clustering in mcl matrix format"
 require_opt $themode -a "$ANNOTATION" "an annotation table with header line, row names as in tab file"
-
-require_file "$CLUSTERING" "(file $projectdir/rcl.hm.*.txt for heatannot or clustering in mcl matrix format for heatannotcls)"
+if (( n_req )); then exit 1; fi
 require_file "$ANNOTATION" "an annotation table with header line, row names as in tab file"
 
 mybase=$projectdir/hm${infix:+.$infix}
 
-if [[ $themode == heatannotcls ]]; then
-  clsinput=$CLUSTERING
-  CLUSTERING=$mybase.thecls.txt
-  mcxdump -imx $clsinput --dump-rlines --no-values > $CLUSTERING
+  # cannot use labelcls to unify outputs - rcldo does lots of stuff for hierarchy including Newick tree.
+  # 
+dispatch_type=none
+dispatch_file=none
+
+if [[ -n $CLUSTERING ]]; then     # the old cls mode.
+  dispatch_type=heatannotcls
+  dispatch_file=$mybase.thecls.txt
+  mcxdump -imx $CLUSTERING --dump-rlines --no-values > $dispatch_file
+elif [[ -n $HIERARCHY ]]; then
+  dispatch_type=heatannot
+  dispatch_file=$HIERARCHY
+else
+  echo "Need -c cls or -h hierarchy argument" && false
 fi
 
 how=created
 if test_absence $mybase.sum.txt return; then
-  # rcldo.pl $themode $ANNOTATION $CLUSTERING $projectdir/rcl.tab > $mybase.txt
-  rcldo.pl $themode $ANNOTATION $CLUSTERING $projectdir/rcl.tab $mybase
+  # rcldo.pl $dispatch_type $ANNOTATION $dispatch_file $projectdir/rcl.tab > $mybase.txt
+  rcldo.pl $dispatch_type $ANNOTATION $dispatch_file $projectdir/rcl.tab $mybase
 else
   how=reused
 fi
 echo "-- file $mybase.sum.txt $how"
 
-  R --slave --quiet --silent --vanilla <<EOR
+  R --no-echo --quiet --silent --vanilla <<EOR
 suppressPackageStartupMessages(library(circlize, warn.conflicts=FALSE))
 suppressPackageStartupMessages(library(ComplexHeatmap, warn.conflicts=FALSE))
 suppressPackageStartupMessages(library(DECIPHER, warn.conflicts=FALSE))           # For newick read
-col_mp    = colorRamp2(c(0, 1, 2, 3, 4, 5), c("darkred", "orange", "lightgoldenrod", "white", "lightblue", "darkblue"))
+col_mp    = colorRamp2(${RCLHM_MVSCALE:-1} * rev(c(0, 1, 2, 3, 4, 5)), c("darkred", "orange", "lightgoldenrod", "white", "lightblue", "darkblue"))
 col_logit = colorRamp2(c(-2, -1, 0, 1, 2, 4, 6)-4, c("darkblue", "lightblue", "white", "lightgoldenrod", "orange", "red", "darkred"))
 col_freq  = colorRamp2(c(-5,-3,0,1,2,3,5), c("darkblue", "lightblue", "white", "lightgoldenrod", "orange", "red", "darkred"))
 
-g  <- read.table("$mybase.sum.txt", header=T, sep="\t")
+g  <- read.table("$mybase.sum.txt", header=T, sep="\t", row.names=4)
 type_bg = as.numeric(g[1,4:ncol(g)])
 g2 <- as.matrix(g[2:nrow(g),4:ncol(g)])
 termsz <- as.numeric(g[1,4:ncol(g)])
@@ -343,10 +363,10 @@ clssz  <- g[2:nrow(g),3]
 totalclssz <- g\$Size[1]
 g3 <- apply(g2, 2, function(x) { x / (clssz/totalclssz)})
 g4 <- apply(g3, 1, function(y) { log(y / termsz) })
-h4 <- t(apply(g2, 2, function(x) { -log10(x / (clssz)) }))
+h4 <- t(apply(g2, 2, function(x) { ((x / clssz)) })) # { -log10(x / (clssz)) }))
 
 r  <- FALSE             # Either FALSE or a dendrogram ...
-if ("$themode" == 'heatannot') {
+if ("$dispatch_type" == 'heatannot') {
   r  <- ReadDendrogram("$mybase.nwk")
   if (nobs(r) != ncol(g4)) {
     stop(sprintf("Dendrogram has %d elements, table $mybase.sum.txt has %d elements", nobs(r), ncol(g4)))
@@ -355,12 +375,22 @@ if ("$themode" == 'heatannot') {
   # g4 <- g4[,order(order.dendrogram(r))]
 }
 
-for (transform in c("fq", "mp")) {
+for (transform in c("rf", "mv")) {
 pdf(sprintf("$mybase.%s.pdf", transform), width = ${RCLPLOT_X:-8}, height = ${RCLPLOT_Y:-8})
+
+print("------")
+print(sum(is.na(g4)))
+print(sum(is.infinite(g4)))
+g4[is.na(g4)] <- 0
+h4[is.na(h4)] <- 0
+g4[is.infinite(g4) & g4 > 0] <-  10
+g4[is.infinite(g4) & g4 < 0] <- -10
+h4[is.infinite(h4) & h4 > 0] <-  10
+h4[is.infinite(h4) & h4 < 0] <- -10
 
 myclr <- col_freq
 obj <- g4
-if (transform == "mp") { myclr <- col_mp; obj <- h4 }
+if (transform == "mv") { myclr <- col_mp; obj <- h4 }
 
   ## the first value is the first residual cluster, usually much larger than the rest.
 clr_size = colorRamp2(c(0, median(g\$Size[-1]), max(g\$Size[-c(1,2)])), c("white", "lightgreen", "darkgreen"))
@@ -375,7 +405,9 @@ ht <- Heatmap(obj, name = "${RCLHM_NAME:-Heat}",
   right_annotation = type_ha,
   col=myclr,
   row_names_gp = gpar(fontsize = ${RCLPLOT_YFTSIZE:-8}),
-  show_column_names = FALSE,
+  column_names_gp = gpar(fontsize = ${RCLPLOT_XFTSIZE:-8}, fontfamily="Courier"),
+  show_column_names = ${RCLHM_CNAMES:-FALSE},
+  show_row_names = ${RCLHM_RNAMES:-TRUE},
   row_labels=lapply(rownames(obj), function(x) { substr(x, 1, ${RCLPLOT_YLABELMAX:-20}) }))
 
 options(repr.plot.width = ${RCLPLOT_HM_X:-20}, repr.plot.height = ${RCLPLOT_HM_Y:-16}, repr.plot.res = 100)
@@ -384,8 +416,38 @@ invisible(dev.off())
 }
 EOR
 
-echo "-- file $mybase.fq.pdf created"
-echo "-- file $mybase.mp.pdf created"
+echo "-- file $mybase.rf.pdf created"
+echo "-- file $mybase.mv.pdf created"
+
+
+elif [[ $themode == 'quickmark' ]]; then
+
+  if [[ -z ${RCL_SCRIPT_HOME+x} ]]; then
+    echo "-- Please set RCL_SCRIPT_HOME to the path where qm.R is found"
+    false
+  fi
+
+  mybase=$projectdir/qm${infix:+.$infix}
+  mycachebase=$projectdir/qm
+
+  echo "-- Using $mybase as file prefix"
+
+  require_opt $themode -d "$COUNTMATRIX" "Count matrix in matrix market format (saved by writeMM)"
+  require_opt $themode -g "$GENENAMES" "Gene names - should correpond to row names of count matrix"
+  if (( n_req )); then exit 1; fi
+
+  # ? todo check file $mybase.cls
+  if [[ -n $CLUSTERING ]]; then     # the old cls mode.
+    mcxdump -imx $CLUSTERING -tabr $pfx.tab --dump-rlines --no-values > $mybase.cls
+  elif [[ -n $HIERARCHY ]]; then
+    rcldo.pl labelcls $pfx.tab < $HIERARCHY > $mybase.cls
+  else
+    echo "Need -c cls or -h hierarchy argument" && false
+  fi
+
+  echo "Starting quickMarkers() analysis [https://github.com/constantAmateur/SoupX/]"
+  R --no-echo --silent --quiet --vanilla --args $COUNTMATRIX $GENENAMES $mybase.cls $mybase.annot.txt $mycachebase.qmcache.txt $mycachebase.datacache.txt ${RCL_QM_N:-2} ${RCL_QM_FDR:-0.01} < $RCL_SCRIPT_HOME/qm.R
+  echo "Output in $mybase.qm.annot.txt"
 
 fi
 

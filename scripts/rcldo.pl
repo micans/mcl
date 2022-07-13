@@ -4,6 +4,12 @@ use strict;
 use warnings;
 use Scalar::Util qw(looks_like_number);
 
+##  This program provides various data-wrangling capabilities for rcl.sh
+##  Most modes are not interesting for users, except 'label', which
+##  translates numerical indices to labels.
+
+##  A neater interface might be nice, e.g. rcldo.pl --mode=label --annotfile=FILE etc
+
 %::help = ( clstag => <<EOH
 clstag FILENAME
     FILENAME will generally contain a clustering in mcl matrix format.
@@ -19,6 +25,13 @@ label TABFILE <STDIN>
     field in the nodes column is expected to be a space-separated list of
     indexes. This mode replaces the indexes with the corresponding labels and
     copies the rest of the input verbatim.
+    TABFILE: mcl tab file containing label mapping.
+EOH
+    ,       labelcls => <<EOH
+label TABFILE <STDIN>
+    As above, additionally expects 'id' column. the 'nodes' column is de-multiplexed
+    over the 'id' column to make a Seurat-type cluster file; a label called 'dummy'
+    is ignored/skipped.
     TABFILE: mcl tab file containing label mapping.
 EOH
     ,       distwrangle => <<EOH
@@ -73,6 +86,7 @@ EOH
 Available modes:
   clstag label granul distwrangle heatannot heatannotcls
   Use rcldo.pl MODE for descriptions
+  Most modes are for rcl.sh internal usage, you may mostly care about label mode.
 EOH
       exit 1;
     }
@@ -86,6 +100,7 @@ my $mode = shift || help('all');
 my %hm_tree  = ();
 my %hm_nodes = ( root => { level => 0, type => 'cls', ival => 0, print => 0 } );
 my $hm_order  =  1;
+$::demux = 0;
 
   # This depends on all modes needing at least one argument.
 if (!@ARGV) {
@@ -105,6 +120,12 @@ elsif ($mode eq 'label') {
   my $tabfile = shift;
   labelwrangle($tabfile);
 }
+elsif ($mode eq 'labelcls') {
+  die "Need <tabfile>\n" unless @ARGV == 1;
+  my $tabfile = shift;
+  $::demux = 1;
+  labelwrangle($tabfile);
+}
 elsif ($mode eq 'clstag') {
   die "Need file name\n" unless @ARGV == 1;
   my $tag = get_tag(@ARGV);
@@ -113,7 +134,6 @@ elsif ($mode eq 'clstag') {
   print "$tag\n";
 }
 elsif ($mode eq 'heatannot' || $mode eq 'heatannotcls') {
-  die "Need file name\n" unless @ARGV == 1;
   die "Need <annotationfile> <partitionhierarchyfile> <tabfile> <outputbase>\n" unless @ARGV == 4;
   my ($fnannot, $fnhier, $fntab, $fnbase) = @ARGV;
   my ($dfannot, $termlist) = read_node_annotation_table($fnannot);
@@ -139,6 +159,7 @@ sub get_tag {
 sub labelwrangle {
   my $tabfile = shift;
   my $tab = read_tab($tabfile);
+  my $bat = { reverse %$tab };        # myes, dangersign.
   
   my $header = <>;
   chomp $header;
@@ -146,12 +167,20 @@ sub labelwrangle {
   my $N = @header;
   my %mapcount = ();
 
-  my $node_index = 0;
+  my $node_index = -1;
+  my $id_index = -1;
+  my $index = 0;
   for (@header) {
-    last if $_ eq 'nodes';
-    $node_index++;
+    $node_index = $index if $_ eq 'nodes';
+    $id_index   = $index if $_ eq 'id';
+    $index++;
   }
-  die "No nodes column found\n" unless $node_index < $N;
+  die "No nodes column found\n" unless $node_index >= 0;
+  die "No id column found\n" unless (!$::demux || $id_index >=0);
+
+  print "$header\n" unless $::demux;
+  my %cls = ();
+
   while (<>) {
     chomp;
             # -1 below is to retain empty fields.
@@ -171,9 +200,21 @@ sub labelwrangle {
         $mapcount{$n}++;
       }
     }
-    $F[$node_index] = join " ", @labels;
-    local $" = "\t";
-    print "@F\n";
+    if ($::demux) {
+      for my $l (@labels) {
+        $cls{$l} = $F[$id_index];
+      }
+    }
+    else {
+      $F[$node_index] = join " ", @labels;
+      local $" = "\t";
+      print "@F\n";
+    }
+  }
+  if ($::demux) {
+    for my $l (sort { $bat->{$a} <=> $bat->{$b} } keys %cls) {
+      print "$l\t$cls{$l}\n" unless $l eq 'dummy';
+    }
   }
   my %hist = ( 0 => 0 );
   for (values %mapcount) {
@@ -259,8 +300,7 @@ sub read_node_annotation_table {
   my $header = <CT>;
   chomp $header;
   my @header = split "\t", $header;
-  die "No leading tab $header" unless $header[0] eq "";
-  shift @header;
+  shift @header if $header[0] eq "";    # empty field, the row name tab.
   my %dfannot = ();
   while (<CT>) {
     chomp;
@@ -345,6 +385,16 @@ sub hm_newick {
 }
 
 
+## fixme / todo
+## $lim and $prefix are two mechanisms for selection (size, and subtree respectively).
+## $lim is passed to newick recursion routine; does this help prevent tree malformedness,
+## as compared to doing at the input stage? Well yes-ish: "internal key error"
+## It is worse however, $lim (RCLPLOT_HEAT_LIMIT) leads to breakage on its own;
+## ("Dendrogram has 9 elements, table s30/hm.abc.sum.txt has 2 elements")
+## it worked at some point; perhaps weeding out leaf nodes smaller than RESLIMIT is ok.
+## This needs work.
+## $prefix on its own seems to work.
+
 sub read_partition_hierarchy {
 
   my $inputmode = shift;
@@ -354,7 +404,7 @@ sub read_partition_hierarchy {
   my $tab = shift;
   my $fnbase   = shift;
 
-  my $lim = $ENV{RCLPLOT_HEAT_LIMIT} || 80;
+  my $lim = $ENV{RCLPLOT_HEAT_LIMIT} || 1;
   my $restful = defined($ENV{RCLPLOT_HEAT_NOREST}) ? 0 : 1;
 
   open(CLS, "<$datafile") || die "No partition input file\n";
@@ -372,28 +422,34 @@ sub read_partition_hierarchy {
     }
   }
 
-  open (GLORIOUS, ">$fnbase.sum.txt") || die "Cannot open frequency output table $fnbase.fq.txt\n";
+  open (GLORIOUS, ">$fnbase.sum.txt") || die "Cannot open cluster-summed output table $fnbase.sum.txt\n";
   open (NWK, ">$fnbase.nwk")   || die "Cannot open Newick output table $fnbase.nwk\n";
   print STDERR "-- computing cluster/term aggregate scores \n";
 
   local $" = "\t";
-  print GLORIOUS "Type\tJoinval\tSize\t@$termlist\n";
+  print GLORIOUS "Type\tJoinval\tSize\tNesting\t@$termlist\n";
 
   my @bglevel = map { log($dfuniverse{$_}) / log(10) } @$termlist;
   my @bgsum   = map { $dfuniverse{$_} } @$termlist;
 
-  print GLORIOUS "NA\tNA\t$NU\t@bgsum\n";
+  print GLORIOUS "NA\tNA\t$NU\tUniverse\t@bgsum\n";
+
+  my $prefix = defined($ENV{RCLPLOT_HEAT_SELECT}) ? $ENV{RCLPLOT_HEAT_SELECT} : "";
 
     # level, type(rest/cls), Ncls, Nmiss, elements
   while (<CLS>) {
     chomp;
     if ($. == 1 && $inputmode eq 'rclhm') {
-      die "Header [$_] not matched\n" unless $_ eq "level\ttype\tjoinval\tN1\tN2\tnesting\tnodes";
+      die "Header [$_] not matched\n" unless $_ eq "level\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes";
       next;
     }
-    my ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = (1, 'cls', 0, 0, 0, "A", "");
+    my ($level, $type, $joinval, $N1, $N2, $nesting, $id, $elems) = (1, 'cls', 0, 0, 0, "A", 0, "");
     if ($inputmode eq 'rclhm') {
-      ($level, $type, $joinval, $N1, $N2, $nesting, $elems) = split "\t";
+      ($level, $type, $joinval, $N1, $N2, $nesting, $id, $elems) = split "\t";
+      next unless $nesting =~ /^$prefix/;
+      # next unless $N2 >= $lim;
+      # would be nice to be able to do this, but currently not possible
+      # see fixme above.
       $hm_nodes{$nesting}{ival}  = $joinval;
       $hm_nodes{$nesting}{level} = $level;
       $hm_nodes{$nesting}{type}  = $type;
@@ -404,14 +460,15 @@ sub read_partition_hierarchy {
                                                 # joinval for the parent cluster (which we need).
                                                 # Hence we need a _A residual cluster for
                                                 # every non-leaf RCL cluster, even if it is empty.
-      while ($nesting =~ s/^(.*)(_.+?)$/$1/) {
+      my $branch = $nesting;
+      while ($branch =~ s/^(.*)(_.+?)$/$1/) {
         $hm_tree{$1}{"$1$2"} = 1;               # Dangersign format dependency.
         if ($2 eq '_A') {                       # Dangersign even more so.
           $hm_nodes{$1}{ival}  = $joinval;
         }
-        $nesting = $1;
+        $branch = $1;
       }
-      $hm_tree{'root'}{$nesting} = 1;
+      $hm_tree{'root'}{$branch} = 1;
     }
     elsif ($inputmode eq 'cls') {
       $elems = $_;
@@ -440,7 +497,7 @@ sub read_partition_hierarchy {
       $df{$t}{sum} = $sum;
     }
     my @values_gl = map { $df{$_}{sum}} @$termlist;
-    print GLORIOUS "$type\t$joinval\t$N2\t@values_gl\n";
+    print GLORIOUS "$type\t$joinval\t$N2\t$nesting\t@values_gl\n";
 
   } close(CLS);
 

@@ -167,6 +167,7 @@ AC_OUTPUT([
     graphs/Makefile
     img/Makefile
     scripts/Makefile
+    rcl/Makefile
     src/Makefile
     src/clew/Makefile
     src/mcl/Makefile

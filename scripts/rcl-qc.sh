@@ -17,7 +17,7 @@
 
 set -euo pipefail
 
-themode=              # first argument, mode 'qc' 'qc2' 'heatannot'
+themode=              # first argument, mode 'qc' 'qc2' 'heatannot' 'quickmark'
 projectdir=           # second argument, for all modes.
 infix='infix'         # -x infix, a secondary tag
 cpu=1                 # -p NUM
@@ -48,8 +48,8 @@ rcl-qc.sh qc  TAG      create (1) heat map of clustering discrepancies and (2) g
 rcl-qc.sh qc2 TAG      create scatter plot of cluster sizes versus induced mean eccentricity of nodes.
                        This is compute intensive and benefits from multiple CPUs (-p option).
 
-rcl-qc.sh heatannot    TAG  -a annotationfile -h rclhierarchyfile (output from rcl select, TAG/rcl.hm*)
-rcl-qc.sh heatannot    TAG  -a annotationfile -c clustering (in mcl matrix format)
+rcl-qc.sh heatannot TAG -a annotationfile -h rclhierarchyfile (output from rcl select, TAG/rcl.hm*)
+rcl-qc.sh heatannot TAG -a annotationfile -c clustering (in mcl matrix format)
 
                        This mode creates a heatmap from an annotation file, where each
                        node is scored for the same list of traits. Scores are added for each trait and
@@ -61,13 +61,13 @@ rcl-qc.sh heatannot    TAG  -a annotationfile -c clustering (in mcl matrix forma
                        class j for node i.
 
                        Additional options:
-                       -x infix     adds infix to the output file.
+                       -x infix     adds infix to the output files (use to distinguish versions/parameters)
 
-rcl-qc.sh quickmark    TAG -d countmatrixfile -g generownamesfile -h rclhierarchyfile
-rcl-qc.sh quickmark    TAG -d countmatrixfile -g generownamesfile -c clustering
+rcl-qc.sh quickmark TAG -d countmatrixfile -g generownamesfile -h rclhierarchyfile
+rcl-qc.sh quickmark TAG -d countmatrixfile -g generownamesfile -c clustering
 
                        Additional options:
-                       -x infix     adds infix to the output file.
+                       -x infix     adds infix to the output files (use to distinguish versions/parameters)
 
 R libraries required:
 qc and qc2: ggplot2 viridis
@@ -423,12 +423,12 @@ echo "-- file $mybase.mv.pdf created"
 elif [[ $themode == 'quickmark' ]]; then
 
   if [[ -z ${RCL_SCRIPT_HOME+x} ]]; then
-    echo "-- Please set RCL_SCRIPT_HOME to the path where qm.R is found"
+    echo "-- Please set RCL_SCRIPT_HOME to the path where rcl-qm.R is found"
     false
   fi
 
   mybase=$projectdir/qm${infix:+.$infix}
-  mycachebase=$projectdir/qm
+  mycachebase=$projectdir/qmcache
 
   echo "-- Using $mybase as file prefix"
 
@@ -446,7 +446,7 @@ elif [[ $themode == 'quickmark' ]]; then
   fi
 
   echo "Starting quickMarkers() analysis [https://github.com/constantAmateur/SoupX/]"
-  R --no-echo --silent --quiet --vanilla --args $COUNTMATRIX $GENENAMES $mybase.cls $mybase.annot.txt $mycachebase.qmcache.txt $mycachebase.datacache.txt ${RCL_QM_N:-2} ${RCL_QM_FDR:-0.01} < $RCL_SCRIPT_HOME/qm.R
+  R --no-echo --silent --quiet --vanilla --args $COUNTMATRIX $GENENAMES $mybase.cls $mybase.annot.txt $mycachebase.qm.txt $mycachebase.data.txt ${RCL_QM_N:-2} ${RCL_QM_FDR:-0.01} < $RCL_SCRIPT_HOME/rcl-qm.R
   echo "Output in $mybase.qm.annot.txt"
 
 fi

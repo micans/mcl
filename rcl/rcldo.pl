@@ -384,6 +384,17 @@ sub hm_newick {
   }
 }
 
+sub sdev {
+  my ($df, $term, $avg, $NU) = @_;
+  my $tally = 0;
+  for my $node (keys %$df) {
+    $tally += ($df->{$node}{$term} - $avg)**2;
+  }
+  my $sd = sqrt($tally/$NU);
+  print STDERR "-- $sd $avg $term\n";
+  return $sd;
+}
+
 
 ## fixme / todo
 ## $lim and $prefix are two mechanisms for selection (size, and subtree respectively).
@@ -411,15 +422,18 @@ sub read_partition_hierarchy {
   my %cls = ();
   my $toplevel = 'root';
 
-  my %dfuniverse = ();
+  my %df_uv_sum = ();         # universe sum for term
+  my %df_uv_sigma = ();       # universe sdev for term
   my $NU = keys %$dfannot;
   print STDERR "-- computing term universe for $NU terms\n";
 
   for my $term (@$termlist) {
     for (sort keys %$dfannot ) {
       die "No $term score for $_\n" unless defined($dfannot->{$_}{$term});
-      $dfuniverse{$term} += $dfannot->{$_}{$term};
+      $df_uv_sum{$term} += $dfannot->{$_}{$term};
     }
+    my $avg = $df_uv_sum{$term} / $NU;
+    $df_uv_sigma{$term} = sdev($dfannot, $term, $avg, $NU);
   }
 
   open (GLORIOUS, ">$fnbase.sum.txt") || die "Cannot open cluster-summed output table $fnbase.sum.txt\n";
@@ -429,10 +443,15 @@ sub read_partition_hierarchy {
   local $" = "\t";
   print GLORIOUS "Type\tJoinval\tSize\tNesting\t@$termlist\n";
 
-  my @bglevel = map { log($dfuniverse{$_}) / log(10) } @$termlist;
-  my @bgsum   = map { $dfuniverse{$_} } @$termlist;
+  my @bglevel = map { log($df_uv_sum{$_}) / log(10) } @$termlist;
+  my @bgsum   = map { $df_uv_sum{$_} } @$termlist;
+  my @bgsigma = map { $df_uv_sigma{$_} } @$termlist;
 
-  print GLORIOUS "NA\tNA\t$NU\tUniverse\t@bgsum\n";
+  # hierverder: compute average, sdev; write sdev for each gene.
+  # twice? normal space and log space if no values < 0.
+
+  print GLORIOUS "NA\tNA\t$NU\tUniverse_sum\t@bgsum\n";
+  print GLORIOUS "NA\tNA\t$NU\tUniverse_sdev\t@bgsigma\n";
 
   my $prefix = defined($ENV{RCLPLOT_HEAT_SELECT}) ? $ENV{RCLPLOT_HEAT_SELECT} : "";
 

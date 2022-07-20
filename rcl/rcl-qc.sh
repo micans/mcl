@@ -347,23 +347,36 @@ else
 fi
 echo "-- file $mybase.sum.txt $how"
 
+# exit 0
+
   R --no-echo --quiet --silent --vanilla <<EOR
 suppressPackageStartupMessages(library(circlize, warn.conflicts=FALSE))
 suppressPackageStartupMessages(library(ComplexHeatmap, warn.conflicts=FALSE))
 suppressPackageStartupMessages(library(DECIPHER, warn.conflicts=FALSE))           # For newick read
-col_mp    = colorRamp2(${RCLHM_MVSCALE:-1} * rev(c(0, 1, 2, 3, 4, 5)), c("darkred", "orange", "lightgoldenrod", "white", "lightblue", "darkblue"))
+col_mv    = colorRamp2(${RCLHM_MVSCALE:-1} * rev(c(0, 1, 2, 3, 4, 5)), c("darkred", "orange", "lightgoldenrod", "white", "lightblue", "darkblue"))
 col_logit = colorRamp2(c(-2, -1, 0, 1, 2, 4, 6)-4, c("darkblue", "lightblue", "white", "lightgoldenrod", "orange", "red", "darkred"))
-col_freq  = colorRamp2(c(-5,-3,0,1,2,3,5), c("darkblue", "lightblue", "white", "lightgoldenrod", "orange", "red", "darkred"))
+col_freq  = colorRamp2(${RCLHM_FRSCALE:-1} * c(-5,-3,0,1,2,3,5), c("darkblue", "lightblue", "white", "lightgoldenrod", "orange", "red", "darkred"))
+col_zs    = colorRamp2(${RCLHM_ZSSCALE:-1} * c(-2, -1, 0, 1, 2), c("darkblue", "lightblue", "white", "orange", "darkred"))
 
 g  <- read.table("$mybase.sum.txt", header=T, sep="\t", row.names=4)
-type_bg = as.numeric(g[1,4:ncol(g)])
-g2 <- as.matrix(g[2:nrow(g),4:ncol(g)])
-termsz <- as.numeric(g[1,4:ncol(g)])
-clssz  <- g[2:nrow(g),3]
-totalclssz <- g\$Size[1]
-g3 <- apply(g2, 2, function(x) { x / (clssz/totalclssz)})
-g4 <- apply(g3, 1, function(y) { log(y / termsz) })
-h4 <- t(apply(g2, 2, function(x) { ((x / clssz)) })) # { -log10(x / (clssz)) }))
+each_cls_sz  <- g[3:nrow(g),"Size"]
+universe_sz <- g\$Size[1]
+
+g2 <- as.matrix(g[3:nrow(g),4:ncol(g)])
+term_uv_sum  <- as.numeric(g[1,4:ncol(g)])    # vector over terms, sum score over universe.
+term_uv_sdev <- as.numeric(g[2,4:ncol(g)])    # vector over terms, sdev for each term.
+term_uv_mean <- term_uv_sum / universe_sz     # vector over terms, mean score over universe.
+
+g3 <- apply(g2, 2, function(x) { x / (each_cls_sz/universe_sz)})
+g4 <- apply(g3, 1, function(y) { log(y / term_uv_sum) })
+h4 <- t(apply(g2, 2, function(x) { ((x / each_cls_sz)) })) # { -log10(x / (each_cls_sz)) }))
+
+z3 <- apply(g2, 2, "/", each_cls_sz)          # average score for cluster.
+z4 <- apply(z3, 1, function(y) { (y - term_uv_mean ) / term_uv_sdev })
+
+# h4: mean value in cluster.
+# g4: logarithm of frequency(cluster)/frequency(universe)
+# z4: z-score transformed data.
 
 r  <- FALSE             # Either FALSE or a dendrogram ...
 if ("$dispatch_type" == 'heatannot') {
@@ -375,12 +388,19 @@ if ("$dispatch_type" == 'heatannot') {
   # g4 <- g4[,order(order.dendrogram(r))]
 }
 
-for (transform in c("rf", "mv")) {
+ls_transform = c("rf", "mv", "zs")
+  # rf relative frequency
+  # mv mean value
+  # zs Z score
+for (transform in ls_transform) {
 pdf(sprintf("$mybase.%s.pdf", transform), width = ${RCLPLOT_X:-8}, height = ${RCLPLOT_Y:-8})
 
-print("------")
-print(sum(is.na(g4)))
-print(sum(is.infinite(g4)))
+inf_expected <- ifelse(transform == "rf", "expected", "unexpected")
+nna  <- sum(is.na(g4))
+ninf <- sum(is.infinite(g4))
+if (nna > 0)  { cat(sprintf("<> %d NA resulting for transform %s\n", nna, transform), file=stderr()) }
+if (ninf > 0) { cat(sprintf("<> %d infinite instances for transform %s (%s)\n", ninf, transform, inf_expected), file=stderr()) }
+
 g4[is.na(g4)] <- 0
 h4[is.na(h4)] <- 0
 g4[is.infinite(g4) & g4 > 0] <-  10
@@ -390,13 +410,14 @@ h4[is.infinite(h4) & h4 < 0] <- -10
 
 myclr <- col_freq
 obj <- g4
-if (transform == "mv") { myclr <- col_mp; obj <- h4 }
+if (transform == "mv") { myclr <- col_mv; obj <- h4 }
+if (transform == "zs") { myclr <- col_zs; obj <- z4 }
 
   ## the first value is the first residual cluster, usually much larger than the rest.
 clr_size = colorRamp2(c(0, median(g\$Size[-1]), max(g\$Size[-c(1,2)])), c("white", "lightgreen", "darkgreen"))
-clr_type = colorRamp2(c(0, median(type_bg), max(type_bg)), c("white", "plum1", "purple4"))
-size_ha  = HeatmapAnnotation("Cluster size" = g\$Size[-1], col=list("Cluster size"=clr_size))
-type_ha  = HeatmapAnnotation("Annot" = type_bg, col=list("Annot"=clr_type), which='row')
+clr_type = colorRamp2(c(0, median(term_uv_sum), max(term_uv_sum)), c("white", "plum1", "purple4"))
+size_ha  = HeatmapAnnotation("Cluster size" = each_cls_sz, col=list("Cluster size"=clr_size))
+type_ha  = HeatmapAnnotation("Annot" = term_uv_sum, col=list("Annot"=clr_type), which='row')
 ht <- Heatmap(obj, name = "${RCLHM_NAME:-Heat}",
   column_title = "${RCLHM_XTITLE:-Clusters}", # row_title = "${RCLHM_YTITLE:-Annotation}",
   cluster_rows = ${RCLHM_ROWCLUSTER:-FALSE},
@@ -413,11 +434,10 @@ ht <- Heatmap(obj, name = "${RCLHM_NAME:-Heat}",
 options(repr.plot.width = ${RCLPLOT_HM_X:-20}, repr.plot.height = ${RCLPLOT_HM_Y:-16}, repr.plot.res = 100)
 ht = draw(ht)
 invisible(dev.off())
+
+cat(sprintf("-- relative frequency file $mybase.%s.pdf created\n", transform), file=stderr())
 }
 EOR
-
-echo "-- file $mybase.rf.pdf created"
-echo "-- file $mybase.mv.pdf created"
 
 
 elif [[ $themode == 'quickmark' ]]; then
@@ -446,8 +466,8 @@ elif [[ $themode == 'quickmark' ]]; then
   fi
 
   echo "Starting quickMarkers() analysis [https://github.com/constantAmateur/SoupX/]"
-  R --no-echo --silent --quiet --vanilla --args $COUNTMATRIX $GENENAMES $mybase.cls $mybase.annot.txt $mycachebase.qm.txt $mycachebase.data.txt ${RCL_QM_N:-2} ${RCL_QM_FDR:-0.01} < $RCL_SCRIPT_HOME/rcl-qm.R
-  echo "Output in $mybase.qm.annot.txt"
+  R --no-echo --silent --quiet --vanilla --args $COUNTMATRIX $GENENAMES $mybase.cls $mybase.annot.txt $mycachebase.qm.txt $mycachebase.data.txt ${RCL_QM_N:-2} ${RCL_QM_TFIDF:-2.0} < $RCL_SCRIPT_HOME/rcl-qm.R
+  echo "Output in $mybase.annot.txt"
 
 fi
 

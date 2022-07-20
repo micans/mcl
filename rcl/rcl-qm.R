@@ -3,6 +3,8 @@ library(Matrix)
 suppressPackageStartupMessages(library(R.utils))
 suppressPackageStartupMessages(library(dplyr))
 
+# quickMarkers was copied verbatim from Matthew Young's SoupX package:
+# https://github.com/constantAmateur/SoupX/
 
 quickMarkers = function(toc,clusters,N=10,FDR=0.01,expressCut=0.9){
   #Convert to the more manipulable format
@@ -60,6 +62,11 @@ quickMarkers = function(toc,clusters,N=10,FDR=0.01,expressCut=0.9){
 
 args <- R.utils::commandArgs(trailingOnly=TRUE)
 
+  ##
+  ## This script is created for use by rcl-qc.sh, so unless further incentives
+  ## arrive, eight positional parameters remain the amazing interface.
+  ## 
+
 if (length(args) != 8) {
   stop("Need <MATRIXFILE> <GENEROWNAMES> <CLUSTERFILE> <OUTPUTFILE> <QMCACHEFILE> <QMCACHEDATA> <NUM> <FDR>")
 }
@@ -68,8 +75,8 @@ matrixfile   <- args[[1]]
 generownames <- args[[2]]
 clusterfile  <- args[[3]]
 outputfile   <- args[[4]]
-qmcacheqm    <- args[[5]]
-qmcachedata  <- args[[6]]
+qmcacheqm    <- args[[5]]         # if present read, otherwise create.
+qmcachedata  <- args[[6]]         # if present read, otherwise create.
 qmN          <- as.numeric(args[[7]])
 qmFDR        <- as.numeric(args[[8]])
 
@@ -100,10 +107,13 @@ if (!file.exists(qmcachedata) || !file.exists(qmcacheqm)) {
   cat(".. done\n", file=stderr())
 }
 
-cat(sprintf("Selecting quickMarkers with N=%d FDR=%f\n", qmN, qmFDR), file=stderr())
+# cat(sprintf("Selecting quickMarkers with N=%d FDR=%f\n", qmN, qmFDR), file=stderr())
+# qm2 <- as.data.frame(qm %>% group_by(cluster) %>% slice_min(order_by = qval, n = qmN))
+# qm2 <- qm2[qm2$qval <= qmFDR,]
 
-qm2 <- as.data.frame(qm %>% group_by(cluster) %>% slice_min(order_by = qval, n = qmN))
-qm2 <- qm2[qm2$qval <= qmFDR,]
+cat(sprintf("Selecting quickMarkers with N=%d tfidf=%f\n", qmN, qmFDR), file=stderr())
+qm2 <- as.data.frame(qm %>% group_by(cluster) %>% slice_max(order_by = tfidf, n = qmN))
+qm2 <- qm2[qm2$tfidf >= qmFDR,]
 
 write.table(t(as.matrix(themtx[unique(qm2$gene),])), file=outputfile, sep="\t", quote=FALSE)
 

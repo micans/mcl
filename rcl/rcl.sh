@@ -70,6 +70,7 @@ EOH
 }
 
 MODES="setup tree select mcl qc qc2 heatannot heatannotcls"
+n_req=0
 
 function require_mode() {
   local mode=$1
@@ -159,7 +160,6 @@ fi
 shift $((OPTIND-1))
 
 function require_opt() {
-  n_req=0
   local mode=$1 option=$2 value=$3 description=$4
   if [[ -z $value ]]; then
     echo "Mode $mode requires $description for option $option"
@@ -174,9 +174,10 @@ function require_opt() {
 if [[ $themode == 'mcl' ]]; then
   require_opt mcl -n "$network" "a network in mcl format"
   require_opt mcl -I "$INFLATION" "a set of inflation values between quotes"
-  if (( n_req )); then exit 1; fi
+  if (( n_req > 0 )); then exit 1; fi
   mkdir -p $projectdir
   echo "-- Running mcl for inflation values in ($INFLATION)"
+  echo ">> $cpu cpus will be used (-p option)"
   for I in $(tr -s ' ' '\n' <<< "$INFLATION" | sort -rn); do
     echo -n "-- inflation $I start .."
     mcl $network -I $I -t $cpu --i3 -odir $projectdir ${RCL_MCL_OPTIONS:-}

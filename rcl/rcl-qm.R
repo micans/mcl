@@ -97,13 +97,14 @@ if (!file.exists(qmcachedata) || !file.exists(qmcacheqm)) {
   cat(sprintf("Writing qm and data cache files %s, %s\n", qmcacheqm, qmcachedata), file=stderr())
     write.table(qm, file=qmcacheqm, sep="\t", quote=FALSE)
     u  <- unique(qm$gene)
-    write.table(as.matrix(themtx[u,]), file=qmcachedata, sep="\t", quote=FALSE)
+    themtx <- t(as.matrix(themtx[u,]))
+    write.table(as.matrix(themtx), file=qmcachedata, sep="\t", quote=FALSE)
 
 } else {
   cat(sprintf("Reading qm and data cache files %s, %s ..", qmcacheqm, qmcachedata), file=stderr())
     # _ Note: not a sparse matrix.
-    themtx <- read.table(qmcachedata, header=T, row.names = 1)
-    qm <- read.table(qmcacheqm, header=T)
+    themtx <- read.table(qmcachedata, header=T, row.names = 1, check.names=FALSE, as.is=TRUE)
+    qm <- read.table(qmcacheqm, header=T, check.names=FALSE, as.is=TRUE)
   cat(".. done\n", file=stderr())
 }
 
@@ -115,6 +116,6 @@ cat(sprintf("Selecting quickMarkers with N=%d tfidf=%f\n", qmN, qmFDR), file=std
 qm2 <- as.data.frame(qm %>% group_by(cluster) %>% slice_max(order_by = tfidf, n = qmN))
 qm2 <- qm2[qm2$tfidf >= qmFDR,]
 
-write.table(t(as.matrix(themtx[unique(qm2$gene),])), file=outputfile, sep="\t", quote=FALSE)
+write.table(as.matrix(themtx[,unique(qm2$gene)]), file=outputfile, sep="\t", quote=FALSE)
 
 

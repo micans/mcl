@@ -296,6 +296,7 @@ sub attach_annotation {
 
 sub read_node_annotation_table {
   my $fntable = shift;
+  print STDERR "-- Annotation table $fntable\n";
   open(CT, "<$fntable") || die "Cannot open annotation table $fntable\n";
   my $header = <CT>;
   chomp $header;

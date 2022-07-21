@@ -358,7 +358,7 @@ col_logit = colorRamp2(c(-2, -1, 0, 1, 2, 4, 6)-4, c("darkblue", "lightblue", "w
 col_freq  = colorRamp2(${RCLHM_FRSCALE:-1} * c(-5,-3,0,1,2,3,5), c("darkblue", "lightblue", "white", "lightgoldenrod", "orange", "red", "darkred"))
 col_zs    = colorRamp2(${RCLHM_ZSSCALE:-1} * c(-2, -1, 0, 1, 2), c("darkblue", "lightblue", "white", "orange", "darkred"))
 
-g  <- read.table("$mybase.sum.txt", header=T, sep="\t", row.names=4)
+g  <- read.table("$mybase.sum.txt", header=T, sep="\t", row.names=4, check.names=FALSE, as.is=TRUE)
 each_cls_sz  <- g[3:nrow(g),"Size"]
 universe_sz <- g\$Size[1]
 
@@ -389,29 +389,25 @@ if ("$dispatch_type" == 'heatannot') {
 }
 
 ls_transform = c("rf", "mv", "zs")
+ls_transform = c("zs")
   # rf relative frequency
   # mv mean value
   # zs Z score
 for (transform in ls_transform) {
-pdf(sprintf("$mybase.%s.pdf", transform), width = ${RCLPLOT_X:-8}, height = ${RCLPLOT_Y:-8})
-
-inf_expected <- ifelse(transform == "rf", "expected", "unexpected")
-nna  <- sum(is.na(g4))
-ninf <- sum(is.infinite(g4))
-if (nna > 0)  { cat(sprintf("<> %d NA resulting for transform %s\n", nna, transform), file=stderr()) }
-if (ninf > 0) { cat(sprintf("<> %d infinite instances for transform %s (%s)\n", ninf, transform, inf_expected), file=stderr()) }
-
-g4[is.na(g4)] <- 0
-h4[is.na(h4)] <- 0
-g4[is.infinite(g4) & g4 > 0] <-  10
-g4[is.infinite(g4) & g4 < 0] <- -10
-h4[is.infinite(h4) & h4 > 0] <-  10
-h4[is.infinite(h4) & h4 < 0] <- -10
-
 myclr <- col_freq
 obj <- g4
 if (transform == "mv") { myclr <- col_mv; obj <- h4 }
 if (transform == "zs") { myclr <- col_zs; obj <- z4 }
+
+inf_expected <- ifelse(transform == "rf", "expected", "unexpected")
+nna  <- sum(is.na(obj))
+ninf <- sum(is.infinite(obj))
+if (nna > 0)  { cat(sprintf("<> %d NA resulting for transform %s\n", nna, transform), file=stderr()) }
+if (ninf > 0) { cat(sprintf("<> %d infinite instances for transform %s (%s)\n", ninf, transform, inf_expected), file=stderr()) }
+
+obj[is.na(obj)] <- 0
+obj[is.infinite(obj) & obj > 0] <-  10
+obj[is.infinite(obj) & obj < 0] <- -10
 
   ## the first value is the first residual cluster, usually much larger than the rest.
 clr_size = colorRamp2(c(0, median(g\$Size[-1]), max(g\$Size[-c(1,2)])), c("white", "lightgreen", "darkgreen"))
@@ -425,17 +421,28 @@ ht <- Heatmap(obj, name = "${RCLHM_NAME:-Heat}",
   top_annotation = size_ha,
   right_annotation = type_ha,
   col=myclr,
+  heatmap_width = unit(20, "cm"),
+  heatmap_height = unit(40, "cm"),
   row_names_gp = gpar(fontsize = ${RCLPLOT_YFTSIZE:-8}),
   column_names_gp = gpar(fontsize = ${RCLPLOT_XFTSIZE:-8}, fontfamily="Courier"),
   show_column_names = ${RCLHM_CNAMES:-FALSE},
   show_row_names = ${RCLHM_RNAMES:-TRUE},
   row_labels=lapply(rownames(obj), function(x) { substr(x, 1, ${RCLPLOT_YLABELMAX:-20}) }))
 
-options(repr.plot.width = ${RCLPLOT_HM_X:-20}, repr.plot.height = ${RCLPLOT_HM_Y:-16}, repr.plot.res = 100)
+# options(repr.plot.width = unit(${RCLPLOT_HM_X:-20}, "cm"), repr.plot.height = unit(${RCLPLOT_HM_Y:-40}, "cm"), repr.plot.res = 100)
+
+ht = draw(ht)
+cat(sprintf("Heatmap dimensions: %s %s\n", ComplexHeatmap:::width(ht), ComplexHeatmap:::height(ht)), file=stderr())
+w = ComplexHeatmap:::width(ht)
+w = convertX(w, "inch", valueOnly = TRUE)
+h = ComplexHeatmap:::height(ht)
+h = convertY(h, "inch", valueOnly = TRUE)
+
+pdf(sprintf("$mybase.%s.pdf", transform), width=w, height=h)
 ht = draw(ht)
 invisible(dev.off())
 
-cat(sprintf("-- relative frequency file $mybase.%s.pdf created\n", transform), file=stderr())
+cat(sprintf("-- file $mybase.%s.pdf created\n", transform), file=stderr())
 }
 EOR
 

@@ -27,6 +27,8 @@ HIERARCHY=            # -h FNAME hierarchy file  (rcl.hm*)
 COUNTMATRIX=          # -d FNAME data file
 GENENAMES=            # -g FNAME row names for COUNTMATRIX
 do_force=false        # -F (for mode 'tree')
+R_invoke="R --no-echo --quiet --silent --vanilla"
+                      # -R (echo R code rather than execute it)
 
 function usage() {
   local e=$1
@@ -68,6 +70,10 @@ rcl-qc.sh quickmark TAG -d countmatrixfile -g generownamesfile -c clustering
 
                        Additional options:
                        -x infix     adds infix to the output files (use to distinguish versions/parameters)
+
+Additional options:
+-F    force re-run (various modes will indicate if this can be used)
+-E    output R code rather than execute it (various modes)
 
 R libraries required:
 qc and qc2: ggplot2 viridis
@@ -147,7 +153,7 @@ require_file "$pfx.tab" "tab file $pfx.nitems is missing"
 echo -- "$themode $projectdir $@" >> $pfx.qcline
 
 
-while getopts :a:c:d:g:h:p:x:F opt
+while getopts :a:c:d:g:h:p:x:FR opt
 do
     case "$opt" in
     a) ANNOTATION=$OPTARG ;;
@@ -157,6 +163,7 @@ do
     h) HIERARCHY=$OPTARG ;;
     p) cpu=$OPTARG ;;
     x) infix=$OPTARG ;;
+    R) R_invoke=cat ;;
     F) do_force=true ;;
     :) echo "Flag $OPTARG needs argument"; exit 1 ;;
     ?) echo "Flag $OPTARG unknown"; exit 1 ;;
@@ -202,7 +209,7 @@ if [[ $themode == 'qc' ]]; then
   out_heat_pdf=${out_heat_txt%.txt}.pdf
   ( echo -e "d\tP1\tP2"; clm dist "${cls[@]}" | rcldo.pl distwrangle $(cat $pfx.nitems) ) > $out_heat_txt # \
 
-  R --no-echo --quiet --silent --vanilla <<EOR
+  $R_invoke <<EOR
 library(ggplot2, warn.conflicts=FALSE)
 library(viridis, warn.conflicts=FALSE)
 
@@ -235,7 +242,7 @@ EOR
   for fname in "${cls[@]}"; do
     clxdo gra $fname | tr -s ' ' '\n' | tail -n +2 | rcldo.pl granul $fname $(cat $pfx.nitems)
   done > "$out_gra_txt"
-  R --no-echo --quiet --silent --vanilla <<EOR
+  $R_invoke <<EOR
 library(ggplot2, warn.conflicts=FALSE)
 
 mytheme = theme(plot.title = element_text(hjust = 0.5),
@@ -294,7 +301,7 @@ elif [[ $themode == 'qc2' ]]; then
 
   out_qc2_pdf=$pfx.qc2all.pdf
 
-  R --no-echo --quiet --silent --vanilla <<EOR
+  $R_invoke <<EOR
 library(ggplot2, warn.conflicts=FALSE)
 library(viridis, warn.conflicts=FALSE)
 d <- read.table("$pfx.qc2all.txt")
@@ -349,7 +356,7 @@ echo "-- file $mybase.sum.txt $how"
 
 # exit 0
 
-  R --no-echo --quiet --silent --vanilla <<EOR
+  $R_invoke <<EOR
 suppressPackageStartupMessages(library(circlize, warn.conflicts=FALSE))
 suppressPackageStartupMessages(library(ComplexHeatmap, warn.conflicts=FALSE))
 suppressPackageStartupMessages(library(DECIPHER, warn.conflicts=FALSE))           # For newick read
@@ -412,26 +419,28 @@ obj[is.infinite(obj) & obj < 0] <- -10
   ## the first value is the first residual cluster, usually much larger than the rest.
 clr_size = colorRamp2(c(0, median(g\$Size[-1]), max(g\$Size[-c(1,2)])), c("white", "lightgreen", "darkgreen"))
 clr_type = colorRamp2(c(0, median(term_uv_sum), max(term_uv_sum)), c("white", "plum1", "purple4"))
-size_ha  = HeatmapAnnotation("Cluster size" = each_cls_sz, col=list("Cluster size"=clr_size))
-type_ha  = HeatmapAnnotation("Annot" = term_uv_sum, col=list("Annot"=clr_type), which='row')
-ht <- Heatmap(obj, name = "${RCLHM_NAME:-Heat}",
+size_ha  = HeatmapAnnotation("${RCLHM_SET:-Set size}" = each_cls_sz, col=list("${RCLHM_SET:-Set size}"=clr_size), show_annotation_name = TRUE)
+type_ha  = HeatmapAnnotation("${RCLHM_TERM:-Annot}" = term_uv_sum, col=list("${RCLHM_TERM:-Annot}"=clr_type), which='row', show_annotation_name = TRUE)
+ht <- Heatmap(obj, name = "${RCLHM_VALUE:-Heat}",
   column_title = "${RCLHM_XTITLE:-Clusters}", # row_title = "${RCLHM_YTITLE:-Annotation}",
   cluster_rows = ${RCLHM_ROWCLUSTER:-FALSE},
   cluster_columns= r,
   top_annotation = size_ha,
   right_annotation = type_ha,
   col=myclr,
-  heatmap_width = unit(20, "cm"),
-  heatmap_height = unit(40, "cm"),
+  heatmap_width = unit(${RCLPLOT_X:-14}, "cm"),
+  heatmap_height = unit(${RCLPLOT_Y:-20}, "cm"),
   row_names_gp = gpar(fontsize = ${RCLPLOT_YFTSIZE:-8}),
   column_names_gp = gpar(fontsize = ${RCLPLOT_XFTSIZE:-8}, fontfamily="Courier"),
   show_column_names = ${RCLHM_CNAMES:-FALSE},
+  column_names_side = "top",
+  show_column_dend = ${RCLHM_CDEND:-TRUE}, show_row_dend = ${RCLHM_RDEND:-TRUE},
   show_row_names = ${RCLHM_RNAMES:-TRUE},
   row_labels=lapply(rownames(obj), function(x) { substr(x, 1, ${RCLPLOT_YLABELMAX:-20}) }))
 
 # options(repr.plot.width = unit(${RCLPLOT_HM_X:-20}, "cm"), repr.plot.height = unit(${RCLPLOT_HM_Y:-40}, "cm"), repr.plot.res = 100)
 
-ht = draw(ht)
+ht = draw(ht, merge_legend = TRUE, annotation_legend_side = "right")
 cat(sprintf("Heatmap dimensions: %s %s\n", ComplexHeatmap:::width(ht), ComplexHeatmap:::height(ht)), file=stderr())
 w = ComplexHeatmap:::width(ht)
 w = convertX(w, "inch", valueOnly = TRUE)
@@ -439,7 +448,7 @@ h = ComplexHeatmap:::height(ht)
 h = convertY(h, "inch", valueOnly = TRUE)
 
 pdf(sprintf("$mybase.%s.pdf", transform), width=w, height=h)
-ht = draw(ht)
+ht = draw(ht, merge_legend = TRUE, annotation_legend_side = "right")
 invisible(dev.off())
 
 cat(sprintf("-- file $mybase.%s.pdf created\n", transform), file=stderr())
@@ -473,7 +482,7 @@ elif [[ $themode == 'quickmark' ]]; then
   fi
 
   echo "Starting quickMarkers() analysis [https://github.com/constantAmateur/SoupX/]"
-  R --no-echo --silent --quiet --vanilla --args $COUNTMATRIX $GENENAMES $mybase.cls $mybase.annot.txt $mycachebase.qm.txt $mycachebase.data.txt ${RCL_QM_N:-2} ${RCL_QM_TFIDF:-2.0} < $RCL_SCRIPT_HOME/rcl-qm.R
+  R --no-echo --silent --quiet --vanilla --args $COUNTMATRIX $GENENAMES $mybase.cls $mybase.annot.txt $mycachebase.qm.txt $mycachebase.data.txt ${RCL_QM_N:-2} ${RCL_QM_TFIDF:-1.0} < $RCL_SCRIPT_HOME/rcl-qm.R
   echo "Output in $mybase.annot.txt"
 
 fi

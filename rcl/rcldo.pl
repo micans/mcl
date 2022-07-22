@@ -454,7 +454,7 @@ sub read_partition_hierarchy {
   print GLORIOUS "NA\tNA\t$NU\tUniverse_sum\t@bgsum\n";
   print GLORIOUS "NA\tNA\t$NU\tUniverse_sdev\t@bgsigma\n";
 
-  my $prefix = defined($ENV{RCLPLOT_HEAT_SELECT}) ? $ENV{RCLPLOT_HEAT_SELECT} : "";
+  my $prefix = defined($ENV{RCLPLOT_CLS_PREFIX}) ? $ENV{RCLPLOT_CLS_PREFIX} : "";
 
     # level, type(rest/cls), Ncls, Nmiss, elements
   while (<CLS>) {

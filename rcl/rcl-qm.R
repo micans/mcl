@@ -63,12 +63,12 @@ quickMarkers = function(toc,clusters,N=10,FDR=0.01,expressCut=0.9){
 args <- R.utils::commandArgs(trailingOnly=TRUE)
 
   ##
-  ## This script is created for use by rcl-qc.sh, so unless further incentives
+  ## This script is created for use by rcl-qc.sh, so until further incentives
   ## arrive, eight positional parameters remain the amazing interface.
   ## 
 
 if (length(args) != 8) {
-  stop("Need <MATRIXFILE> <GENEROWNAMES> <CLUSTERFILE> <OUTPUTFILE> <QMCACHEFILE> <QMCACHEDATA> <NUM> <FDR>")
+  stop("Need <MATRIXFILE> <GENEROWNAMES> <CLUSTERFILE> <OUTPUTFILE> <QMCACHEFILE> <QMCACHEDATA> <NUM> <TFIDF>")
 }
 
 matrixfile   <- args[[1]]
@@ -78,7 +78,7 @@ outputfile   <- args[[4]]
 qmcacheqm    <- args[[5]]         # if present read, otherwise create.
 qmcachedata  <- args[[6]]         # if present read, otherwise create.
 qmN          <- as.numeric(args[[7]])
-qmFDR        <- as.numeric(args[[8]])
+qmTFIDF      <- as.numeric(args[[8]])
 
 cls <- read.table(clusterfile, row.names=1, sep="\t")
 geneNames <- readLines(generownames)
@@ -97,6 +97,8 @@ if (!file.exists(qmcachedata) || !file.exists(qmcacheqm)) {
   cat(sprintf("Writing qm and data cache files %s, %s\n", qmcacheqm, qmcachedata), file=stderr())
     write.table(qm, file=qmcacheqm, sep="\t", quote=FALSE)
     u  <- unique(qm$gene)
+      # transpose the matrix; we expect generally more nodes/cells/barcodes
+      # than genes/terms/annoation, so keep annotation as column.
     themtx <- t(as.matrix(themtx[u,]))
     write.table(as.matrix(themtx), file=qmcachedata, sep="\t", quote=FALSE)
 
@@ -112,9 +114,9 @@ if (!file.exists(qmcachedata) || !file.exists(qmcacheqm)) {
 # qm2 <- as.data.frame(qm %>% group_by(cluster) %>% slice_min(order_by = qval, n = qmN))
 # qm2 <- qm2[qm2$qval <= qmFDR,]
 
-cat(sprintf("Selecting quickMarkers with N=%d tfidf=%f\n", qmN, qmFDR), file=stderr())
+cat(sprintf("Selecting quickMarkers with N=%d tfidf=%f\n", qmN, qmTFIDF), file=stderr())
 qm2 <- as.data.frame(qm %>% group_by(cluster) %>% slice_max(order_by = tfidf, n = qmN))
-qm2 <- qm2[qm2$tfidf >= qmFDR,]
+qm2 <- qm2[qm2$tfidf >= qmTFIDF,]
 
 write.table(as.matrix(themtx[,unique(qm2$gene)]), file=outputfile, sep="\t", quote=FALSE)
 

@@ -19,7 +19,7 @@ set -euo pipefail
 
 themode=              # first argument, mode 'qc' 'qc2' 'heatannot' 'quickmark'
 projectdir=           # second argument, for all modes.
-infix='infix'         # -x infix, a secondary tag
+infix='vnl'           # -x infix, a secondary tag
 cpu=1                 # -p NUM
 ANNOTATION=           # -a FNAME annotation file
 CLUSTERING=           # -c FNAME clustering file (mcl format)
@@ -196,9 +196,9 @@ if [[ $themode == 'qc' ]]; then
    # Some things still hardcoded, e.g. cluster size range.
    # This looks absolutely awful, with perl madness and inline R scripts.
    # Remember that things like daisies and clover exist.
-   # Additionally It Should Work
+   # Most importantly though It Should Work
 
-  require_file "$pfx.lsocls" "(created in step 'tree')"
+  require_file "$pfx.lsocls" "(created in step 'setup or mcl')"
   require_file "$pfx.nitems" "(created in step 'setup')"
 
   export RCLPLOT_PARAM_SCALE=${RCLPLOT_PARAM_SCALE:-2}

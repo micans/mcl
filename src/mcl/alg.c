@@ -1572,16 +1572,15 @@ void  howMuchRam
    ;  int y    =  MCX_MIN(n, x)
    ;  mclIvp ivps[10]
    ;  int l    =  sizeof(ivps) / 10
-   ;  double r =  (2.0 * l * y * n) / (1024.0 * 1024.0)
+   ;  double r =  (2.0 * l * y * n) / (1024.0 * 1024.0 * 1024.0)
    ;  fprintf
       (  stdout
-      ,  "The current settings require at most <%.2fM> RAM for a\n"
-         "graph with <%ld> nodes, assuming the average node degree of\n"
-         "the input graph does not exceed <%ld>. This (RAM number)\n"
-         "will usually but not always be too pessimistic an estimate.\n"
+      ,  "The current settings require at most <%.fG> RAM for a graph with <%ld> nodes,\n"
+         "assuming the average node degree of the input graph does not exceed <%ld>.\n"
+         "This estimate will usually but not always be too cautious/high.\n"
       ,  (double) r
       ,  (long) n
-      ,  (long) y
+      ,  (long) (2 * y)
       )
 ;  }
 

@@ -15,6 +15,7 @@ aclocal.m4
 /config*
 /doc/stamp.*
 /slate
+/graphs/*
 /autom4te.cache
 /src/shmx/mcx
 /src/shmx/mcxsubs

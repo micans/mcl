@@ -64,7 +64,9 @@ use Scalar::Util qw(looks_like_number);
 # Globals yes, too lazy for now to package into a state object.
 
 $::jiggery = defined($ENV{RCL_JIGGERY})? $ENV{RCL_JIGGERY} : 1;
-die "Only jiggery 1 is currently available\n" unless $::jiggery == 1;
+$::peekaboo = defined($ENV{RCL_PEEKABOO}) ? $ENV{RCL_PEEKABOO} : "";
+
+die "Only jiggery 1 or 2 is currently available\n" unless $::jiggery & 3;
 
 $::prefix = shift || die "Need prefix for file names";
 die "Need at least one resolution parameter\n" unless @ARGV;
@@ -218,35 +220,57 @@ sub flat_pick_levels {
   my @clustering = ();
   my %resolutionstack = ();
   my %pick_by_level = ();
-  
-  for my $res (sort { $b <=> $a } @::resolution) { print STDERR " .. $res";
+
+  for my $res (sort { $b <=> $a } @::resolution) { print STDERR " .. $res" unless $::peekaboo;
 
     while (@inputstack) {
 
       my $name = pop @inputstack;
       my $ann  = $::nodes{$name}{ann};
       my $bob  = $::nodes{$name}{bob};
-   
+
       if ($::jiggery == 1) {
 
          my $la = $ann eq 'null' ? '-' : $::nodes{$ann}{lss};
          my $lb = $bob eq 'null' ? '-' : $::nodes{$bob}{lss};
-         my $action = 'retain';
+         my $peek = '';
 
+                                # second clause: taking 2*lss as a proxy for the size of A in ABC
+                                # (noting that we only consider such A nodes),
+                                # this says there is no ABC node below name of size > R.
+                                # a
          if ($::nodes{$name}{size} == 1 || (2 * $::nodes{$ann}{lss} <= $res && 2 * $::nodes{$bob}{lss} <= $res)) {
            push @clustering, $name;
            $pick_by_level{$name} = $res;
+           $peek = 'cls' if $::nodes{$name}{size} > 10 && defined($::nodes{$name}{peek});
          }
          else {                 # there is a merge node of size >= $res at/below either ann or bob.
                                 # so we descend down to such merge nodes (discarding e.g. volatile nodes)
                                 # OTOH once such a merge node does not exist we stop descending (so
                                 # keeping volatile nodes). TBC.
-           $action = 'descend';
            push @inputstack, $ann;
            push @inputstack, $bob;
+           if (defined($::nodes{$name}{peek})) {
+             $::nodes{$ann}{peek} = 1;
+             $::nodes{$bob}{peek} = 1;
+             $peek = 'desc' if $::nodes{$name}{iss} >= $::reslimit;
+           }
          }
-         # print STDERR "\n$res $action $name (lss $la $lb $ann $bob)\n" if $name eq 'L33169_445';
-         # print STDERR "\n$res $action $name (lss $la $lb $ann $bob)\n" if $ann eq 'L33169_445' || $bob eq 'L33169_445';
+         if ($peek) {
+           printf STDERR "-- %5d %4s %14s size %5d %5d %5d lss %5d %5d %5d\n",
+              $res, $peek, $name,
+              $::nodes{$name}{size}, $::nodes{$ann}{size}, $::nodes{$bob}{size},
+              $::nodes{$name}{lss},  $::nodes{$ann}{lss},  $::nodes{$bob}{lss};
+         }
+      }
+      elsif ($::jiggery == 2) {
+        if ($::nodes{$name}{lss} >= $res) {
+          push @inputstack, ($ann, $bob);
+        }
+        else {
+          push @clustering, $name;
+          $pick_by_level{$name} = $res;
+        }
       }
       else {
          die "No other jiggery is available right now\n";
@@ -411,6 +435,7 @@ sub read_full_tree {
      ,  parent => ''
      } ;
 
+     $::nodes{$upname}{peek} = 1 if $::peekaboo eq $upname;
      $::nodes{$ann}{parent} = $upname;
      $::nodes{$bob}{parent} = $upname;
 
@@ -575,8 +600,8 @@ sub printheatnode {
     local $" = ' ';
     my $N = @items;
     if ($N) {
-      print $fh "$level\tcls\t$ival\t$N\t$N\t$prefix\t@items\n";
-      return 'x' . sprintf("%04d", $::hmorder++) . "_$level" . ':' . $up;
+      print $fh "$level\tcls\t$ival\t$N\t$N\t$prefix\t$::hmorder\t@items\n";
+      return 'x' . sprintf("%05d", $::hmorder++) . "_$level" . ':' . $up;
     }
     else {
       return "";
@@ -584,7 +609,6 @@ sub printheatnode {
   }
   else {
     my @missing = ();
-    my @newick = ();
     my $index = "A";
     for (@items) {
       push @missing, $_ unless defined($childrenitems{$_});
@@ -595,8 +619,9 @@ sub printheatnode {
 
       # We print this even if $N == 0. One needed consequence is that all and
       # only residual classes have the letter 'A' in them.
-    print $fh "$l\tresidual\t$ival\t$I\t$N\t$prefix" . "_$index\t@missing\n";
+    print $fh "$l\tresidual\t$ival\t$I\t$N\t$prefix" . "_$index\t$::hmorder\t@missing\n";
     $index++;
+    $::hmorder++;
 
     for my $nj (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @children ) {
       printheatnode($pick, $fh, $level+1, [ @$nodelist, $ni ], $nj, $ni, "$prefix" . "_$index");
@@ -650,9 +675,13 @@ sub print_heatmap_order2 {
   my $sizelimit = $::reslimit;
   my @toplevelnames = sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} }
                       grep { $pick->{$_}{level} == 1 && $::nodes{$_}{size} >= $sizelimit } keys %$pick;
-print STDERR "@toplevelnames\n";
+print STDERR "Toplevel: @toplevelnames\n";
   my %toplevelchildren = map { ($_, 1) } ( map { @{$::nodes{$_}{items}} } @toplevelnames );
   my @toplevelmissing = ();
+
+# todo/fixme; duplicated code with printheatnode
+# could be fixed I assume with introducing top universe cluster, but
+# this may require then attention in many places across the code.
 
   for (0..($::N_leaves-1)) {
     push @toplevelmissing, $_ if ! defined($toplevelchildren{$_});
@@ -662,8 +691,9 @@ print STDERR "@toplevelnames\n";
   my $N = @toplevelmissing;
 
   my $index = "A";
-  print HEATLIST "level\ttype\tjoinval\tN1\tN2\tnesting\tnodes\n";
-  print HEATLIST "1\tresidual\t0\t$::N_leaves\t$N\t$index\t@toplevelmissing\n";
+  print HEATLIST "level\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes\n";
+  print HEATLIST "1\tresidual\t0\t$::N_leaves\t$N\t$index\t$::hmorder\t@toplevelmissing\n";
+  $::hmorder++;
 
   for my $n (@toplevelnames)
   { $index++;
@@ -820,10 +850,33 @@ sub dump_subtree {
   }
 }
 
+sub dump_subtree2 {
+
+  my ($root, $res, $maxdepth) = @_;
+  my @stack = ([$root, 0]);
+
+  while (@stack) {
+    my $item = pop @stack;
+    my ($name, $depth) = @$item;
+die "Huh $name\n" unless defined($::nodes{$name}{ann});
+    next if $::nodes{$name}{size} == 1;
+    my $ann = $::nodes{$name}{ann};
+    my $bob = $::nodes{$name}{bob};
+    print "$name\t$ann\t$bob\t$::nodes{$name}{iss}\t$::nodes{$name}{val}\n";
+    next if $::nodes{$name}{size} <= $res;
+    push @stack, ([$ann, $depth+1], [$bob, $depth+1]) unless $maxdepth && $depth >= $maxdepth;
+  }
+}
+
 
 if ($::prefix =~ s/^\+//) {
   my $toplevelstack = read_full_tree();     # this creates $::nodes, needed by dump_subtree.
   dump_subtree($::prefix, $::reslimit);
+  exit 0;
+}
+elsif ($::prefix =~ s/^>//) {
+  my $toplevelstack = read_full_tree();     # this creates $::nodes, needed by dump_subtree.
+  dump_subtree2($::prefix, $::reslimit, 50);
   exit 0;
 }
 

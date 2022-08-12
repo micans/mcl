@@ -1,5 +1,9 @@
 
 
+- granularity plots, heatmap, Makefile, joy.
+  (some formats have extra column(s))
+
+
  -  read matrix market format, optionally gzipped.
     https://www.gnu.org/software/autoconf-archive/ax_check_zlib.html
 

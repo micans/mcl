@@ -327,7 +327,7 @@ require_opt $themode -a "$ANNOTATION" "an annotation table with header line, row
 if (( n_req )); then exit 1; fi
 require_file "$ANNOTATION" "an annotation table with header line, row names as in tab file"
 
-mybase=$projectdir/hm${infix:+.$infix}
+mybase=$projectdir/hm.$infix
 
   # cannot use labelcls to unify outputs - rcldo does lots of stuff for hierarchy including Newick tree.
   # 
@@ -463,8 +463,8 @@ elif [[ $themode == 'quickmark' ]]; then
     false
   fi
 
-  mybase=$projectdir/qm${infix:+.$infix}
-  mycachebase=$projectdir/qmcache
+  mybase=$projectdir/qm.$infix
+  mycachebase=$projectdir/qmcache.$infix
 
   echo "-- Using $mybase as file prefix"
 

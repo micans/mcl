@@ -28,7 +28,7 @@ label TABFILE <STDIN>
     TABFILE: mcl tab file containing label mapping.
 EOH
     ,       labelcls => <<EOH
-label TABFILE <STDIN>
+labelcls TABFILE <STDIN>
     As above, additionally expects 'id' column. the 'nodes' column is de-multiplexed
     over the 'id' column to make a Seurat-type cluster file; a label called 'dummy'
     is ignored/skipped.
@@ -75,6 +75,7 @@ print <<EOH;
 Usage:
 $::help{clstag}
 $::help{label}
+$::help{labelcls}
 $::help{distwrangle}
 $::help{granul}
 $::help{'heatannot[cls]'}
@@ -84,7 +85,7 @@ EOH
     else {
       print <<EOH;
 Available modes:
-  clstag label granul distwrangle heatannot heatannotcls
+  clstag label labelcls granul distwrangle heatannot heatannotcls
   Use rcldo.pl MODE for descriptions
   Most modes are for rcl.sh internal usage, you may mostly care about label mode.
 EOH
@@ -168,15 +169,15 @@ sub labelwrangle {
   my %mapcount = ();
 
   my $node_index = -1;
-  my $id_index = -1;
+  my $id_nesting = -1;
   my $index = 0;
   for (@header) {
     $node_index = $index if $_ eq 'nodes';
-    $id_index   = $index if $_ eq 'id';
+    $id_nesting   = $index if $_ eq 'nesting';
     $index++;
   }
   die "No nodes column found\n" unless $node_index >= 0;
-  die "No id column found\n" unless (!$::demux || $id_index >=0);
+  die "No id column found\n" unless (!$::demux || $id_nesting >=0);
 
   print "$header\n" unless $::demux;
   my %cls = ();
@@ -202,7 +203,7 @@ sub labelwrangle {
     }
     if ($::demux) {
       for my $l (@labels) {
-        $cls{$l} = $F[$id_index];
+        $cls{$l} = $F[$id_nesting];
       }
     }
     else {
@@ -357,6 +358,10 @@ sub hm_newick {
           # implementation needs to be more explicit about this (e.g.
           # is_internal).  The hm_tree, hm_nodes data structures need more
           # scrutitinising.
+
+          # Currently, ComplexHeatmap requires alphabetically ordered
+          # nodes in the dendrogram (this is to be fixed, https://github.com/jokergoo/ComplexHeatmap/issues/949)
+          # 
   my @children = grep { !defined($hm_nodes{$_}{size}) || $hm_nodes{$_}{size} >= $lim } sort bycluskey keys %{$hm_tree{$key}};
   if (!@children) {
     die "No info for childless node $key\n" unless defined($hm_nodes{$key});
@@ -419,6 +424,8 @@ sub read_partition_hierarchy {
   my $lim = $ENV{RCLPLOT_HEAT_LIMIT} || 1;
   my $restful = defined($ENV{RCLPLOT_HEAT_NOREST}) ? 0 : 1;
 
+  my @nwk_check = ();
+
   open(CLS, "<$datafile") || die "No partition input file\n";
   my %cls = ();
   my $toplevel = 'root';
@@ -460,12 +467,12 @@ sub read_partition_hierarchy {
   while (<CLS>) {
     chomp;
     if ($. == 1 && $inputmode eq 'rclhm') {
-      die "Header [$_] not matched\n" unless $_ eq "level\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes";
+      die "Header [$_] not matched\n" unless $_ eq "level\ttree\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes";
       next;
     }
-    my ($level, $type, $joinval, $N1, $N2, $nesting, $id, $elems) = (1, 'cls', 0, 0, 0, "A", 0, "");
+    my ($level, $treeid, $type, $joinval, $N1, $N2, $nesting, $id, $elems) = (1, 'L', 'cls', 0, 0, 0, "A", 0, "");
     if ($inputmode eq 'rclhm') {
-      ($level, $type, $joinval, $N1, $N2, $nesting, $id, $elems) = split "\t";
+      ($level, $treeid, $type, $joinval, $N1, $N2, $nesting, $id, $elems) = split "\t";
       next unless $nesting =~ /^$prefix/;
       # next unless $N2 >= $lim;
       # would be nice to be able to do this, but currently not possible
@@ -502,6 +509,8 @@ sub read_partition_hierarchy {
     $N2 = $N1 = @elems unless $N2;    # This is for mode 'cls'.
     next unless $N2 >= $lim;          # Dangersign; NewickSelection dependency.
 
+    push @nwk_check, $nesting;
+
     if (@elems <= 1) {
       print STDERR "## small cluster [$level $type $joinval $N1 $N2 $elems]\n";
     }
@@ -524,6 +533,15 @@ sub read_partition_hierarchy {
   if ($inputmode eq 'rclhm') {
     my $nwk = hm_newick($lim, 0, 'root', 0, 0);
     print NWK "($nwk)\n";
+    $nwk =~ s/.*?x\d+\.(\w+):\d+/$1-/g;
+    $nwk =~ s/-\).*//;
+    my $nwk2 = join '-', @nwk_check;
+    if ($nwk ne $nwk2) {
+      print STDERR "-- Error heatmap and dendrogram not matching\n$nwk\n$nwk2\n";
+    }
+    else {
+      print STDERR "-- Matching heatmap data and RCL dendrogram produced in $fnbase.sum.txt and $fnbase.nwk\n";
+    }
   }
 
   close(NWK);

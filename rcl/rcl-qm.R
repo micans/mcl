@@ -92,10 +92,10 @@ if (!file.exists(qmcachedata) || !file.exists(qmcacheqm)) {
   cat(".. done\n", file=stderr())
 
   cat("Running permissive quickMarkers with N=5 FDR=0.01 ..", file=stderr())
-    qm <- quickMarkers(themtx, cls$V2, N=5, FDR=0.01)
+    qm <- quickMarkers(themtx, cls$V2, N=10, FDR=0.01)
   cat(".. done\n", file=stderr())
   cat(sprintf("Writing qm and data cache files %s, %s\n", qmcacheqm, qmcachedata), file=stderr())
-    write.table(qm, file=qmcacheqm, sep="\t", quote=FALSE)
+    write.table(qm, file=qmcacheqm, sep="\t", quote=FALSE, row.names=FALSE)
     u  <- unique(qm$gene)
       # transpose the matrix; we expect generally more nodes/cells/barcodes
       # than genes/terms/annoation, so keep annotation as column.

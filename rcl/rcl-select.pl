@@ -59,12 +59,86 @@ use strict;
 use warnings;
 use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
+use Getopt::Long;
 
+my @ARGV_COPY  = @ARGV;
+my $n_args = @ARGV;
+
+my $help = 0;
+my $dump_tabname  = "";
+my $dump_clsnode  = "";
+my $dump_treenode1 = "";
+my $dump_treenode2 = "";
+my $dump_printres = 1;
+
+if
+(! GetOptions
+   (  "tab=s"        =>   \$dump_tabname
+   ,  "clsnode=s"    =>   \$dump_clsnode
+   ,  "treenode1=s"  =>   \$dump_treenode1
+   ,  "treenode2=s"  =>   \$dump_treenode2
+   ,  "printres=s"   =>   \$dump_printres
+   ,  "help"         =>   \$help
+   )
+)
+   {  print STDERR "option processing failed\n";
+      exit(1);
+   }
+
+if ($help) {
+  print <<EOH;
+--tab=FNAME
+--clsnode=Lname
+--treenode1=Lname
+--treenode2=Lname
+--printres=<nu>
+EOH
+  exit 0;
+}
 
 # Globals yes, too lazy for now to package into a state object.
 
 $::jiggery = defined($ENV{RCL_JIGGERY})? $ENV{RCL_JIGGERY} : 1;
 $::peekaboo = defined($ENV{RCL_PEEKABOO}) ? $ENV{RCL_PEEKABOO} : "";
+
+# print STDERR "@ARGV\n";
+
+%::nodes = ();
+$::nodes{dummy}{items} = [];     # used for singletons; see below
+$::nodes{dummy}{size}  = 0;      #
+$::nodes{dummy}{lss}   = 0;      #
+$::L=1;
+%::topoftree = ();
+
+%::tab = ();
+
+if ($dump_tabname) {
+  open(TAB, "<$dump_tabname") || die "No tab $dump_tabname\n";
+  %::tab = map { chomp; split "\t"; } <TAB>; close(TAB);
+}
+
+# This is to dump subtrees; either the set of leaves below an internal node (useful utility
+# when analysing higher-level clusters), # or the branching structure below that node.
+# This is put here because we don't need a prefix or resolutions.
+# not ideal, interface-wise, this may be cleaned up later should rcl start finding use.
+
+if ($dump_clsnode || $dump_treenode1 || $dump_treenode2) {
+  my $toplevelstack = read_full_tree();     # this creates $::nodes, needed by dump_subtree.
+  if ($dump_treenode1) {
+    dump_subtree($dump_treenode1, $dump_printres);
+  }
+  elsif ($dump_treenode2) {
+    dump_subtree2($dump_treenode2, $dump_printres);
+  }
+  elsif ($dump_clsnode) {
+    die "No node $dump_clsnode\n" unless defined($::nodes{$dump_clsnode});
+    get_node_items($dump_clsnode);
+    my @items = map { $dump_tabname ? $::tab{$_} : $_ } @{$::nodes{$dump_clsnode}{items}};
+    local $" = "\n";
+    print "@items", "\n";
+  }
+  exit 0;
+}
 
 die "Only jiggery 1 or 2 is currently available\n" unless $::jiggery & 3;
 
@@ -79,13 +153,6 @@ $::reslimithi = $::resolution[-1];
 $::resolutiontag = join '-', @::resolution;
 
 @ARGV = ();
-%::nodes = ();
-$::nodes{dummy}{items} = [];     # used for singletons; see below
-$::nodes{dummy}{size}  = 0;      #
-$::nodes{dummy}{lss}   = 0;      #
-
-$::L=1;
-%::topoftree = ();
 
 
 sub pick_hierarchy {
@@ -235,10 +302,8 @@ sub flat_pick_levels {
          my $lb = $bob eq 'null' ? '-' : $::nodes{$bob}{lss};
          my $peek = '';
 
-                                # second clause: taking 2*lss as a proxy for the size of A in ABC
-                                # (noting that we only consider such A nodes),
-                                # this says there is no ABC node below name of size > R.
-                                # a
+                                #
+                                #
          if ($::nodes{$name}{size} == 1 || (2 * $::nodes{$ann}{lss} <= $res && 2 * $::nodes{$bob}{lss} <= $res)) {
            push @clustering, $name;
            $pick_by_level{$name} = $res;
@@ -594,13 +659,14 @@ sub printheatnode {
   my %childrenitems = map { ($_, 1) } ( map { @{$::nodes{$_}{items}} } @children );
   my $ival = $::nodes{$ni}{ival};
   my $ivalminusone = $ival > 0 ? $ival-1 : 0;
-  my $up    = $parent ? $ival - $::nodes{$parent}{ival} : $ival;
+  my $up   = $parent ? $ival - $::nodes{$parent}{ival} : $ival;
+  my $N1   = $parent ? $::nodes{$parent}{size} : $::N_leaves;
 
   if (!@children) {
     local $" = ' ';
     my $N = @items;
     if ($N) {
-      print $fh "$level\tcls\t$ival\t$N\t$N\t$prefix\t$::hmorder\t@items\n";
+      print $fh "$level\t$ni\tcls\t$ival\t$N1\t$N\t$prefix\t$::hmorder\t@items\n";
       return 'x' . sprintf("%05d", $::hmorder++) . "_$level" . ':' . $up;
     }
     else {
@@ -619,7 +685,7 @@ sub printheatnode {
 
       # We print this even if $N == 0. One needed consequence is that all and
       # only residual classes have the letter 'A' in them.
-    print $fh "$l\tresidual\t$ival\t$I\t$N\t$prefix" . "_$index\t$::hmorder\t@missing\n";
+    print $fh "$l\t$ni\tresidual\t$ival\t$I\t$N\t$prefix" . "_$index\t$::hmorder\t@missing\n";
     $index++;
     $::hmorder++;
 
@@ -691,8 +757,8 @@ print STDERR "Toplevel: @toplevelnames\n";
   my $N = @toplevelmissing;
 
   my $index = "A";
-  print HEATLIST "level\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes\n";
-  print HEATLIST "1\tresidual\t0\t$::N_leaves\t$N\t$index\t$::hmorder\t@toplevelmissing\n";
+  print HEATLIST "level\ttree\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes\n";
+  print HEATLIST "1\troot\tresidual\t0\t$::N_leaves\t$N\t$index\t$::hmorder\t@toplevelmissing\n";
   $::hmorder++;
 
   for my $n (@toplevelnames)
@@ -868,17 +934,6 @@ die "Huh $name\n" unless defined($::nodes{$name}{ann});
   }
 }
 
-
-if ($::prefix =~ s/^\+//) {
-  my $toplevelstack = read_full_tree();     # this creates $::nodes, needed by dump_subtree.
-  dump_subtree($::prefix, $::reslimit);
-  exit 0;
-}
-elsif ($::prefix =~ s/^>//) {
-  my $toplevelstack = read_full_tree();     # this creates $::nodes, needed by dump_subtree.
-  dump_subtree2($::prefix, $::reslimit, 50);
-  exit 0;
-}
 
 
 my $toplevelstack = read_full_tree();

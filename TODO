@@ -1,5 +1,8 @@
 
 
+- update config.guess [check?]
+- cygwin fix for SIGALRM
+
 - granularity plots, heatmap, Makefile, joy.
   (some formats have extra column(s))
 

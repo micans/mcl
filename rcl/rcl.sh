@@ -34,6 +34,7 @@ do_force=false        # -F (for mode 'tree')
 INFLATION=            # -I, e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
 SELF=                 # -D
 test_ucl=false        # -U
+run_dot=false         # -S
 
 function usage() {
   local e=$1
@@ -130,7 +131,7 @@ if grep -qFw $themode <<< "setup tree select mcl qc qc2 heatannot heatannotcls";
   shift 1
 fi
 
-while getopts :n:p:r:t:I:FDU opt
+while getopts :n:p:r:t:I:FDUS opt
 do
     case "$opt" in
     n) network=$OPTARG ;;
@@ -141,6 +142,7 @@ do
     F) do_force=true ;;
     D) SELF="--self" ;;
     U) test_ucl=true ;;
+    S) run_dot=true ;;
     :) echo "Flag $OPTARG needs argument" exit 1 ;;
     ?) echo "Flag $OPTARG unknown" exit 1 ;;
    esac
@@ -291,15 +293,15 @@ elif [[ $themode == 'select' ]]; then
       false
     fi
     prefix="$pfx.res$r"
-    cut -f 4 $rfile | mcxload -235-ai - -o $prefix.cls
-    mcxdump -icl $prefix.cls -tabr $pfx.tab -o $prefix.labels
-    mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose -o $prefix.txt
+    tail -n +2 $rfile | cut -f 5 | mcxload -235-ai - -o $prefix.cls
+    mcxdump -icl $prefix.cls -tabr $pfx.tab | grep -v __dummy__ > $prefix.labels
+    mcxdump -imx $prefix.cls -tabr $pfx.tab --no-values --transpose | grep -v __dummy__ > $prefix.txt
     nshared="--"
     if [[ -n $res_prev ]]; then
       nshared=$(grep -Fcwf <(head -n 30 $rfile | cut -f 1) <(head -n 30 $file_prev | cut -f  1) || true)
     fi
     export CLXDO_GRABIG_TAG="($(printf "%2s" $nshared)) "
-    clxdo grabig 20 $prefix.cls
+    clxdo grabig 30 $prefix.cls
     res_prev=$r
     file_prev=$rfile
   done
@@ -307,34 +309,36 @@ elif [[ $themode == 'select' ]]; then
   hyphenlist=$(tr -s $'\t ' '-' <<< $RESOLUTION)
   resmapfile=$pfx.hi.$hyphenlist.resdot
 
-  if [[ -f $resmapfile ]]; then
-    rlist=($RESOLUTION)
-    for minres in ${rlist[@]}; do
-      resdotfile=$pfx.hi.$minres.dot
-      respdffile=$pfx.hi.$minres.pdf
-      restxtfile=$pfx.hi.$minres.txt
-      rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$minres --label=size < $resmapfile > $resdotfile
-      if ! dot -Tpdf -Gsize=10,10\! < $resdotfile > $respdffile; then
-        echo "-- dot did not run, pdf not produced"
-      else
-        echo "-- map of output produced in $respdffile"
-      fi
-    done
+  if $run_dot; then
+    if [[ -f $resmapfile ]]; then
+      rlist=($RESOLUTION)
+      for minres in ${rlist[@]}; do
+        resdotfile=$pfx.hi.$minres.dot
+        respdffile=$pfx.hi.$minres.pdf
+        rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$minres --label=size < $resmapfile > $resdotfile
+        if ! dot -Tpdf -Gsize=10,10\! < $resdotfile > $respdffile; then
+          echo "-- dot did not run, pdf not produced"
+        else
+          echo "-- map of output produced in $respdffile"
+        fi
+      done
+    else
+      echo "-- Expected file $resmapfile not present"
+    fi
   else
-    echo "-- Expected file $resmapfile not present"
+    echo "-- Size graph plots not produced (use -S to do so)"
   fi
 
 cat <<EOM
+The following outputs were made - individual resolution based files:
+  Master file with tree information:        $(eval echo $pfx.res{$commalist}.info)
+  One cluster-per line files with labels:   $(eval echo $pfx.res{$commalist}.labels)
+  LABEL<TAB>CLUSID files:                   $(eval echo $pfx.res{$commalist}.txt)
+  clustering files in mcl format:           $(eval echo $pfx.res{$commalist}.cls)
 
-The following outputs were made.
-One cluster-per line files with labels:
-   $(eval echo $pfx.res{$commalist}.labels)
-LABEL<TAB>CLUSID files:
-   $(eval echo $pfx.res{$commalist}.txt)
-mcl-edge matrix/cluster files (suitable input e.g. for 'clm dist' and others):
-   $(eval echo $pfx.res{$commalist}.cls)
-A table with all clusters at different levels up to size $minres, including their nesting structure:
-   $restxtfile
+A table with all clusters at different levels up to size $minres, including nesting structure,
+suitable for running quickmarkers and generating heatmap:
+   $pfx.sy.$hyphenlist.txt
 EOM
 
 fi

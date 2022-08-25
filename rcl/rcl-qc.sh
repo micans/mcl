@@ -349,6 +349,7 @@ how=created
 if test_absence $mybase.sum.txt return; then
   # rcldo.pl $dispatch_type $ANNOTATION $dispatch_file $projectdir/rcl.tab > $mybase.txt
   rcldo.pl $dispatch_type $ANNOTATION $dispatch_file $projectdir/rcl.tab $mybase
+  # creates $mybase.{sum.txt,nwk}
 else
   how=reused
 fi

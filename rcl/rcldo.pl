@@ -30,7 +30,7 @@ EOH
     ,       labelcls => <<EOH
 labelcls TABFILE <STDIN>
     As above, additionally expects 'id' column. the 'nodes' column is de-multiplexed
-    over the 'id' column to make a Seurat-type cluster file; a label called 'dummy'
+    over the 'id' column to make a Seurat-type cluster file; a label called '__dummy__'
     is ignored/skipped.
     TABFILE: mcl tab file containing label mapping.
 EOH
@@ -96,11 +96,6 @@ EOH
 
 my $mode = shift || help('all');
 
-  # Out of pure laziness and spite these are global for now so I don't need to pass them into
-  # newick(). TODO revisit when code stabilises.
-my %hm_tree  = ();
-my %hm_nodes = ( root => { level => 0, type => 'cls', ival => 0, print => 0 } );
-my $hm_order  =  1;
 $::demux = 0;
 
   # This depends on all modes needing at least one argument.
@@ -214,7 +209,7 @@ sub labelwrangle {
   }
   if ($::demux) {
     for my $l (sort { $bat->{$a} <=> $bat->{$b} } keys %cls) {
-      print "$l\t$cls{$l}\n" unless $l eq 'dummy';
+      print "$l\t$cls{$l}\n" unless $l eq '__dummy__';
     }
   }
   my %hist = ( 0 => 0 );
@@ -348,8 +343,10 @@ sub bycluskey {
 }
 
 
+my $hm_order  =  1;
+
 sub hm_newick {
-  my ($lim, $depth, $key, $branchlength) = @_;
+  my ($hm_nodes, $hm_tree, $lim, $depth, $key, $branchlength) = @_;
           # Dangersign NewickSelection.
           # Below is brittle. The idea is that we never stop at
           # internal nodes, but only filter on size once at a leaf node. This
@@ -362,11 +359,11 @@ sub hm_newick {
           # Currently, ComplexHeatmap requires alphabetically ordered
           # nodes in the dendrogram (this is to be fixed, https://github.com/jokergoo/ComplexHeatmap/issues/949)
           # 
-  my @children = grep { !defined($hm_nodes{$_}{size}) || $hm_nodes{$_}{size} >= $lim } sort bycluskey keys %{$hm_tree{$key}};
+  my @children = grep { !defined($hm_nodes->{$_}{size}) || $hm_nodes->{$_}{size} >= $lim } sort bycluskey keys %{$hm_tree->{$key}};
   if (!@children) {
-    die "No info for childless node $key\n" unless defined($hm_nodes{$key});
-    die "Leaf key error for $key $hm_order\n" if defined($hm_nodes{$key}) && !defined($hm_nodes{$key}{ival});
-    my ($ival, $level, $type) = map { $hm_nodes{$key}{$_} } qw(ival level type);
+    die "No info for childless node $key\n" unless defined($hm_nodes->{$key});
+    die "Leaf key error for $key $hm_order\n" if defined($hm_nodes->{$key}) && !defined($hm_nodes->{$key}{ival});
+    my ($ival, $level, $type) = map { $hm_nodes->{$key}{$_} } qw(ival level type);
     my $up = $ival - $branchlength;
 # print STDERR "l\t$depth\t$key\t$branchlength\t$ival\t$up\n";
     return 'x' . sprintf("%04d", $hm_order++) . ".$key" . ':' . $up;
@@ -374,16 +371,16 @@ sub hm_newick {
   else {
               # TODO: check ival/pival, definition of up.
     my $ival = $branchlength;
-    if (defined($hm_nodes{$key}) && !defined($hm_nodes{$key}{ival})) {
-      my @huh = keys %{$hm_nodes{$key}};
+    if (defined($hm_nodes->{$key}) && !defined($hm_nodes->{$key}{ival})) {
+      my @huh = keys %{$hm_nodes->{$key}};
       die "Internal key error for $key $hm_order [@huh]\n"
     }
-    $ival = $hm_nodes{$key}{ival} if defined($hm_nodes{$key});
+    $ival = $hm_nodes->{$key}{ival} if defined($hm_nodes->{$key});
     my $up = $ival - $branchlength;
 # print STDERR "i\t$depth\t$key\t$branchlength\t$ival\t$up\n";
     my @newick = ();
     for my $child (@children) {
-      my $nwk = hm_newick($lim, $depth+1, $child, $branchlength + $up);
+      my $nwk = hm_newick($hm_nodes, $hm_tree, $lim, $depth+1, $child, $branchlength + $up);
       push @newick, $nwk;
     }
     return "(" . (join ",", @newick) . "):$up";
@@ -413,6 +410,9 @@ sub sdev {
 ## $prefix on its own seems to work.
 
 sub read_partition_hierarchy {
+
+  my %hm_tree  = ();
+  my %hm_nodes = ( root => { level => 0, type => 'cls', ival => 0, print => 0 } );
 
   my $inputmode = shift;
   my $datafile = shift;
@@ -454,9 +454,6 @@ sub read_partition_hierarchy {
   my @bglevel = map { log($df_uv_sum{$_}) / log(10) } @$termlist;
   my @bgsum   = map { $df_uv_sum{$_} } @$termlist;
   my @bgsigma = map { $df_uv_sigma{$_} } @$termlist;
-
-  # hierverder: compute average, sdev; write sdev for each gene.
-  # twice? normal space and log space if no values < 0.
 
   print GLORIOUS "NA\tNA\t$NU\tUniverse_sum\t@bgsum\n";
   print GLORIOUS "NA\tNA\t$NU\tUniverse_sdev\t@bgsigma\n";
@@ -519,7 +516,7 @@ sub read_partition_hierarchy {
     for my $t (@$termlist) {
       my $sum = 0;
       for my $e (@elems) {
-        next if $e eq 'dummy';
+        next if $e eq '__dummy__';
         die "No $e $t\n" unless defined($dfannot->{$e}{$t});
         $sum += $dfannot->{$e}{$t};
       }
@@ -531,7 +528,7 @@ sub read_partition_hierarchy {
   } close(CLS);
 
   if ($inputmode eq 'rclhm') {
-    my $nwk = hm_newick($lim, 0, 'root', 0, 0);
+    my $nwk = hm_newick(\%hm_nodes, \%hm_tree, $lim, 0, 'root', 0, 0);
     print NWK "($nwk)\n";
     $nwk =~ s/.*?x\d+\.(\w+):\d+/$1-/g;
     $nwk =~ s/-\).*//;

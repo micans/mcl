@@ -32,6 +32,7 @@ AC_CACHE_CHECK([ _____ weak test for C void* <=> unsigned int conversion],
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 unsigned test[] =
 {  0x00000000, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000

@@ -11,25 +11,30 @@ my $N = $LEVEL - 1;
 my $header = <>;
 chomp $header;
 
-die "Header not recognised\n" unless $header eq "level\ttree\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes";
-                                                #  0      1     2     3      4   5      6      7   8
+die "Header not recognised\n" unless $header eq "level\ttree\ttype\tjoinval\tN1\tN2\tnesting\telements";
+                                                #  0      1     2     3      4   5      6      7
 
 my $curnest = "";
 my @output  = ();
+
+my $current_parent_size = 0;
 
 while (<>) {
 
   chomp;
   my @F = split "\t";
-  push @F, "" if $F[5] == 0 && @F < 9;      # N1 is 0, split dropped last column.
+  push @F, "" if $F[5] == 0 && @F < 8;      # N2 is 0, split dropped last column.
   my $nesting = $F[6];
-  my @nesting = split "_", $F[6];
+  my @nesting = split "_", $nesting;
   my $mynest = @nesting > $N ? join '_', @nesting[0..$N] : $nesting;
   $F[6] = $mynest;
-  $F[8] = [ split " ", $F[8] ];
+  $F[7] = [ split " ", $F[7] ];
+
+  $current_parent_size = $F[4] if $mynest =~ /_A$/ || $mynest eq 'A';
+  $F[4] = $current_parent_size;
 
   if ($mynest eq $curnest) {
-    push @{$output[-1][8]}, @{$F[8]};
+    push @{$output[-1][7]}, @{$F[7]};
     $output[-1][5] +=  $F[5];
     # print STDERR "Join $mynest $nesting\n";
   }
@@ -41,17 +46,14 @@ while (<>) {
 }
 
 
-my $newid = 1;
-
 print "$header\n";
 
 for my $rec (@output) {
-  my @items = sort { $a <=> $b } @{$rec->[8]};
+  my @items = sort { $a <=> $b } @{$rec->[7]};
   local $" = "\t";
   print "@$rec[0..6]";
   local $" = ' ';
-  print "\t$newid\t@items\n";
-  $newid++;
+  print "\t@items\n";
 }
 
 my $n = @output;

@@ -1,5 +1,7 @@
 
 
+- rcl enable override default resolution limit with env setting.
+
 - update config.guess [check?]
 - cygwin fix for SIGALRM
 

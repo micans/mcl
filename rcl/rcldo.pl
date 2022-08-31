@@ -21,7 +21,7 @@ clstag FILENAME
 EOH
     ,       label => <<EOH
 label TABFILE <STDIN>
-    Reads STDIN.  Expects a header line containing a column name 'nodes'.  Each
+    Reads STDIN.  Expects a header line containing a column name 'elements'.  Each
     field in the nodes column is expected to be a space-separated list of
     indexes. This mode replaces the indexes with the corresponding labels and
     copies the rest of the input verbatim.
@@ -29,8 +29,8 @@ label TABFILE <STDIN>
 EOH
     ,       labelcls => <<EOH
 labelcls TABFILE <STDIN>
-    As above, additionally expects 'id' column. the 'nodes' column is de-multiplexed
-    over the 'id' column to make a Seurat-type cluster file; a label called '__dummy__'
+    As above, additionally expects 'nesting' column. the 'elements' column is de-multiplexed
+    over the 'nesting' column to make a Seurat-type cluster file; a label called '__dummy__'
     is ignored/skipped.
     TABFILE: mcl tab file containing label mapping.
 EOH
@@ -167,7 +167,7 @@ sub labelwrangle {
   my $id_nesting = -1;
   my $index = 0;
   for (@header) {
-    $node_index = $index if $_ eq 'nodes';
+    $node_index = $index if $_ eq 'elements';
     $id_nesting   = $index if $_ eq 'nesting';
     $index++;
   }
@@ -366,7 +366,7 @@ sub hm_newick {
     my ($ival, $level, $type) = map { $hm_nodes->{$key}{$_} } qw(ival level type);
     my $up = $ival - $branchlength;
 # print STDERR "l\t$depth\t$key\t$branchlength\t$ival\t$up\n";
-    return 'x' . sprintf("%04d", $hm_order++) . ".$key" . ':' . $up;
+    return 'x' . sprintf("%05d", $hm_order++) . ".$key" . ':' . $up;
   }
   else {
               # TODO: check ival/pival, definition of up.
@@ -464,12 +464,12 @@ sub read_partition_hierarchy {
   while (<CLS>) {
     chomp;
     if ($. == 1 && $inputmode eq 'rclhm') {
-      die "Header [$_] not matched\n" unless $_ eq "level\ttree\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes";
+      die "Header [$_] not matched\n" unless $_ eq "level\ttree\ttype\tjoinval\tN1\tN2\tnesting\telements";
       next;
     }
-    my ($level, $treeid, $type, $joinval, $N1, $N2, $nesting, $id, $elems) = (1, 'L', 'cls', 0, 0, 0, "A", 0, "");
+    my ($level, $treeid, $type, $joinval, $N1, $N2, $nesting, $elems) = (1, 'L', 'cls', 0, 0, 0, "A", "");
     if ($inputmode eq 'rclhm') {
-      ($level, $treeid, $type, $joinval, $N1, $N2, $nesting, $id, $elems) = split "\t";
+      ($level, $treeid, $type, $joinval, $N1, $N2, $nesting, $elems) = split "\t";
       next unless $nesting =~ /^$prefix/;
       # next unless $N2 >= $lim;
       # would be nice to be able to do this, but currently not possible

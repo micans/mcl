@@ -509,7 +509,7 @@ sub flat_cls_print {
     my $fname = "$::prefix.res$res.info";
     open(OUT, ">$fname") || die "Cannot write to $fname";
     print STDERR " $fname";
-    print OUT "tree\tjoinval\tsize\tnesting\tnodes\n";
+    print OUT "tree\tjoinval\tsize\tnesting\telements\n";
 
     for my $name ( sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @$clsstack ) {
 
@@ -587,8 +587,7 @@ sub printheatnode {
     local $" = ' ';
     my $N = @items;
     if ($N) {
-      print $fh "$level\t$ni\tcls\t$ival\t$N1\t$N\t$prefix\t$::syorder\t@items\n";
-      return 'x' . sprintf("%05d", $::syorder++) . "_$level" . ':' . $up;
+      print $fh "$level\t$ni\tcls\t$ival\t$N1\t$N\t$prefix\t@items\n";
     }
     else {
       return "";
@@ -606,9 +605,8 @@ sub printheatnode {
 
       # We print this even if $N == 0. One needed consequence is that all and
       # only residual classes have the letter 'A' in them.
-    print $fh "$l\t$ni\tresidual\t$ival\t$I\t$N\t$prefix" . "_$index\t$::syorder\t@missing\n";
+    print $fh "$l\t$ni\tresidual\t$ival\t$I\t$N\t$prefix" . "_$index\t@missing\n";
     $index++;
-    $::syorder++;
 
     for my $nj (sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } @children ) {
       my $jprefix = $prefix . "_$index";
@@ -642,7 +640,7 @@ sub print_hierarchy {
   my $down = (sort { $a <=> $b } map { $::nodes{$_}{ival} } @toplevelnames)[0];
 
   open(RESLIST, ">$listname") || die "Cannot open $listname for writing";
-  print RESLIST "level\tsize\tjoinval\tresidual\tup\tdown\tnesting\tnodes\n";
+  print RESLIST "level\tsize\tjoinval\tresidual\tup\tdown\tnesting\telements\n";
   print RESLIST "0\t$datasize\t0\t$presidual\t0\t$down\troot\t-\n";
 
   for my $n (@toplevelnames)
@@ -679,9 +677,8 @@ print STDERR "Summary toplevel: @toplevelnames\n";
   my $N = @toplevelmissing;
 
   my $index = "A";
-  print HEATLIST "level\ttree\ttype\tjoinval\tN1\tN2\tnesting\tid\tnodes\n";
-  print HEATLIST "1\troot\tresidual\t0\t$::N_leaves\t$N\t$index\t$::syorder\t@toplevelmissing\n";
-  $::syorder++;
+  print HEATLIST "level\ttree\ttype\tjoinval\tN1\tN2\tnesting\telements\n";
+  print HEATLIST "1\troot\tresidual\t0\t$::N_leaves\t$N\t$index\t@toplevelmissing\n";
 
   for my $n (@toplevelnames)
   { $index++;
@@ -802,7 +799,6 @@ my $flatname = "$::prefix.hi.$::resolutiontag.txt";
 print_hierarchy('flat', $flatname, $flatpick, $datasizes->[0]);
 
 my $syname = "$::prefix.sy.$::resolutiontag.txt";
-$::syorder = 1;
 
 print_heatmap_order2($syname, $flatpick);
   #

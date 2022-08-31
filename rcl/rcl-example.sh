@@ -28,4 +28,8 @@ rcl.sh tree $TAG -F
 echo "4) Creating resolution-based hierarchy"; sleep 1
 rcl.sh select $TAG -r "5 10 20 40"
 
+echo "5) Use data labels in the resolution-based hierarchy"; sleep 1
+rcldo.pl label $TAG/rcl.tab < $TAG/rcl.sy.5-10-20-40.txt > $TAG/rcl.sy.5-10-20-40.label
+
+echo "-- hierarchical output with labels in $TAG/rcl.sy.5-10-20-40.label"
 

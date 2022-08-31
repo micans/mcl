@@ -1,0 +1,93 @@
+
+
+ -------------------------------------------------------------------------------
+ A number of snippets to analyse data with RCL / Leiden / MCL given three files:
+ -------------------------------------------------------------------------------
+
+     data/data.mtx             - raw expression data in Matrix Market format
+     data/dataRownames.tsv     - gene names  (single column file)
+     data/dataColnames.tsv     - cell labels (single column file)
+
+It is convenient to stick them in a directory, I assume here called 'data'.
+
+
+### Obtain normalised expression from raw data with Seurat.
+
+  # This is useful later for creating a heatmap to summarise and evaluate
+  # the complete RCL hierarchical output.
+
+  library(Seurat)
+  library(Matrix)
+
+  themtx <- readMM("data/data.mtx")
+  rn <- readLines("data/dataRownames.tsv")
+  cn <- readLines("data/dataColnames.tsv")
+  dimnames(themtx) <- list(rn,cn)
+  srat <- CreateSeuratObject(themtx)
+
+  srat <- NormalizeData(srat)
+  writeMM(srat$RNA@data, "data/norm.mtx")
+
+
+### Save the 'SNN' (shared nearest neighbours) network to file so that MCL can use it.
+
+  srat <- FindVariableFeatures(srat, selection.method = "vst", nfeatures = 2000)
+  all.genes <- rownames(srat)
+  srat <- ScaleData(srat, features = all.genes)
+  srat <- RunPCA(srat, features = VariableFeatures(object = srat))
+  srat<- FindNeighbors(srat, k.param = 30)    # use k=30 for MCL.
+
+  # nn_id <- srat@graphs$RNA_nn@Dimnames[[1]]
+  # write.table(nn_id, file="nn_id.txt", row.names=FALSE, col.names=FALSE, sep="\t", quote = FALSE)
+  # Above is not needed, should be the same as the file data/Colnames.tsv - kept for reference.
+
+  writeMM(as(as.matrix(srat@graphs$RNA_snn),"dgCMatrix"), "s30.mtx")
+
+
+### Obtain the Leiden clusterings with Seurat (make sure the directory cls_lei exists)
+
+  res_ls <- c(0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24)
+  srat<- FindNeighbors(srat, k.param = 20)    # use default 20 for Leiden.
+  for (res in res_ls) {
+    outfile = sprintf("cls_lei/lei_r%03d", 10* res)
+    print(outfile)
+    srat <- FindClusters(srat, resolution = res, algorithm = 4)
+    write.table(srat@active.ident, file=outfile, row.names=TRUE, col.names=FALSE, sep="\t", quote = FALSE)
+  }
+
+
+### Compute mcl clusterings; this assumes 8 cpus are available.
+
+  ( cd data
+    srt2tab.sh dataColnames.tsv > cells.tab
+    ln dataRownames.tsv genes.txt
+    tail -n +3 s30.mtx | mcxload -123 -  -ri max --write-binary -o s30.mcx
+  )
+  mkdir cls_mcl
+  rcl.sh mcl cls_mcl -p 8 -n data/s30.mcx -t data/cells.tab -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
+
+  # the above will make a file cls_mcl/rcl.lsocls with names of all the clustering outputs,
+  # the steps below will use that file.
+
+
+### Compute RCL tree and resolution clusters for mcl in the same directory.
+
+  rcl.sh setup cls_mcl -n data/s30.mcx -t data/cells.tab
+  rcl.sh tree cls_mcl
+  rcl.sh select cls_mcl -r "100 200 400 800 1600 3200"
+
+
+### Compute RCL tree and resolution clusters for Leiden
+
+  rcl.sh setup cls_lei -n data/s30.mcx -t data/cells.tab cls_lei/lei_r*
+  rcl.sh tree cls_lei
+  rcl.sh select cls_lei -r "100 200 400 800 1600 3200"
+
+
+### Create quickmarkers annotation and heatmap
+
+  export RCL_SCRIPT_HOME=$HOME/local/bin
+  RCL_QM_N=2 RCL_QM_TFIDF=1.0 rcl-qc.sh quickmark cls_mcl -d data/norm.mtx -g data/genes.txt -h cls_mcl/rcl.sy.100-200-400-800-1600-3200.txt -x foo
+  RCLPLOT_X=16 RCLPLOT_Y=20 RCLHM_RNAMES=TRUE RCLHM_ROWCLUSTER=TRUE RCLPLOT_HEAT_LIMIT=80 RCLPLOT_XFTSIZE=5 RCLPLOT_YFTSIZE=6 RCLHM_XTITLE="marker gene expression across RCL clusters" rcl-qc.sh heatannot cls_mcl -h cls_mcl/rcl.sy.100-200-400-800-1600-3200.txt -a  cls_mcl/qm.foo.annot.txt -x foo
+
+

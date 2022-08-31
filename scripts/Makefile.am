@@ -3,7 +3,7 @@
 
 include $(top_srcdir)/include/include.am
 
-this = minimcl docme mcxplotlines.R clsdiam.sh srt2cls.sh srt2tab.sh
+this = minimcl docme mcxplotlines.R clsdiam.sh
 
 noinst_SCRIPTS = packed-example.sh packed-example2.sh
 

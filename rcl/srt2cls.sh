@@ -22,7 +22,7 @@ if (( $(wc -l < $fn) + 1 != $(wc -l < $nodetab) )); then
   echo "Not found: expected different of 1 between file line counts"
   false
 fi
-if [[ $(head -n 1 $nodetab) != 0$'\t'dummy ]]; then
+if [[ $(head -n 1 $nodetab) != 0$'\t'__dummy__ ]]; then
   echo "Dummy node not found in tab file"
   false
 fi

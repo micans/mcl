@@ -2,12 +2,10 @@
   
 set -euo pipefail
 
-UCL=""
-TAG=rcl
-if [[ ! -z ${MCLX_USEUCL+x} ]]; then UCL=-U; TAG=ucl; fi
+TAG=fox        # everything will be made in a directory fox.
 
-if [[ ! -f falkner.mci || ! -f falkner.tab ]]; then
-   echo "Please copy graphs/falkner.mci and graphs/falkner.tab from the mcl source to here"
+if [[ ! -f data/falkner.mci || ! -f data/falkner.tab ]]; then
+   echo "Please make a directory 'data' and copy graphs/falkner.mci and graphs/falkner.tab from the mcl source to data"
    exit 0
 fi
 
@@ -16,22 +14,18 @@ fi
 export MCLXIOVERBOSITY=2
 
    # This generates many clusterings at different levels of granularity.
-   # -dae triggers degree-adjustment with the specified exponent.
    #
-echo "1) Generating clusterings"
-cached=0
-for i in 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.5 3.0 4.0 5.0 6.0; do
-   cline1="mcl falkner.mci -q x -V all -I $i"
-   cline2="mcl falkner.mci -q x -V all -I $i -dae  1 -aa .dad"
-   ( [[ ! -f $($cline1 -az) ]] && $cline1 ) || (( ++cached ))
-   ( [[ ! -f $($cline2 -az) ]] && $cline2 ) || (( ++cached ))
-done
-echo "Clustering done ($cached cached)"
+echo "1) Generating clusterings in $TAG"; sleep 1
+rcl.sh mcl $TAG -n data/falkner.mci -I "1.3 1.4 1.5 1.6 1.8 2.0 2.2 2.5 3.0 4.0"
 
-rcl.sh $TAG $UCL -n falkner.mci -t falkner.tab out.falkner.mci*
+echo "2) Setting up directory $TAG with network and tab files"; sleep 1
+rcl.sh setup $TAG -n data/falkner.mci -t data/falkner.tab
 
-rcl.sh $TAG -l 200/100/600
+echo "3) Creating RCL matrix and single linkage tree"; sleep 1
+   # -F forces overwrite; useful for small example, otherwise not necessary.
+rcl.sh tree $TAG -F
 
-rcl.sh $TAG -r "5 10 20 40"
+echo "4) Creating resolution-based hierarchy"; sleep 1
+rcl.sh select $TAG -r "5 10 20 40"
 
 

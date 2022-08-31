@@ -278,7 +278,7 @@ elif [[ $themode == 'select' ]]; then
   # rcl-select.22-178.pl $pfx $RESOLUTION < $pfx.join-order
 
   echo "-- saving resolution cluster files and"
-  echo "-- displaying size of the 20 largest clusters"
+  echo "-- displaying size of the 30 largest clusters"
   echo "-- in parentheses N identical clusters with previous level among 30 largest clusters"
                                       # To help space the granularity output.
   export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution

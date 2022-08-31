@@ -3,6 +3,10 @@
 
 SUBDIRS = . img graphs doc src include scripts rcl testing shed
 
+if BUILD_RCL
+SUBDIRS += rcl
+endif
+
 VERSION = @VERSION@
 
 AM_CPPFLAGS = -DMAN_PATH=\"$(mandir)\"

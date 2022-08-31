@@ -92,6 +92,23 @@ if test "$helpful_reminder" = "yes"; then
 fi
 
 
+########################      rcl scripts    #####################################
+
+AC_ARG_ENABLE(rcl,
+[  --enable-rcl   install rcl scripts ],
+ [
+     case "${enableval}" in
+         yes) cfg_rcl=true ;;
+         no)  cfg_rcl=false ;;
+         *) AC_MSG_ERROR([bad value ${enableval} for --enable-rcl]) ;;
+     esac
+ ], [cfg_rcl=false]
+)
+AM_CONDITIONAL(BUILD_RCL, test x$cfg_rcl = xtrue)
+
+
+
+
 ########################  blast package      #####################################
 
 ## AC_ARG_ENABLE(blast,

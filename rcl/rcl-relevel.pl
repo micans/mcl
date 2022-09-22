@@ -33,6 +33,9 @@ while (<>) {
   $current_parent_size = $F[4] if $mynest =~ /_A$/ || $mynest eq 'A';
   $F[4] = $current_parent_size;
 
+  $F[0] = $LEVEL if @nesting > $N;
+  $F[2] = 'cls' unless $mynest =~ /_A$/ || $mynest eq 'A';
+
   if ($mynest eq $curnest) {
     push @{$output[-1][7]}, @{$F[7]};
     $output[-1][5] +=  $F[5];

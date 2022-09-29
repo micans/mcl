@@ -1,13 +1,14 @@
 
 
    *  A new method for concensus clustering called RCL (restricted contingency
-      linkage) is introduced. It is implemented in scripts/rcl.sh; the help
+      linkage) is introduced. It is implemented in rcl/rcl.sh; the help
       output for this should be sufficient to run it. {rcl.sh} uses
-      {clm vol}, {clm close}, {rcl-select.pl} and {rcl-dot-resmap.pl} to
-      compute the RCL results. RCL is completely independent from mcl, but can
-      be used to integrate a set of MCL outputs at different levels of
-      inflation.  Various items below in this update reference RCL; a pre-print
-      is forthcoming.
+      {clm vol}, {clm close}, and {rcl-select.pl} to compute the RCL results.
+      RCL is completely independent from mcl, but can be used to integrate a
+      set of MCL outputs at different levels of inflation.  Various items below
+      in this update reference RCL; a pre-print is forthcoming.
+      The script rcl-qc.sh supports various modes to create QC plots as in
+      the preprint, as well as the cluster/marker-gene heatmap from the preprint.
 
    *  Mcl source is now hosted on github.com/micans/mcl .
       Compiling mcl now requires installation of cimfomfa, which provides

@@ -1,12 +1,14 @@
 
 
-- rcl enable override default resolution limit with env setting.
-
+- incorporate Joost's patch
 - update config.guess [check?]
-- cygwin fix for SIGALRM
+- cygwin fix for SIGALRM (revert?)
+
+- add version to rcl.sh, other scripts.
 
 - granularity plots, heatmap, Makefile, joy.
   (some formats have extra column(s))
+  retain the rcl-rcl projection script .. somewhere in kn.
 
 
  -  read matrix market format, optionally gzipped.

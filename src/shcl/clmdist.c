@@ -524,12 +524,12 @@ static mcxstatus distMain
             ;  }
                for (k=0;k<N_COLS(meet12);k++)
                {  dim l
-               ;  mclv* ct = meet12->cols+k
-               ;  mclv* c1mem = c1->cols+k
-               ;  mclv* c2mem = NULL
+               ;  mclv* ct = meet12->cols+k        /* list of clusters contingent with c1 */
+               ;  mclv* c1mem = c1->cols+k         /* the elements in c1 */
+               ;  mclv* c2mem = NULL               /* we will loop through various c2 */
 
                ;  for (l=0;l<ct->n_ivps;l++)
-                  {  ofs c2id = ct->ivps[l].idx
+                  {  ofs c2id = ct->ivps[l].idx    /* we have the id of this c2 */
                   ;  double meet_sz = ct->ivps[l].val
                   ;  c2mem = mclxGetVector(c2, c2id, EXIT_ON_FAIL, c2mem)
                   ;  mclp* tivp = NULL
@@ -537,6 +537,7 @@ static mcxstatus distMain
                   ;  mclv* meet = mcldMeet(c1mem, c2mem, NULL)
                   ;  mclv* nbvec = NULL
                   ;  dim minsize = MCX_MIN(c1mem->n_ivps, c2mem->n_ivps)
+                                                   /* below is consistency, with skew generalisation (default 1.0 so off) */
                   ;  if (mxrcl)
                      mclvMakeConstant(meet, pow(1.0 * meet->n_ivps / (1.0 * minsize), skew_g))
 

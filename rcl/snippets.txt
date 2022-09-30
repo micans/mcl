@@ -64,7 +64,7 @@ It is convenient to stick them in a directory, I assume here called 'data'.
     tail -n +3 s30.mtx | mcxload -123 -  -ri max --write-binary -o s30.mcx
   )
   mkdir cls_mcl
-  rcl.sh mcl cls_mcl -p 8 -n data/s30.mcx -t data/cells.tab -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
+  rcl mcl cls_mcl -p 8 -n data/s30.mcx -t data/cells.tab -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
 
   # the above will make a file cls_mcl/rcl.lsocls with names of all the clustering outputs,
   # the steps below will use that file.
@@ -72,22 +72,22 @@ It is convenient to stick them in a directory, I assume here called 'data'.
 
 ### Compute RCL tree and resolution clusters for mcl in the same directory.
 
-  rcl.sh setup cls_mcl -n data/s30.mcx -t data/cells.tab
-  rcl.sh tree cls_mcl
-  rcl.sh select cls_mcl -r "100 200 400 800 1600 3200"
+  rcl setup cls_mcl -n data/s30.mcx -t data/cells.tab
+  rcl tree cls_mcl
+  rcl select cls_mcl -r "100 200 400 800 1600 3200"
 
 
 ### Compute RCL tree and resolution clusters for Leiden
 
-  rcl.sh setup cls_lei -n data/s30.mcx -t data/cells.tab cls_lei/lei_r*
-  rcl.sh tree cls_lei
-  rcl.sh select cls_lei -r "100 200 400 800 1600 3200"
+  rcl setup cls_lei -n data/s30.mcx -t data/cells.tab cls_lei/lei_r*
+  rcl tree cls_lei
+  rcl select cls_lei -r "100 200 400 800 1600 3200"
 
 
 ### Create quickmarkers annotation and heatmap
 
   export RCL_SCRIPT_HOME=$HOME/local/bin
-  RCL_QM_N=2 RCL_QM_TFIDF=1.0 rcl-qc.sh quickmark cls_mcl -d data/norm.mtx -g data/genes.txt -h cls_mcl/rcl.sy.100-200-400-800-1600-3200.txt -x foo
-  RCLPLOT_X=16 RCLPLOT_Y=20 RCLHM_RNAMES=TRUE RCLHM_ROWCLUSTER=TRUE RCLPLOT_HEAT_LIMIT=80 RCLPLOT_XFTSIZE=5 RCLPLOT_YFTSIZE=6 RCLHM_XTITLE="marker gene expression across RCL clusters" rcl-qc.sh heatannot cls_mcl -h cls_mcl/rcl.sy.100-200-400-800-1600-3200.txt -a  cls_mcl/qm.foo.annot.txt -x foo
+  RCL_QM_N=2 RCL_QM_TFIDF=1.0 rcl-qc quickmark cls_mcl -d data/norm.mtx -g data/genes.txt -h cls_mcl/rcl.sy.100-200-400-800-1600-3200.txt -x foo
+  RCLPLOT_X=16 RCLPLOT_Y=20 RCLHM_RNAMES=TRUE RCLHM_ROWCLUSTER=TRUE RCLPLOT_HEAT_LIMIT=80 RCLPLOT_XFTSIZE=5 RCLPLOT_YFTSIZE=6 RCLHM_XTITLE="marker gene expression across RCL clusters" rcl-qc heatannot cls_mcl -h cls_mcl/rcl.sy.100-200-400-800-1600-3200.txt -a  cls_mcl/qm.foo.annot.txt -x foo
 
 

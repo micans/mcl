@@ -10,7 +10,7 @@
 #    _ _  __|_ _. __|_ _  _|   _ _  _ _|_. _  _  _  _    |. _ |  _  _  _
 #   | (/__\ | | |(_ | (/_(_|  (_(_)| | | |(_|(/_| |(_\/  ||| ||<(_|(_|(/_
 #                                           |        /               |
-# RCL consensus clustering
+# RCL - Fast multi-resolution consensus clustering
 # Author: Stijn van Dongen
 #
 # This RCL implementation uses programs/tools that are shipped with mcl.  It
@@ -18,7 +18,7 @@
 # network and clusterings have to be supplied in mcl matrix format.
 #
 # See github.com/micans/mcl#rcl and this script with no arguments.
-# qc plots can be made with rcl-qc.sh .
+# qc plots can be made with rcl-qc .
 
 set -euo pipefail
 
@@ -41,14 +41,14 @@ function usage() {
   cat <<EOH
 An rcl workflow requires three steps:
 
-1) rcl.sh setup   TAG -n NETWORKFILENAME -t TABFILENAME  LIST-OF-CLUSTERING-FILES
-2) rcl.sh tree    TAG [-F] [-p NCPU]
-3) rcl.sh select  TAG -r "RESOLUTIONLIST"
+1) rcl setup   TAG -n NETWORKFILENAME -t TABFILENAME  LIST-OF-CLUSTERING-FILES
+2) rcl tree    TAG [-F] [-p NCPU]
+3) rcl select  TAG -r "RESOLUTIONLIST"
 
 TAG will be used as a project directory name in the current directory.
 NETWORKFILENAME and TABFILENAME are usually created by mcxload.
 Hard links to these files will be made in TAG, symbolic if this is not possible.
-All rcl.sh commands are issued from outside and directly above directory TAG.
+All rcl commands are issued from outside and directly above directory TAG.
 LIST-OF-CLUSTERING-FILES is stored in a file and retrieved when needed.
 -F forces a run if a previous output exists.
 For RESOLUTIONLIST a doubling is suggested, e.g. -r "100 200 400 800 1600 3200"
@@ -59,10 +59,10 @@ If 'dot' is available, a plot of results is left in TAG/rcl.hi.RESOLUTION.pdf
 A table of all clusters of size above the smallest resolution is left in TAG/rcl.hi.RESOLUTION.txt
 
 To make mcl clusterings to give to rcl:
-rcl.sh mcl TAG [-p NCPU] -n NETWORKFILENAME -I "INFLATIONLIST"
+rcl mcl TAG [-p NCPU] -n NETWORKFILENAME -I "INFLATIONLIST"
 This may take a while for large graphs.
 In step 1) you can then use
-   rcl.sh setup TAG -n NETWORKFILENAME -t TABFILENAME
+   rcl setup TAG -n NETWORKFILENAME -t TABFILENAME
 INFLATIONLIST:
 - for single cell use e.g. -I "1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.8 1.9 2"
 - for protein families you will probably want somewhat larger values
@@ -70,7 +70,7 @@ EOH
   exit $e
 }
 
-MODES="setup tree select mcl qc qc2 heatannot heatannotcls"
+MODES="setup tree select mcl"
 n_req=0
 
 function require_mode() {
@@ -126,7 +126,7 @@ function test_absence () {
 
 require_mode "${1-}"          # themode now set
 shift 1
-if grep -qFw $themode <<< "setup tree select mcl qc qc2 heatannot heatannotcls"; then
+if grep -qFw $themode <<< "setup tree select mcl"; then
   require_tag $themode "${1-}"   # projectdir now set
   shift 1
 fi
@@ -231,7 +231,7 @@ elif [[ $themode == 'setup' ]]; then
   ##  T R E E
 
 elif [[ $themode == 'tree' ]]; then
-  require_imx "$pfx.input" "did you run rcl.sh setup $projectdir?"
+  require_imx "$pfx.input" "did you run rcl setup $projectdir?"
   require_file "$pfx.lsocls" "cluster file $pfx.lsocls is missing, weirdly"
 
   rclfile=$pfx.rcl
@@ -259,7 +259,7 @@ elif [[ $themode == 'tree' ]]; then
   fi
   echo "-- Computing single linkage join order for network $rclfile"
   clm close --sl -sl-rcl-cutoff ${RCL_CUTOFF-0} -imx $rclfile -tab $pfx.tab -o $pfx.join-order -write-sl-list $pfx.node-values
-  echo "RCL network and linkage both ready, you can run rcl.sh select $projectdir"
+  echo "RCL network and linkage both ready, you can run rcl select $projectdir"
 
 
   ##
@@ -269,7 +269,7 @@ elif [[ $themode == 'select' ]]; then
   minres=-
   require_opt select -r "$RESOLUTION" "a list of resolution values between quotes"
   (( n_req )) && false
-  require_imx "$pfx.rcl" "did you run rcl.sh tree $projectdir?"
+  require_imx "$pfx.rcl" "did you run rcl tree $projectdir?"
   echo "-- computing clusterings with resolution parameters $RESOLUTION"
   export MCLXIOVERBOSITY=2
   # export RCL_RES_PLOT_LIMIT=${RCL_RES_PLOT_LIMIT-500}

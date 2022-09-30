@@ -7,7 +7,7 @@ this =
 
 noinst_SCRIPTS = 
 
-dist_bin_SCRIPTS = rcl.sh rcl-qc.sh rcl-select.pl rcldo.pl rcl-dot-resmap.pl rcl-qm.R rcl-relevel.pl
+dist_bin_SCRIPTS = rcl rcl-qc rcl-select.pl rcldo.pl rcl-dot-resmap.pl rcl-qm.R rcl-relevel.pl
 
 EXTRA_DIST = $(this) $(noinst_SCRIPTS)
 

@@ -13,6 +13,7 @@ cd $place
 ../../configure CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib --prefix=$HOME/local
 
 make install
-CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib make distcheck
+CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib make dist
+#CFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib make distcheck
 
 

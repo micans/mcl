@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-my $VERSION='__SETVERSION__';
+my $VERSION='22-273';  # __SETVERSION__
 
 # Copyright 2022 Stijn van Dongen
 
@@ -172,7 +172,9 @@ sub flat_pick_levels {
   my %resolutionstack = ();
   my %pick_by_level = ();
 
-  for my $res (sort { $b <=> $a } @::resolution) { print STDERR " .. $res" unless $::peekaboo;
+  print STDERR "-- computing resolution hierarchy (toplevel @inputstack) ";
+
+  for my $res (sort { $b <=> $a } @::resolution) { print STDERR " $res" unless $::peekaboo;
 
     while (@inputstack) {
 
@@ -289,7 +291,7 @@ sub read_full_tree {
   $::N_leaves = 0;    # yes fix up global variable when refactoring.
 
   die "Join order header line not recognised (expect [$header_expect])" unless $header eq $header_expect;
-  print STDERR "-- constructing tree:\n";
+  print STDERR "-- reading RCL tree in memory\n";
 
   my $equijoin_report = defined($ENV{RCL_EQUIJOIN}) ? $ENV{RCL_EQUIJOIN} : 0;
 
@@ -402,7 +404,7 @@ sub read_full_tree {
   }
 print STDERR "\n" if $. >= 1000;
   my $N = scalar (keys %::nodes);
-  print STDERR "-- Have $::N_leaves nodes in join order input\n";
+  print STDERR "-- have $::N_leaves nodes in join order input\n";
   return [ grep { $::nodes{$_}{size} > 0 } sort { $::nodes{$b}{size} <=> $::nodes{$a}{size} } keys %::topoftree ];
 }
 
@@ -422,7 +424,7 @@ sub flat_cls_collect {
 
   my $resolutionstack = shift;
 
-  print STDERR "\n-- collecting clusters for resolution\n";
+  print STDERR "\n-- collecting clusters for resolution ";
    # when collecting items, proceed from fine-grained to coarser clusterings,
    # so with low resolution first.
    #
@@ -431,7 +433,7 @@ sub flat_cls_collect {
 
   my $res_index = 0;
 
-  for my $res (sort { $a <=> $b } @::resolution) { print STDERR " .. $res";
+  for my $res (sort { $a <=> $b } @::resolution) { print STDERR " $res";
 
     $res_index++;
 
@@ -642,7 +644,7 @@ sub print_hierarchy {
   $toplevelsum += $::nodes{$_}{size} for @toplevelnames;
 
   my $presidual = $toplevelsum ? sprintf("%.1f", 100 * ($datasize - $toplevelsum) / $datasize) : "-";
-  print "$type: $toplevelsum $datasize ($presidual% residual nodes at top level)\n";
+  # print "$type: $toplevelsum $datasize ($presidual% residual nodes at top level)\n";
 
   my $down = (sort { $a <=> $b } map { $::nodes{$_}{ival} } @toplevelnames)[0];
 
@@ -796,7 +798,6 @@ die "Huh $name\n" unless defined($::nodes{$name}{ann});
 my $toplevelstack = read_full_tree();
 dot_full_tree();
 
-print STDERR "-- computing resolution hierarchy (toplevelstack @$toplevelstack)\n";
 my ($resolutionstack, $pick_by_level) = flat_pick_levels($toplevelstack);
 my ($flatpick, $datasizes) = flat_cls_collect($resolutionstack);
 

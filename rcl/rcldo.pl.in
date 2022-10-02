@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Scalar::Util qw(looks_like_number);
 
-##  This program provides various data-wrangling capabilities for rcl.sh
+##  This program provides various data-wrangling capabilities for rcl
 ##  Most modes are not interesting for users, except 'label', which
 ##  translates numerical indices to labels.
 
@@ -48,7 +48,7 @@ granul FILENAME
     FILENAME to contain the same infix as described under clstag (r\\d{2,} or
     I\\d{2,}).  Outputs cumulative fractional proportion of nodes contained in
     cluster of size <= x.
-    Used by: rcl.sh qc
+    Used by: rcl-qc
 EOH
     ,       'heatannot[cls]' => <<EOH
 heatannot[cls] ANNOTATIONFILE PARTITIONFILE TABFILE outputbase
@@ -56,11 +56,11 @@ heatannot[cls] ANNOTATIONFILE PARTITIONFILE TABFILE outputbase
       A rectangular matrix; column names are terms, row names are cell barcodes, the data
       are scores for each barcode/term combination.
     PARTITIONFILE Either an rcl output file rcl.hm.* (heatmap-ready data produced by
-      rcl.sh select) in mode heatannot
+      rcl select) in mode heatannot
       or an mcl clustering in mode heatannotcls
     TABFILE mcl tab file containing label mapping.
     outputbase prefix for output
-    Used by: rcl-qc.sh heatannot[cls]
+    Used by: rcl-qc heatannot[cls]
 EOH
 );
 
@@ -88,7 +88,7 @@ EOH
 Available modes:
   clstag label labelcls granul distwrangle heatannot heatannotcls
   Use rcldo.pl MODE for descriptions
-  Most modes are for rcl.sh internal usage, you may mostly care about label mode.
+  Most modes are for rcl internal usage, you may mostly care about label mode.
 EOH
       exit 1;
     }

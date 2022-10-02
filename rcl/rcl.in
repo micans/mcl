@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=__SETVERSION__
+VERSION=__SETVERSION__ #__SETVERSION__
 
 # Copyright 2022 Stijn van Dongen
 
@@ -135,6 +135,8 @@ fi
 if [[ $themode == 'version' ]]; then
    list=$(for p in clm; do echo -n " | $($p --version | head -n 1)"; done)
    echo "Versions of programs used: $list |"
+   rcl-select.pl --version
+   rcldo.pl version
    echo "RCL version: $VERSION"
    exit 0
 fi
@@ -232,6 +234,7 @@ elif [[ $themode == 'setup' ]]; then
     ln -sf $network $pfx.input
   fi
   wc -l < $pfx.tab > $pfx.nitems
+  rcl version >> $pfx.cline
   echo "Project directory $projectdir is ready ($pfx.input)"
 
 
@@ -274,9 +277,9 @@ elif [[ $themode == 'tree' ]]; then
   ##  S E L E C T
 
 elif [[ $themode == 'select' ]]; then
-  minres=-
   require_opt select -r "$RESOLUTION" "a list of resolution values between quotes"
   (( n_req )) && false
+  minres=$(tr -s ' ' '\n' <<< "$RESOLUTION" | sort -n | head -n 1)
   require_imx "$pfx.rcl" "did you run rcl tree $projectdir?"
   echo "-- computing clusterings with resolution parameters $RESOLUTION"
   export MCLXIOVERBOSITY=2
@@ -285,8 +288,7 @@ elif [[ $themode == 'select' ]]; then
   rcl-select.pl $pfx $RESOLUTION < $pfx.join-order
   # rcl-select.22-178.pl $pfx $RESOLUTION < $pfx.join-order
 
-  echo "-- saving resolution cluster files and"
-  echo "-- displaying size of the 30 largest clusters"
+  echo "-- saving resolution cluster files and displaying size of the 30 largest clusters"
   echo "-- in parentheses N identical clusters with previous level among 30 largest clusters"
                                       # To help space the granularity output.
   export CLXDO_WIDTH=$((${#pfx}+14))  # .res .cls length 8, leave 6 for resolution
@@ -320,10 +322,10 @@ elif [[ $themode == 'select' ]]; then
   if $run_dot; then
     if [[ -f $resmapfile ]]; then
       rlist=($RESOLUTION)
-      for minres in ${rlist[@]}; do
-        resdotfile=$pfx.hi.$minres.dot
-        respdffile=$pfx.hi.$minres.pdf
-        rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$minres --label=size < $resmapfile > $resdotfile
+      for theres in ${rlist[@]}; do
+        resdotfile=$pfx.hi.$theres.dot
+        respdffile=$pfx.hi.$theres.pdf
+        rcl-dot-resmap.pl ${RCL_DOT_RESMAP_OPTIONS-} --minres=$theres --label=size < $resmapfile > $resdotfile
         if ! dot -Tpdf -Gsize=10,10\! < $resdotfile > $respdffile; then
           echo "-- dot did not run, pdf not produced"
         else
@@ -339,14 +341,15 @@ elif [[ $themode == 'select' ]]; then
 
 cat <<EOM
 The following outputs were made - individual resolution based files:
-  Master file with tree information:        $(eval echo $pfx.res{$commalist}.info)
+  Master files with tree information:       $(eval echo $pfx.res{$commalist}.info)
   One cluster-per line files with labels:   $(eval echo $pfx.res{$commalist}.labels)
   LABEL<TAB>CLUSID files:                   $(eval echo $pfx.res{$commalist}.txt)
-  clustering files in mcl format:           $(eval echo $pfx.res{$commalist}.cls)
+  clustering files in mcx format:           $(eval echo $pfx.res{$commalist}.cls)
 
-A table with all clusters at different levels up to size $minres, including nesting structure,
-suitable for running quickmarkers and generating heatmap:
-   $pfx.sy.$hyphenlist.txt
+Summary table $pfx.sy.$hyphenlist.txt
+  - All different levels integrated
+  - Residual clusters (names ending in _A) collating small clusters below size $minres
+  - Suitable for running quickmarkers and generating heatmap
 EOM
 
 fi

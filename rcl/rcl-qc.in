@@ -14,7 +14,7 @@ VERSION=__SETVERSION__
 # RCL consensus clustering QC
 # Author: Stijn van Dongen
 #
-# See rcl.sh, github.com/micans/mcl#rcl and this script with no arguments.
+# See rcl, github.com/micans/mcl#rcl and this script with no arguments.
 
 set -euo pipefail
 
@@ -34,7 +34,7 @@ R_invoke="R --no-echo --quiet --silent --vanilla"
 function usage() {
   local e=$1
   cat <<EOH
-This program provides qc/reporting modes additional to rcl.sh, where TAG is an rcl project
+This program provides qc/reporting modes additional to rcl, where TAG is an rcl project
 directory. It has some in-line R code to create plots (not pretty, but there are reasons, e.g. file
 transformations are needed before the R code can be invoked).  Should you find it useful and wish to
 change the R code, you can simply make those changes in (bespoke copies of) this program.  Several

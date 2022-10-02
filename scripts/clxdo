@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+VERSION=__SETVERSION__
 
 #  (C) Copyright 2005-2022 Stijn van Dongen
 #
@@ -44,6 +45,14 @@ function require_num() {
 
 ################################
 
+    version)
+echo "clxdo version: $VERSION"
+exit
+;;
+
+
+################################
+
     -h)
       (cat | sort) <<EOU
 clxdo gra          <cls-file>                    #  show cluster sizes
@@ -69,6 +78,7 @@ clxdo factor_table_from_cls <node-to-factormatrix> <node-clustering> <factor-dic
 clxdo make_map <source-cls> <dest-cls>           # make map file between clusterings
 clxdo diff_table <tbl-file> <tbl-file>           # prints max(abs(a-b))
 clxdo diff_mx <tbl-file> <tbl-file>              # dumps all edges from a-b
+clxdo version                                    # version
 EOU
       exit
       ;;

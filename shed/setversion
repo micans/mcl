@@ -40,3 +40,9 @@ echo $MONTHDAY >  doc/stamp.day
 echo $MONTH    >  doc/stamp.month
 echo $YEAR     >  doc/stamp.year
 
+( cd rcl
+  for p in rcl.in; do
+    sed "2s/__SETVERSION__/$VERSION/" > rcl
+  done
+)
+

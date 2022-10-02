@@ -41,8 +41,10 @@ echo $MONTH    >  doc/stamp.month
 echo $YEAR     >  doc/stamp.year
 
 ( cd rcl
-  for p in rcl.in rcl-qc.in; do
-    sed "2s/__SETVERSION__/$VERSION/" < $p > ${p%.in}
+  for p in {rcl,rcl-qc,rcl-select.pl,rcldo.pl,rcl-relevel.pl}.in; do
+    dest=${p%.in}
+    sed "2s/__SETVERSION__/$VERSION/" < $p > $dest
+    chmod u+x $dest
   done
 )
 

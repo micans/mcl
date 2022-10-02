@@ -47,4 +47,11 @@ echo $YEAR     >  doc/stamp.year
     chmod u+x $dest
   done
 )
+( cd scripts
+  for p in clxdo.in; do
+    dest=${p%.in}
+    sed "2s/__SETVERSION__/$VERSION/" < $p > $dest
+    chmod u+x $dest
+  done
+)
 

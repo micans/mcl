@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+my $VERSION='__SETVERSION__';
 
 # Copyright 2022 Stijn van Dongen
 
@@ -65,6 +66,7 @@ my @ARGV_COPY  = @ARGV;
 my $n_args = @ARGV;
 
 my $help = 0;
+my $version = 0;
 my $dump_tabname  = "";
 my $dump_clsnode  = "";
 my $dump_treenode1 = "";
@@ -79,6 +81,7 @@ if
    ,  "treenode2=s"  =>   \$dump_treenode2
    ,  "printres=s"   =>   \$dump_printres
    ,  "help"         =>   \$help
+   ,  "version"      =>   \$version
    )
 )
    {  print STDERR "option processing failed\n";
@@ -94,6 +97,10 @@ if ($help) {
 --printres=<nu>
 EOH
   exit 0;
+}
+elsif ($version) {
+   print "rcl-select.pl version $VERSION\n";
+   exit 0;
 }
 
 # Globals yes, too lazy for now to package into a state object.

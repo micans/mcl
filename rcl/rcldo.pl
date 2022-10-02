@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+my $VERSION='__SETVERSION__';
 
 use strict;
 use warnings;
@@ -98,8 +99,12 @@ my $mode = shift || help('all');
 
 $::demux = 0;
 
-  # This depends on all modes needing at least one argument.
-if (!@ARGV) {
+if ($mode eq 'version') {
+   print "rcldo.pl version $VERSION\n";
+   exit 0;
+}
+  # This depends on all othermodes needing at least one argument.
+elsif (!@ARGV) {
                            # it makes sense in a limited and specific way.
   $mode = 'heatannot[cls]' if $mode eq 'heatannot' || $mode eq 'heatannotcls';
   help($mode);

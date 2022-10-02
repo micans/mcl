@@ -135,6 +135,7 @@ fi
 if [[ $themode == 'version' ]]; then
    list=$(for p in clm; do echo -n " | $($p --version | head -n 1)"; done)
    echo "Versions of programs used: $list |"
+   echo "RCL version: $VERSION"
    exit 0
 fi
 

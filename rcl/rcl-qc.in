@@ -1,4 +1,5 @@
 #!/bin/bash
+VERSION=__SETVERSION__
 
 # Copyright 2022 Stijn van Dongen
 
@@ -85,7 +86,7 @@ EOH
   exit $e
 }
 
-MODES="qc qc2 heatannot quickmark"
+MODES="qc qc2 heatannot quickmark version"
 
 function require_mode() {
   local mode=$1
@@ -143,6 +144,11 @@ shift 1
 if grep -qFw $themode <<< "qc qc2 heatannot quickmark"; then
   require_tag $themode "${1-}"   # projectdir now set
   shift 1
+fi
+
+if [[ $themode == 'version' ]]; then
+   echo "rcl-qc version: $VERSION"
+   exit 0
 fi
 
 pfx=$projectdir/rcl

@@ -1,9 +1,14 @@
 #!/usr/bin/perl
+my $VERSION='__SETVERSION__';
 
 use strict;
 use warnings;
 
 my $LEVEL = shift || die "Please supply maximum number of levels for new hierarchy\n";
+if ($LEVEL eq 'version') {                     # truly awful
+   print "rcl-relevel.pl version $VERSION\n";
+   exit 0;
+}
 die "Number of levels should be positive\n" unless $LEVEL > 0;
 
 my $N = $LEVEL - 1;

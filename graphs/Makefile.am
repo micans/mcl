@@ -3,7 +3,7 @@
 
 exampledir = $(datadir)/doc/$(PACKAGE)/examples
 
-example_DATA = falkner.mci falkner2.mci falkner.coords make-falkner.pl \
+example_DATA = falkner.mci falkner.tab falkner2.mci falkner.coords make-falkner.pl \
    proteins.mci matula.mci lattice.mci honey.mci seven.mci infinity.mci \
    friends small.mci small.map small.tab fznyy.tab fznyy.mci small64.mci \
 	petersen.mci \

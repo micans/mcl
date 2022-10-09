@@ -11,6 +11,17 @@ method published by Enright, van Dongen and Ouzounis.
 A lot (too much) of information and documentation is available
 at [micans.org](http://micans.org/mcl) .
 
+## RCL, fast multi-resolution consensus clustering
+RCL, (f)or Restricted Contingency Linkage, is a fast and *parameterless* method for integrating
+multiple flat clusterings at different levels of resolutions. There is
+no requirement on these clusterings; they can be made by any method or combination of methods,
+for example by Leiden with different resolution parameters, or by MCL with
+different inflation values.
+The implementation provided here
+in [the RCL directory](rcl) just requires the input to be in the native mcl
+matrix format.
+
+
 ## MCL-edge
 This is the name I use sometimes to refer to the collection of sibling
 programs to MCL for network and matrix loading, filtering and subsetting,

@@ -9,7 +9,9 @@ Installing MCL software requires a compilable source tree. The code in this
 repository requires processing by autotools to produce such a tree.
 Hence, to use MCL software this repository is not the right source unless
 you are interested in development. For installing the latest MCL software
-use (the script install-this-mcl.sh)[install-this-mcl.sh].
+use (the script install-this-mcl.sh)[install-this-mcl.sh]. On Linux
+and MacOS (if you have development tools installed on MacOS) the following
+lines pasted in a terminal (or saved to file and sourced) will install MCL.
 
 ```
 mkdir installmcl
@@ -21,7 +23,9 @@ mcl --version        # test install
 ```
 
 By default programs are installed in `$HOME/local/bin` and the multi-resolution
-consensus clustering program `rcl` is enabled (see below).
+consensus clustering program `rcl` is enabled (see below). Edit the file `install-this-mcl.sh`
+before executing it if you want to make changes.
+
 
 ## Applications and bioinformatics
 MCL has been used a lot in the field of bioinformatics, starting with the TribeMCL

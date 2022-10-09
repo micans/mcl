@@ -14,7 +14,9 @@ use (the script install-this-mcl.sh)[install-this-mcl.sh].
 ```
 mkdir installmcl
 cd installmcl
-wget https://raw.githubusercontent.com/micans/mcl/main/install-this-mcl.sh && ./install-this-mcl.sh
+wget https://raw.githubusercontent.com/micans/mcl/main/install-this-mcl.sh -o install-this-mcl
+chmod u+x install-this-mcl.sh
+./install-this-mcl.sh
 mcl --version        # test install
 ```
 
@@ -60,17 +62,9 @@ to expand mcl-edge's capabilities.
 Another reason for new releases is that new compilers and
 compiler settings have unearthed two or three blemishes in the code base that
 needed fixing.
-
-Currently only development MCL releases have been made available from this repository.
-Stable releases will follow in the not too distant future.
 This code needs the C library in the github repo
 [micans/cimfomfa](http://github.com/micans/cimfomfa),
-hence the build procedure has been changed somewhat and needs more steps.
+hence the build procedure has been changed somewhat and needs more steps (see instructions above).
 
-- [This script](build-mcl-21-257.sh) will pull http://micans.org/mcl/dev/mcl-21-257.tar.gz
-  and http://micans.org/dev/cimfomfa-21-257.tar.gz and then (attempt to) build an mcl release.
-- [installmcl.sh](installmcl.sh) is similar with a little more control and needs local tar archives,
-  for example the two listed above.
-
-If you have suggestions please get in touch or open an issue.
+If you have questions, suggestions, or problems please open an issue or discussion.
 

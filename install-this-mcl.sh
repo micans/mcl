@@ -14,16 +14,15 @@ mcltar=mcl-$mcl.tar.gz
 cfftar=cimfomfa-$cff.tar.gz
 
 if command -v wget > /dev/null; then 
-   webbit=wget
+   wget http://micans.org/mcl/src/$mcltar -O $mcltar
+   wget http://micans.org/mcl/src/$cfftar -O $cfftar
 elif command -v curl > /dev/null; then 
-   webbit="curl -O"
+   curl http://micans.org/mcl/src/$mcltar -O $mcltar -O
+   curl http://micans.org/mcl/src/$cfftar -O $cfftar -O
 else
    echo "Explain to me how to download stuff please"
    false
 fi
-
-$webbit http://micans.org/mcl/src/$mcltar
-$webbit http://micans.org/mcl/src/$cfftar
 
 if true; then
   thedir=./${cfftar%.tar.gz}

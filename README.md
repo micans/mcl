@@ -5,6 +5,22 @@ for clustering weighted or simple networks, a.k.a. graphs.  It is accompanied
 in this source code by other network construction and (trait) analysis
 programs.
 
+Installing MCL software requires a compilable source tree. The code in this
+repository requires processing by autotools to produce such a tree.
+Hence, to use MCL software this repository is not the right source unless
+you are interested in development. For installing the latest MCL software
+use (the script install-this-mcl.sh)[install-this-mcl.sh].
+
+```
+mkdir installmcl
+cd installmcl
+wget https://raw.githubusercontent.com/micans/mcl/main/install-this-mcl.sh && ./install-this-mcl.sh
+mcl --version        # test install
+```
+
+By default programs are installed in `$HOME/local/bin` and the multi-resolution
+consensus clustering program `rcl` is enabled (see below).
+
 ## Applications and bioinformatics
 MCL has been used a lot in the field of bioinformatics, starting with the TribeMCL
 method published by Enright, van Dongen and Ouzounis.

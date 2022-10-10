@@ -5,7 +5,7 @@ include $(top_srcdir)/include/include.am
 
 this = 
 
-noinst_SCRIPTS = 
+noinst_SCRIPTS = srt2tab.sh srt2cls.sh
 
 dist_bin_SCRIPTS = rcl rcl-qc rcl-select.pl rcldo.pl rcl-dot-resmap.pl rcl-qm.R rcl-relevel.pl
 

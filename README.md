@@ -9,7 +9,7 @@ Installing MCL software requires a compilable source tree. The code in this
 repository requires processing by autotools to produce such a tree.
 Hence, to use MCL software this repository is not the right source unless
 you are interested in development. For installing the latest MCL software
-use (the script install-this-mcl.sh)[install-this-mcl.sh]. On Linux
+use [the script install-this-mcl.sh](install-this-mcl.sh). On Linux
 and MacOS (if you have development tools installed on MacOS) the following
 lines pasted in a terminal (or saved to file and sourced) will install MCL.
 

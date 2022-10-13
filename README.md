@@ -43,11 +43,9 @@ The implementation provided here
 in [the RCL directory](rcl) just requires the input to be in the native mcl
 matrix format.
 
+[This preprint quite extensively describes RCL](https://www.biorxiv.org/content/10.1101/2022.10.09.511493v1),
+including application of RCL to a large-scale single-cell kidney data set of 27k cells.
 
-## MCL-edge
-This is the name I use sometimes to refer to the collection of sibling
-programs to MCL for network and matrix loading, filtering and subsetting,
-including computation of network traits such as centrality and clustering coefficient.
 
 ## Status and plans
 The program MCL has been very stable or nearly unchanging for well over 15
@@ -55,6 +53,9 @@ years now, with the last speed optimisations occurring about a decade ago. I
 aim to do some development in its sibling programs, including improving those
 that implement (currently somewhat inelegant) mini-formats such as `mcx alter`
 and `mcxsubs`.
+
+RCL (see above) was recently added, so some focus will be to improve/extend its
+implementation, as well as support and documentation.
 
 A second are of development, tied to the first, will be
 low-level fast loading, filtering and subsetting of large networks and matrices.

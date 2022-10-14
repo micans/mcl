@@ -32,7 +32,7 @@ dummyclsid="srtdummyclsid"
 (cut -f 2 $fn | sort -un; echo $dummyclsid) | nl -v0 -nln -w1 > .tmp.$fn.clstab
 
 mcxload --transpose --stream-split \
-  -abc <(cat $fn; echo -e "dummy\t$dummyclsid") \
+  -abc <(cat $fn; echo -e "__dummy__\t$dummyclsid") \
   -strict-tabc $nodetab \
   -strict-tabr .tmp.$fn.clstab \
   -o $fn.cls

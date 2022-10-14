@@ -42,6 +42,10 @@ different inflation values.
 The implementation provided here
 in [the RCL directory](rcl) just requires the input to be in the native mcl
 matrix format.
+For Seurat results this is facilitated by the scripts
+[rcl/srt2tab.sh](rcl/srt2tab.sh) (this establishes a mapping from labels to
+indexes) and [rcl/srt2cls.sh](rcl/srt2cls.sh) (this translates a Seurat
+`<LABEL><CLSID>` file to mcl matrix format).
 
 [This preprint quite extensively describes RCL](https://www.biorxiv.org/content/10.1101/2022.10.09.511493v1),
 including application of RCL to a large-scale single-cell kidney data set of 27k cells.

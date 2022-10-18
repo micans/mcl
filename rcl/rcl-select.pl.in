@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-my $VERSION='22-273';  # __SETVERSION__
+my $VERSION='__SETVERSION__';  # __SETVERSION__
 
 # Copyright 2022 Stijn van Dongen
 

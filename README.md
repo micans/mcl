@@ -2,13 +2,15 @@
 
 Markov CLustering or the Markov CLuster algorithm, MCL is a method
 for clustering weighted or simple networks, a.k.a. graphs.  It is accompanied
-in this source code by other network construction and (trait) analysis
-programs.
+in this source code by other network-related
+programs, one of which is RCL (restricted contingency linkage) for fast
+multi-resolution consensus clustering (see below).
 
 Installing MCL software requires a compilable source tree. The code in this
 repository requires processing by autotools to produce such a tree.
 Hence, to use MCL software this repository is not the right source unless
-you are interested in development. For installing the latest MCL software
+you are interested in development. For installing the current MCL release
+from [micans.org/mcl](https://micans.org/mcl)
 use [the script install-this-mcl.sh](install-this-mcl.sh). On Linux
 and MacOS (if you have development tools installed on MacOS) the following
 lines pasted in a terminal (or saved to file and sourced) will install MCL.

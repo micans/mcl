@@ -25,8 +25,7 @@ else
 fi
 
 if true; then
-  thedir=./${cfftar%.tar.gz}
-  rm -rf $thedir
+  thedir=${cfftar%.tar.gz}
   tar xzf $cfftar
   ( cd $thedir
     ./configure --prefix=$INSTALL --disable-shared
@@ -37,7 +36,7 @@ fi
 
 if true; then
   tar xzf $mcltar
-  thedir=./${mcltar%.tar.gz}
+  thedir=${mcltar%.tar.gz}
   ( cd $thedir
     ./configure CFLAGS=-I$INSTALL/include LDFLAGS=-L$INSTALL/lib --prefix=$INSTALL --enable-rcl
     make

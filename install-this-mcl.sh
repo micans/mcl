@@ -17,8 +17,8 @@ if command -v wget > /dev/null; then
    wget http://micans.org/mcl/src/$mcltar -O $mcltar
    wget http://micans.org/mcl/src/$cfftar -O $cfftar
 elif command -v curl > /dev/null; then 
-   curl http://micans.org/mcl/src/$mcltar -O $mcltar -O
-   curl http://micans.org/mcl/src/$cfftar -O $cfftar -O
+   curl http://micans.org/mcl/src/$mcltar -O
+   curl http://micans.org/mcl/src/$cfftar -O
 else
    echo "Explain to me how to download stuff please"
    false

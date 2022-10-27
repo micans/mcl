@@ -1,15 +1,21 @@
 # $Id: INSTALL,v 1.1 2001/03/21 00:28:28 vanbaal Exp $
 
+mcl has libtingea (a C utility library) as a dependency, provided by the
+cimfomfa project (https://github.com/micans/cimfomfa).
 
-This mcl source has 'cimfomfa' (a C utility library) as a dependency. The 'dev'
-tree has a script that installs both cimfomfa and a development version of mcl.
-I plan to release a new mcl version this autumn. At that stage the install
-script will be available from the 'main' branch.
+Neither mcl nor cimfomfa can be directly built from the github source as the
+source code requires processing by autotools. Autotool-derived source trees are
+available from micans.org.
 
-
+The (very simple) script install-this-mcl.sh installs both cimfomfa and the
+latest released version of mcl. If you wish to customise the build of mcl this
+script is a good starting point.
 
 Below are generic installation instructions from the time when mcl did not have
-any dependencies. Some of these instructions may still be useful.
+any dependencies. Some of these instructions may still be useful; for example
+to understand the script install-this-mcl.sh if you are new to compiling and
+installing C sources on Unix.
+
 
 Basic Installation
 ==================

@@ -33,7 +33,7 @@ before executing it if you want to make changes.
 MCL has been used a lot in the field of bioinformatics, starting with the TribeMCL
 method published by Enright, van Dongen and Ouzounis.
 A lot (too much) of information and documentation is available
-at [micans.org](http://micans.org/mcl) .
+at [micans.org](https://micans.org/mcl) .
 
 ## RCL, fast multi-resolution consensus clustering
 RCL, (f)or Restricted Contingency Linkage, is a fast and *parameterless* method for integrating

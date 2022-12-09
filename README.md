@@ -6,6 +6,10 @@ in this source code by other network-related
 programs, one of which is RCL (restricted contingency linkage) for fast
 multi-resolution consensus clustering (see below).
 
+This MCL implementation is fast, threaded, and uses sparse matrices. It runs on a single
+machine and can use multiple CPUs. On capable hardware it can cluster
+networks with millions of nodes and billions of edges within hours.
+
 Installing MCL software requires a compilable source tree. The code in this
 repository requires processing by autotools to produce such a tree.
 Hence, to use MCL software this repository is not the right source unless
@@ -33,7 +37,7 @@ before executing it if you want to make changes.
 MCL has been used a lot in the field of bioinformatics, starting with the TribeMCL
 method published by Enright, van Dongen and Ouzounis.
 A lot (too much) of information and documentation is available
-at [micans.org](https://micans.org/mcl) .
+at [micans.org/mcl](https://micans.org/mcl) .
 
 ## RCL, fast multi-resolution consensus clustering
 RCL, (f)or Restricted Contingency Linkage, is a fast and *parameterless* method for integrating
@@ -55,7 +59,7 @@ including application of RCL to a large-scale single-cell kidney data set of 27k
 
 ## Status and plans
 The program MCL has been very stable or nearly unchanging for well over 15
-years now, with the last speed optimisations occurring about a decade ago. I
+years now. The last speed optimisations happened in 2010. I
 aim to do some development in its sibling programs, including improving those
 that implement (currently somewhat inelegant) mini-formats such as `mcx alter`
 and `mcxsubs`.

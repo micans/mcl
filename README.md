@@ -5,6 +5,12 @@ for clustering weighted or simple networks, a.k.a. graphs.  It is accompanied
 in this source code by other network-related
 programs, one of which is RCL (restricted contingency linkage) for fast
 multi-resolution consensus clustering (see below).
+**If you use this software, please cite**
+
+Van Dongen, Stijn, Graph clustering via a discrete uncoupling process, Siam
+Journal on Matrix Analysis and Applications 30—1, p121—141, 2008.
+
+[See https://doi.org/10.1137/040608635](https://doi.org/10.1137/040608635)
 
 This MCL implementation is fast, threaded, and uses sparse matrices. It runs on a single
 machine and can use multiple CPUs. On capable hardware it can cluster

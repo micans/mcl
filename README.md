@@ -7,8 +7,8 @@ programs, one of which is RCL (restricted contingency linkage) for fast
 multi-resolution consensus clustering (see below).
 **If you use this software, please cite**
 
-Van Dongen, Stijn, Graph clustering via a discrete uncoupling process, Siam
-Journal on Matrix Analysis and Applications 30—1, p121—141, 2008.
+van Dongen, Stijn, Graph clustering via a discrete uncoupling process, Siam
+Journal on Matrix Analysis and Applications 30-1, p121-141, 2008.
 
 [See https://doi.org/10.1137/040608635](https://doi.org/10.1137/040608635)
 

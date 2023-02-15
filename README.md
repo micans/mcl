@@ -16,6 +16,7 @@ This MCL implementation is fast, threaded, and uses sparse matrices. It runs on 
 machine and can use multiple CPUs. On capable hardware it can cluster
 networks with millions of nodes and billions of edges within hours.
 
+## Installation
 Installing MCL software requires a compilable source tree. The code in this
 repository requires processing by autotools to produce such a tree.
 Hence, to use MCL software this repository is not the right source unless

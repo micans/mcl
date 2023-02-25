@@ -3,7 +3,7 @@
 
 # MCL
 
-![Visualisation of MCL](https://github.com/micans/mcl/blob/master/img/fa_header_800_200.png)
+![Visualisation of MCL](/img/fa_header_800_200.png)
 
 Markov CLustering or the Markov CLuster algorithm, MCL is a method
 for clustering weighted or simple networks, a.k.a. graphs.  It is accompanied

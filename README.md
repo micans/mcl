@@ -1,3 +1,5 @@
+![Visualisation of MCL](https://github.com/micans/mcl/blob/master/img/fa_header_800_200.png)
+
 # MCL
 
 Markov CLustering or the Markov CLuster algorithm, MCL is a method

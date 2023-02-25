@@ -1,6 +1,4 @@
 
-![Visualisation of MCL](https://github.com/micans/mcl/blob/master/img/fa_header_800_200.png)
-
 # MCL
 
 ![Visualisation of MCL](/img/fa_header_800_200.png)

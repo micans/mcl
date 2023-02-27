@@ -42,12 +42,26 @@ By default programs are installed in `$HOME/local/bin` and the multi-resolution
 consensus clustering program `rcl` is enabled (see below). Edit the file `install-this-mcl.sh`
 before executing it if you want to make changes.
 
+MCL's build environment was created by Joost van Baal - many thanks Joost!
+
+Version 14-137 of MCL is available on many flavours of Linux, including Debian
+and Ubuntu.  This is a fine version; this MCL implementation has not noticeably
+changed over the past decade. See [Status and Plans](#status-and-plans) below for finer details and why
+this software is still developed nonetheless. Again many thanks to Joost and subsequent Debian
+and other maintainers who packaged MCL for Linux distro releases.
+
 
 ## Applications and bioinformatics
 MCL has been used a lot in the field of bioinformatics, starting with the TribeMCL
 method published by Enright, van Dongen and Ouzounis.
 A lot (too much) of information and documentation is available
-at [micans.org/mcl](https://micans.org/mcl) .
+at [micans.org/mcl](https://micans.org/mcl) . For bioinformatic applications, please
+cite additionally
+
+Enright A.J., Van Dongen S., Ouzounis C.A.
+An efficient algorithm for large-scale detection of protein families,
+Nucleic Acids Research 30(7):1575-1584 (2002).
+
 
 ## RCL, fast multi-resolution consensus clustering
 RCL, (f)or Restricted Contingency Linkage, is a fast and *parameterless* method for integrating

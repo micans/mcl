@@ -61,6 +61,7 @@ cite additionally
 Enright A.J., Van Dongen S., Ouzounis C.A.
 An efficient algorithm for large-scale detection of protein families,
 Nucleic Acids Research 30(7):1575-1584 (2002).
+[https://pubmed.ncbi.nlm.nih.gov/11917018/](https://pubmed.ncbi.nlm.nih.gov/11917018/)
 
 
 ## RCL, fast multi-resolution consensus clustering

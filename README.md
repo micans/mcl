@@ -14,7 +14,8 @@ van Dongen, Stijn, Graph clustering via a discrete uncoupling process, Siam
 Journal on Matrix Analysis and Applications 30-1, p121-141, 2008.
 
 [See https://doi.org/10.1137/040608635](https://doi.org/10.1137/040608635) .
-The algorithm was conceived in 1998 and first published in technical reports over 1998 to 1999.
+The algorithm was conceived in 1998 and [first published in a technical reports in 1998](https://ir.cwi.nl/pub/4604).
+A PhD thesis and three more technical reports [followed in 2000](https://micans.org/mcl/index.html?sec_thesisetc).
 The paper above is the result of a long-winded review process that started in
 2000 and lay dormant for a long time, for reasons not entirely untypical within
 the realms of scientific publishing.

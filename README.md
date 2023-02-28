@@ -13,7 +13,11 @@ multi-resolution consensus clustering (see below).
 van Dongen, Stijn, Graph clustering via a discrete uncoupling process, Siam
 Journal on Matrix Analysis and Applications 30-1, p121-141, 2008.
 
-[See https://doi.org/10.1137/040608635](https://doi.org/10.1137/040608635)
+[See https://doi.org/10.1137/040608635](https://doi.org/10.1137/040608635) .
+The algorithm was conceived in 1998 and first published in technical reports over 1998 to 1999.
+The paper above is the result of a long-winded review process that started in
+2000 and lay dormant for a long time, for reasons not entirely untypical within
+the realms of scientific publishing.
 
 This MCL implementation is fast, threaded, and uses sparse matrices. It runs on a single
 machine and can use multiple CPUs. On capable hardware it can cluster

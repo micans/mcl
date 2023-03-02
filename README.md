@@ -11,10 +11,9 @@ multi-resolution consensus clustering (see below).
 **If you use this software, please cite**
 
 van Dongen, Stijn, Graph clustering via a discrete uncoupling process, Siam
-Journal on Matrix Analysis and Applications 30-1, p121-141, 2008.
+Journal on Matrix Analysis and Applications 30-1, p121-141, 2008. [https://doi.org/10.1137/040608635](https://doi.org/10.1137/040608635) .
 
-[See https://doi.org/10.1137/040608635](https://doi.org/10.1137/040608635) .
-The algorithm was conceived in 1998 and [first published in a technical reports in 1998](https://ir.cwi.nl/pub/4604).
+The algorithm was conceived in 1998 and [first published in a technical report in 1998](https://ir.cwi.nl/pub/4604).
 A PhD thesis and three more technical reports [followed in 2000](https://micans.org/mcl/index.html?sec_thesisetc).
 The paper above is the result of a long-winded review process that started in
 2000 and lay dormant for a long time, for reasons not entirely untypical within
@@ -49,11 +48,12 @@ before executing it if you want to make changes.
 
 MCL's build environment was created by Joost van Baal - many thanks Joost!
 
-Version 14-137 of MCL is available on many flavours of Linux, including Debian
-and Ubuntu.  This is a fine version; this MCL implementation has not noticeably
-changed over the past decade. See [Status and Plans](#status-and-plans) below for finer details and why
-this software is still developed nonetheless. Again many thanks to Joost and subsequent Debian
-and other maintainers who packaged MCL for Linux distro releases.
+**Release 14-137 of MCL (an earlier version of the software in this repository) is available
+on many flavours of Linux and BSD, including Debian,
+Ubuntu and OpenBSD.  Release 14-137 is a fine version;** this MCL implementation has not noticeably
+changed over the past decade. See [Status and Plans](#status-and-plans) below for more detail and why
+the software is still being developed nonetheless. Again many thanks to Joost, Kusalananda and subsequent
+maintainers who packaged MCL for Linux and BSD releases.
 
 
 ## Applications and bioinformatics

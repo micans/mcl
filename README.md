@@ -1,9 +1,9 @@
 
-[Installation and MCL versions](#installation-and-mcl-versions)
-[Applications and bioinformatics](applications-and-bioinformatics)
-[Quick pointers](quick-pointers)
-[RCL, fast multi-resolution consensus clustering](rcl-fast-multi-resolution-consensus-clustering)
-[Status and plans](status-and-plans)
+[Installation and MCL versions](#installation-and-mcl-versions)  
+[Applications and bioinformatics](applications-and-bioinformatics)  
+[Quick pointers](quick-pointers)  
+[RCL, fast multi-resolution consensus clustering](rcl-fast-multi-resolution-consensus-clustering)  
+[Status and plans](status-and-plans)  
 
 # MCL
 

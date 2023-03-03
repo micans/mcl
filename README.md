@@ -1,4 +1,10 @@
 
+[Installation and MCL versions](#installation-and-mcl-versions)
+[Applications and bioinformatics](applications-and-bioinformatics)
+[Quick pointers](quick-pointers)
+[RCL, fast multi-resolution consensus clustering](rcl-fast-multi-resolution-consensus-clustering)
+[Status and plans](status-and-plans)
+
 # MCL
 
 ![Visualisation of MCL](/img/fa_header_800_200.png)
@@ -16,8 +22,7 @@ Journal on Matrix Analysis and Applications 30-1, p121-141, 2008. [https://doi.o
 The algorithm was conceived in 1998 and [first published in a technical report in 1998](https://ir.cwi.nl/pub/4604).
 A PhD thesis and three more technical reports [followed in 2000](https://micans.org/mcl/index.html?sec_thesisetc).
 The paper above is the result of a long-winded review process that started in
-2000 and lay dormant for a long time, for reasons not entirely untypical within
-the realms of scientific publishing.
+2000 and lay dormant for a long time, for reasons not entirely untypical within the realms of scientific publishing.
 A lot more (too much) information and documentation is available at [micans.org/mcl](https://micans.org/mcl) .
 
 This MCL implementation is fast, threaded, and uses sparse matrices. It runs on a single
@@ -69,6 +74,28 @@ Enright A.J., Van Dongen S., Ouzounis C.A.
 An efficient algorithm for large-scale detection of protein families,
 Nucleic Acids Research 30(7):1575-1584 (2002).
 [https://pubmed.ncbi.nlm.nih.gov/11917018/](https://pubmed.ncbi.nlm.nih.gov/11917018/)
+
+
+## Quick pointers
+The quickest way to try out MCL is to provide it with a file that has three tab-separated columns,
+where each line is of the form `LABEL1<tab>LABEL2<tab>VALUE`. Such a line represents an edge
+from `LABEl1` to `LABEL2` with weight `VALUE`. If the file is called `MYFILE` you can run MCL
+like this:
+```
+mcl MYFILE --abc -I 2.0
+```
+Output will be in the file `out.MYFILE.I20`, where each line is cluster written as a list of labels.
+It is recommended to try a few different inflation values (the `-I` parameter), e.g.
+```
+mcl MYFILE --abc -I 1.4
+mcl MYFILE --abc -I 2.0
+mcl MYFILE --abc -I 3.0
+mcl MYFILE --abc -I 5.0
+```
+
+How you construct the network is important.
+[Some recipes can be found here](https://micans.org/mcl/man/clmprotocols.html), and
+[some Frequently Answered Questions here](https://micans.org/mcl/man/mclfaq.html) (the latter is a bit over the top).
 
 
 ## RCL, fast multi-resolution consensus clustering

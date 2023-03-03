@@ -23,14 +23,17 @@ This MCL implementation is fast, threaded, and uses sparse matrices. It runs on 
 machine and can use multiple CPUs. On capable hardware it can cluster
 networks with millions of nodes and billions of edges within hours.
 
-## Installation
+## Installation and MCL versions
 Installing MCL software requires a compilable source tree. The code in this
 repository requires processing by autotools to produce such a tree.
-Hence, to use MCL software this repository is not the right source unless
-you are interested in development. For installing the current MCL release
-from [micans.org/mcl](https://micans.org/mcl)
-use [the script install-this-mcl.sh](install-this-mcl.sh). On Linux
-and MacOS (if you have development tools installed on MacOS) the following
+Hence, to use MCL software this repository is not the right source unless you are interested in development.
+This code additionally needs the C library in the github repository
+[micans/cimfomfa](http://github.com/micans/cimfomfa) (previously cimfomfa was included within the mcl distribution).
+The build procedure has been changed accordingly and coordinates installation of both cimfomfa and mcl.
+
+For installing the current MCL release from [micans.org/mcl](https://micans.org/mcl)
+use [the script install-this-mcl.sh](install-this-mcl.sh).
+On Linux and MacOS (if you have development tools installed on MacOS) the following
 lines pasted in a terminal (or saved to file and sourced) will install MCL.
 
 ```
@@ -107,9 +110,6 @@ to expand mcl-edge's capabilities.
 Another reason for new releases is that new compilers and
 compiler settings have unearthed two or three blemishes in the code base that
 needed fixing.
-This code needs the C library in the github repo
-[micans/cimfomfa](http://github.com/micans/cimfomfa),
-hence the build procedure has been changed somewhat and needs more steps (see instructions above).
 
 If you have questions, suggestions, or problems please open an issue or discussion.
 

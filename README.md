@@ -18,6 +18,7 @@ A PhD thesis and three more technical reports [followed in 2000](https://micans.
 The paper above is the result of a long-winded review process that started in
 2000 and lay dormant for a long time, for reasons not entirely untypical within
 the realms of scientific publishing.
+A lot more (too much) information and documentation is available at [micans.org/mcl](https://micans.org/mcl) .
 
 This MCL implementation is fast, threaded, and uses sparse matrices. It runs on a single
 machine and can use multiple CPUs. On capable hardware it can cluster
@@ -62,9 +63,7 @@ maintainers who packaged MCL for Linux and BSD releases.
 ## Applications and bioinformatics
 MCL has been used a lot in the field of bioinformatics, starting with the TribeMCL
 method published by Enright, van Dongen and Ouzounis.
-A lot (too much) of information and documentation is available
-at [micans.org/mcl](https://micans.org/mcl) . For bioinformatic applications, please
-cite additionally
+For bioinformatic applications, please cite additionally
 
 Enright A.J., Van Dongen S., Ouzounis C.A.
 An efficient algorithm for large-scale detection of protein families,

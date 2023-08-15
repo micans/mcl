@@ -352,7 +352,7 @@ static double mclExpandVector1
    ;  }
 
       {  vecMeasure(dstvec, &maxval, &center)
-      ;  mcxbool get_stats =  stats->flow_chr && stats->i_ite < 9
+      ;  mcxbool get_stats =  stats->flow_chr && stats->i_ite < 21
       ;  double selfval    =  get_stats ? mclvSelf(dstvec) : -1.0
 
       ;  if (mxp->implementation & MCL_USE_RPRUNE)
@@ -667,7 +667,7 @@ mclExpandStats* mclExpandStatsNew
 
    ;  stats->flow_chr  =  make_flow_chr
                           ?  mclxCartesian
-                             (  mclvCanonical(NULL, 40, 1.0)      /* tbcont 40 hardcoded */
+                             (  mclvCanonical(NULL, 100, 1.0)      /* tbcont 100 hardcoded (20 iterations) */
                              ,  mclvCanonical(NULL, n_cols, 1.0)
                              ,  -1.0
                              )

@@ -706,9 +706,9 @@ int main
          ;
 
             case MY_OPT_STRICT_TABG :   t++ ;
-            // fall through
+            /* fall through */
             case MY_OPT_RESTRICT_TABG : t++ ;
-            // fall through
+            /* fall through */
             case MY_OPT_EXTEND_TABG
          :
             {  xfusetabg = mcxIOnew(opt->val, "r")
@@ -720,9 +720,9 @@ int main
          ;  }
 
             case MY_OPT_STRICT_TABC :   t++ ;
-            // fall through
+            /* fall through */
             case MY_OPT_RESTRICT_TABC : t++ ;
-            // fall through
+            /* fall through */
             case MY_OPT_EXTEND_TABC
          :
             {  xfusetabc = mcxIOnew(opt->val, "r")
@@ -734,9 +734,9 @@ int main
          ;  }
 
             case MY_OPT_STRICT_TABR :   t++ ;
-            // fall through
+            /* fall through */
             case MY_OPT_RESTRICT_TABR : t++ ;
-            // fall through
+            /* fall through */
             case MY_OPT_EXTEND_TABR
          :
             {  xfusetabr = mcxIOnew(opt->val, "r")

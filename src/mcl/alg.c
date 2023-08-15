@@ -1119,7 +1119,7 @@ mcxstatus mclAlgorithmInit
 
             case ALG_OPT_AMOIXA
          :  helpbits |= MCX_OPT_DISPLAY_HIDDEN  ;
-            // fall through
+            /* fall through */
             case ALG_OPT_SHOWLONGHELP
          :  helpbits |= MCX_OPT_DISPLAY_SKIP
 

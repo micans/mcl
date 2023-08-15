@@ -61,8 +61,13 @@ MCL's build environment was created by Joost van Baal - many thanks Joost!
 on many flavours of Linux and BSD, including Debian,
 Ubuntu and OpenBSD.  Release 14-137 is a fine version;** this MCL implementation has not noticeably
 changed over the past decade. See [Status and Plans](#status-and-plans) below for more detail and why
-the software is still being developed nonetheless. Again many thanks to Joost, Kusalananda and subsequent
-maintainers who packaged MCL for Linux and BSD releases.
+the software is still being developed nonetheless. Again many thanks to Joost, Kusalananda, Andreas Tille and other
+maintainers who package(d) MCL for Debian and other Linux and BSD releases.
+
+The current release is 22-282, which so far is without open issues. You'll need
+this release if you want to experiment with RCL (consensus clustering
+integrating results for different granularities / inflation values / resolution
+values).  The release also [fixes some mcxarray issues](ChangeLog).
 
 
 ## Applications and bioinformatics

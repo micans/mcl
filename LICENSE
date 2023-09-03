@@ -21,16 +21,12 @@
    published in regular or electronic journals, usage of MCL as a back-end to a
    database that is accessible via a web interface, or inclusion of MCL in a
    larger framework of software that is distributed for other people for
-   scientific use.  Include one of the following citations:
+   scientific use.  Include the following citation:
 
-      Stijn van Dongen, Graph Clustering by Flow Simulation.
-      PhD thesis, University of Utrecht, May 2000.
-      ( http://www.library.uu.nl/digiarchief/dip/diss/1895620/inhoud.htm )
 
-      Stijn van Dongen. A cluster algorithm for graphs.  Technical Report
-      INS-R0010, National Research Institute for Mathematics and Computer
-      Science in the Netherlands, Amsterdam, May 2000.
-      ( http://www.cwi.nl/ftp/CWIreports/INS/INS-R0010.ps.Z )
+      Stijn van Dongen, Graph clustering via a discrete uncoupling process,
+      Siam Journal on Matrix Analysis and Applications 30-1, p121-141, 2008.
+
 
    and proper attributions to mcl's home http://micans.org/mcl/
    and its author, Stijn van Dongen.
@@ -41,6 +37,7 @@
 
    For biological applications, it is appropriate to cite, additionally,
    the reference article for the first application of mcl to biological data:
+
 
       Enright A.J., Van Dongen S., Ouzounis C.A.
       An efficient algorithm for large-scale detection of protein families,

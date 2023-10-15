@@ -886,7 +886,7 @@ int main
    ;  symmetric = bits_stream_other & MCLXIO_STREAM_SYMMETRIC
    ;  mirror    = bits_stream_other & MCLXIO_STREAM_MIRROR
 
-   ;  if (mirror && (bits_stream_input & MCLXIO_STREAM_MULTICOLUMN))
+   ;  if (0 && mirror && (bits_stream_input & MCLXIO_STREAM_MULTICOLUMN))
       mcxDie(1, me, "symmetric mode not compatible with multi-column input formats")
 
    ;  if ((xfusetabc || xfusetabr || xfcachetabc || xfcachetabr) && symmetric)

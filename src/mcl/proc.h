@@ -43,6 +43,7 @@ typedef struct
 #define  MCPVB_LINES     1 << 5     /* line based dump                     */
 #define  MCPVB_CAT       1 << 6     /* all to same destination (dump_stem) */
 #define  MCPVB_TAB       1 << 8     /* use tab                             */
+#define  MCPVB_NOCVG     1 << 9     /* hijacked: ignore convergence (for testing purposes) */
 
 ;  mcxbits              dumping
 ;  int                  dump_modulo

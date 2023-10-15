@@ -597,6 +597,8 @@ mcxstatus mclProcessInit
             BIT_ON(mpp->dumping, MCPVB_CAT)
          ;  if (strstr(arg, "labels"))
             BIT_ON(mpp->dumping, MCPVB_TAB)
+         ;  if (strstr(arg, "nocvg"))
+            BIT_ON(mpp->dumping, MCPVB_NOCVG)
          ;  break
          ;
 

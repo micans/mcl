@@ -25,6 +25,7 @@
 *  Machine Control Language
 *  Midas Control Language
 *  Mission Critical Linux
+*  Mitral Cell Layer
 *  Maximum Chlorophyll Layer
 *  Mark-Compact-Lazy [Allocate]
 *  Mesh Connectivity Layer
@@ -58,6 +59,7 @@
 *  Mini Club Luzern (Mini Cooper)
 *  Model Car List
 *  Musical Chain Letters
+*  Motorcycle Live
 
  Dutch:
 

@@ -31,7 +31,7 @@ networks with millions of nodes and billions of edges within hours.
 
 ## Installation and MCL versions
 Installing MCL software requires a compilable source tree. The code in this
-repository requires processing by autotools to produce such a tree.
+repository requires processing by [autotools](https://en.wikipedia.org/wiki/GNU_Autotools) to produce such a tree.
 Hence, to use MCL software this repository is not the right source unless you are interested in development.
 This code additionally needs the C library in the github repository
 [micans/cimfomfa](http://github.com/micans/cimfomfa) (previously cimfomfa was included within the mcl distribution).
@@ -64,8 +64,8 @@ changed over the past decade. See [Status and Plans](#status-and-plans) below fo
 the software is still being developed nonetheless. Again many thanks to Joost, Kusalananda, Andreas Tille and other
 maintainers who package(d) MCL for Debian and other Linux and BSD releases.
 
-The current release is 22-282, which so far is without open issues. You'll need
-this release if you want to experiment with RCL (consensus clustering
+The current release is 22-282, which is without open issues that relate to mcl.
+You'll need this release if you want to experiment with RCL (consensus clustering
 integrating results for different granularities / inflation values / resolution
 values).  The release also [fixes some mcxarray issues](ChangeLog).
 
@@ -101,6 +101,9 @@ mcl MYFILE --abc -I 5.0
 How you construct the network is important.
 [Some recipes can be found here](https://micans.org/mcl/man/clmprotocols.html), and
 [some Frequently Answered Questions here](https://micans.org/mcl/man/mclfaq.html) (the latter is a bit over the top).
+For large data the 'abc' format just described becomes very slow to load.
+[Use these instructions on the recipe page](https://micans.org/mcl/man/clmprotocols.html#large)
+to convert 'abc' format to a binary format that is orders of magnitude faster to load.
 
 
 ## RCL, fast multi-resolution consensus clustering

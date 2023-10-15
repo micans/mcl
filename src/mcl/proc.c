@@ -234,7 +234,10 @@ mclMatrix*  mclProcess
             mpp->mainInflation *= 1.001
          ,  mcxLog(MCX_LOG_MODULE, me, "====== Inflation bumped to %.4f ======", mpp->mainInflation)
 
-      ;  if (abort_loop || convergence)
+             /* NOCVG is for testing purposes (force continued expansion/inflation)
+              * abort_loop is if a signal was sent.
+             */
+      ;  if (!MCPVB(mpp, MCPVB_NOCVG) && (abort_loop || convergence))
          break
    ;  }
 

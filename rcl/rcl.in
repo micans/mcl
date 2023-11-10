@@ -211,6 +211,9 @@ elif [[ $themode == 'setup' ]]; then
   ndim=$(grep -o "[0-9]\+$" <<< $(mcx query --dim -imx "$network"))
   ntab=$(wc -l < "$tabfile")
 
+  ntab=${ntab//[[:space:]]/}
+  ndim=${ndim//[[:space:]]/}
+
   if [[ $ntab != $ndim ]]; then
     echo "Dimension mismatch between network ($ndim) and tab file ($ntab)"
     false

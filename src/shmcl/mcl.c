@@ -93,7 +93,7 @@ if (mcxLogLevel & MCX_LOG_UNIVERSE) {
 fprintf(stderr, "\nPlease cite:\n");
 fprintf(stderr, "    Stijn van Dongen, Graph Clustering Via a Discrete Uncoupling Process,\n");
 fprintf(stderr, "    SIAM Journal on Matrix Analysis and Applications, 30(1):121-141, 2008.\n");
-fprintf(stderr, "    ( http://link.aip.org/link/?SJMAEL/30/121/1 )\n");
+fprintf(stderr, "    ( https://doi.org/10.1137/040608635 )\n");
 }
 #endif
    }

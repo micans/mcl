@@ -139,7 +139,7 @@ grade gradeDir[] =
 ,  {  94, "ripping" }
 ,  {  93, "smashing baby!" }
 ,  {  92, "scrumptious" }
-,  {  81, "cracking" }
+,  {  91, "cracking" }
 ,  {  90, "top-notch" }
 ,  {  89, "excellent" }
 ,  {  88, "splendid" }

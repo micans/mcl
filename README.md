@@ -33,7 +33,7 @@ networks with millions of nodes and billions of edges within hours.
 
 Releases 14-137 and 22-282 of MCL are **available
 on Bioconda and many flavours of Linux and BSD**, including **Debian**,
-**Ubuntu** and **OpenBSD**.  Release 14-137 is a fine version;** this MCL
+**Ubuntu** and **OpenBSD**.  Release 14-137 is a fine version; this MCL
 implementation has not noticeably changed over the past decade, so for using
 the clustering program `mcl` it does not matter which of these versions you have.
 See [Status and Plans](#status-and-plans) below for more detail and why

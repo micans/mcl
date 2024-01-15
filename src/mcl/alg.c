@@ -221,7 +221,7 @@ mcxOptAnchor mclAlgOptions[] =
    ,  MCX_OPT_HASARG
    ,  ALG_OPT_FORCE_CONNECTED
    ,  "y/n"
-   ,  "analyze clustering, make sure it induces cocos"
+   ,  "analyze clustering, make sure it induces connected components"
    }
 ,  {  "--write-limit"
    ,  MCX_OPT_DEFAULT
@@ -233,7 +233,7 @@ mcxOptAnchor mclAlgOptions[] =
    ,  MCX_OPT_HASARG
    ,  ALG_OPT_CHECK_CONNECTED
    ,  "y/n"
-   ,  "analyze clustering, see whether it induces cocos"
+   ,  "analyze clustering, see whether it induces connected components"
    }
 ,  {  "-analyze"
    ,  MCX_OPT_HASARG

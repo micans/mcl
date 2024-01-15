@@ -30,7 +30,25 @@ machine and can use multiple CPUs. On capable hardware it can cluster
 networks with millions of nodes and billions of edges within hours.
 
 ## Installation and MCL versions
-Installing MCL software requires a compilable source tree. The code in this
+
+Releases 14-137 and 22-282 of MCL are **available
+on Bioconda and many flavours of Linux and BSD**, including **Debian**,
+**Ubuntu** and **OpenBSD**.  Release 14-137 is a fine version;** this MCL
+implementation has not noticeably changed over the past decade, so for using
+the clustering program `mcl` it does not matter which of these versions you have.
+See [Status and Plans](#status-and-plans) below for more detail and why
+the software is still being developed nonetheless.
+Many thanks to Joost van baal, Kusalananda, Andreas Tille and other
+maintainers who package(d) MCL for Debian and other Linux and BSD releases.
+Example package installation commands:
+
+```
+conda install bioconda::mcl
+
+apt-get install mcl           # Debian, Ubuntu
+```
+
+Installing MCL software without a package manager requires a compilable source tree. The code in this
 repository requires processing by [autotools](https://en.wikipedia.org/wiki/GNU_Autotools) to produce such a tree.
 Hence, to use MCL software this repository is not the right source unless you are interested in development.
 This code additionally needs the C library in the github repository
@@ -56,13 +74,6 @@ consensus clustering program `rcl` is enabled (see below). Edit the file `instal
 before executing it if you want to make changes.
 
 MCL's build environment was created by Joost van Baal - many thanks Joost!
-
-**Release 14-137 of MCL (an earlier version of the software in this repository) is available
-on many flavours of Linux and BSD, including Debian,
-Ubuntu and OpenBSD.  Release 14-137 is a fine version;** this MCL implementation has not noticeably
-changed over the past decade. See [Status and Plans](#status-and-plans) below for more detail and why
-the software is still being developed nonetheless. Again many thanks to Joost, Kusalananda, Andreas Tille and other
-maintainers who package(d) MCL for Debian and other Linux and BSD releases.
 
 The current release is 22-282, which is without open issues that relate to mcl.
 You'll need this release if you want to experiment with RCL (consensus clustering

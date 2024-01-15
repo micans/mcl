@@ -73,7 +73,7 @@ By default programs are installed in `$HOME/local/bin` and the multi-resolution
 consensus clustering program `rcl` is enabled (see below). Edit the file `install-this-mcl.sh`
 before executing it if you want to make changes.
 
-MCL's build environment was created by Joost van Baal - many thanks Joost!
+MCL's build environment was created by [Debian developer Joost van Baal](http://mdcc.cx/~joostvb/) - many thanks Joost!
 
 The current release is 22-282, which is without open issues that relate to mcl.
 You'll need this release if you want to experiment with RCL (consensus clustering

@@ -94,9 +94,12 @@ Nucleic Acids Research 30(7):1575-1584 (2002).
 
 ## Quick pointers
 The quickest way to try out MCL is to provide it with a file that has three tab-separated columns,
-where each line is of the form `LABEL1<tab>LABEL2<tab>VALUE`. Such a line represents an edge
-from `LABEl1` to `LABEL2` with weight `VALUE`. If the file is called `MYFILE` you can run MCL
-like this:
+where each line is of the form `LABEL1<tab>LABEL2<tab>SIMILARITY-VALUE`. Such a line represents an edge
+from `LABEl1` to `LABEL2` with weight `SIMILARITY-VALUE`. **Values should quantify similarities between objects**.
+Examples are measures of overlap (e.g. Jaccard index), a correlation coefficient such as Pearson or Spearman,
+or a negative log E-value.  In network clustering / community detection edge weights should be higher if objects are more similar.
+In contrast, pair-wise relationships in classical feature-space clustering algorithms are nearly always a distance.
+Beware of this dichotomy.  If the file is called `MYFILE` you can run MCL like this:
 ```
 mcl MYFILE --abc -I 2.0
 ```
@@ -137,15 +140,19 @@ including application of RCL to a large-scale single-cell kidney data set of 27k
 
 ## Status and plans
 The program MCL has been very stable or nearly unchanging for well over 15
-years now. The last speed optimisations happened in 2010. I
-aim to do some development in its sibling programs, including improving those
+years now. The last speed optimisations happened in 2010.
+Note that the underlying *MCL algorithm* is very simple and consists of alternation
+of two *sparse* matrix operations; regular matrix multiplication and element-wise matrix
+power-raising plus scaling. Hence, there is little to optimise beyond the pruning/approximation
+scheme where some of the smallest elements are set to zero.
+I aim to do some development in its sibling programs, including improving those
 that implement (currently somewhat inelegant) mini-formats such as `mcx alter`
 and `mcxsubs`.
 
 RCL (see above) was recently added, so some focus will be to improve/extend its
 implementation, as well as support and documentation.
 
-A second are of development, tied to the first, will be
+A second area of development, tied to the first, will be
 low-level fast loading, filtering and subsetting of large networks and matrices.
 I have found occasional use for this in past projects, and under certain conditions
 an mcl-edge recipe, if possible, will be a few times faster than a recipe using

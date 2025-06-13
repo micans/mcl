@@ -1,5 +1,5 @@
 
-[Installation and MCL versions](#installation-and-mcl-versions)  
+[Installation, MCL versions and Linux packages](#installation-mcl-versions-and-linux-packages)  
 [Applications and bioinformatics](#applications-and-bioinformatics)  
 [Quick pointers](#quick-pointers)  
 [RCL, fast multi-resolution consensus clustering](#rcl-fast-multi-resolution-consensus-clustering)  
@@ -29,7 +29,7 @@ This MCL implementation is fast, threaded, and uses sparse matrices. It runs on 
 machine and can use multiple CPUs. On capable hardware it can cluster
 networks with millions of nodes and billions of edges within hours.
 
-## Installation and MCL versions
+## Installation, MCL versions and Linux packages
 
 Releases 14-137 and 22-282 of MCL are **available
 on Bioconda and many flavours of Linux and BSD**, including **Debian**,

@@ -474,6 +474,7 @@ struct slnode
 ;  dim      size        /* current count of all leaf nodes below this node */
 ;  dim      lss         /* current largest sub split below this node       */
 ;  dim      nsg         /* number of singletons joining a bigger cluster   */
+;  double   jv          /* join value                                      */
 ;
 }  ;
 
@@ -487,6 +488,7 @@ void* node_init(void* v)
 ;  node->size = 1
 ;  node->lss  = 0
 ;  node->nsg  = 0
+;  node->jv   = 1000.0     /* checkme */
 ;  return node
 ;
 }
@@ -692,7 +694,7 @@ static mcxstatus closeMain
 
       ;  fprintf
          (  xfout->fp
-         ,  "link\tval\tNID\tANN\tBOB\txcsz\tycsz\txycsz\tiss\tlss\tannid\tbobid\n"
+         ,  "link\tval\tNID\tANN\tBOB\txcsz\tycsz\txycsz\tiss\tlss\tannid\tbobid\tanndelta\tbobdelta\n"
          )
                         /* We only actually do stuff in this loop no more
                          * than N = N_COLS(mx) times
@@ -703,6 +705,8 @@ static mcxstatus closeMain
          ;  pval v = edges[e].val
          ;  pnum si = NODE[s].cid      /* source (cluster) index        */
          ;  pnum di = NODE[d].cid      /* destination (cluster) index   */
+         ;  pval sv = NODE[s].jv
+         ;  pval dv = NODE[d].jv
 
          ;  pnum ni = NODE[si].size >= NODE[di].size ? si : di          /* New Index (re-used)*/
          ;  pnum ui = ni == si ? di : si                                /* this one needs Updating */
@@ -737,7 +741,7 @@ static mcxstatus closeMain
             ;  NODE[ni].nsg = sgl_sub + ((sz1 == 1) ^ (sz2 == 1))    /* overwrites si or di */
 
             ;  fprintf
-               (  xfout->fp, "%d\t%.2f\t" "%s\t%s\t%s\t" "%d\t%d\t%d\t" "%lu\t%lu\t%lu\t%lu\n"
+               (  xfout->fp, "%d\t%.3f\t" "%s\t%s\t%s\t" "%d\t%d\t%d\t" "%lu\t%lu\t%lu\t%lu\t" "%.3f\t%.3f\n"
                ,  (int) n_linked, (double) v
                ,  upname->str, NODE[si].name->str, NODE[di].name->str
                ,  (int) sz1, (int) sz2, (int) sz_sum
@@ -746,9 +750,12 @@ static mcxstatus closeMain
                ,  (long unsigned) NODE[ni].lss
                ,  (long unsigned) s
                ,  (long unsigned) d
+               ,  (double) (sv - v)
+               ,  (double) (dv - v)
                )
 
             ;  NODE[ni].size = sz1 + sz2
+            ;  NODE[ni].jv   = v
             ;  mcxTingWrite(NODE[ni].name, upname->str)
             ;
                                           /* In this loop no next pointer is ever re-wired,

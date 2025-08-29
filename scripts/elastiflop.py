@@ -60,13 +60,13 @@
                then slightly over half-way it will decrement by delta (every 5 cycles).
 # 
 # Example invocations:
-# python3 elastiflop.py 31 215 2 50
+# python3 elastiflop.py 31 215 2.0 50 1.0
 #       achieves moving trampoline with inflation 2, higher N and k
 # 
-# python3 elastiflop.py 9 135 4 50
+# python3 elastiflop.py 9 135 4.0 50 1.0
 #       inflation 4, lower N and k
 # 
-# python3 elastiflop.py 5 35 8 50
+# python3 elastiflop.py 5 35 8.0 50 1.0
 #       inflation 8, lower N and k
 
 

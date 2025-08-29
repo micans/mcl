@@ -999,6 +999,7 @@ mcxstatus mclAlgorithmInit
    ;  float f, f_0  =  0.0, f_1 = 1.0
    ;  int i_1     =  1
    ;  int i_10    =  10
+   ;  int i_16    =  16
    ;  int i
    ;  long l
    ;  const char* dirout = NULL
@@ -1297,7 +1298,7 @@ mcxstatus mclAlgorithmInit
             case ALG_OPT_DIGITS
          :  l = atol(opt->val)
          ;  i = l
-         ;  if ((vok = chb(anch->tag,'i', &i, intGq, &i_1, intLq, &i_10)))
+         ;  if ((vok = chb(anch->tag,'i', &i, intGq, &i_1, intLq, &i_16)))
                mlp->expandDigits = i
             ,  mpp->printDigits = i
          ;  break

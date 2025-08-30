@@ -39,8 +39,12 @@
 #
 #       =  1/2n +  (x - ½ n x^2)       where (x - ½ n x^2) is << 1/2n  if x << 1/2n
 #
-#  Thus the smaller x is relative to 1/2n the closer x' will be to 1/2n. In practice we observe
-#  that expansion bounces small x up close to 1/2n, then inflation bounces them back to be small again.
+#       =  1/2n + x + O(x^2) 
+#
+#  Thus for very small x we get that x' is approxiately x away from 1/2n.
+#  Then for high inflation values x'' (the inflated value of the expansion value x') will be very small again,
+#  but crucially x' is about 1/2n and y' is about 1/4, so x'' is determined by n and the inflation value.
+#  whatever x'' ends up as, the next expansion value will be about x'' away again from 1/2n.
 #
 #  These counteracting forces settle into a stable orbit dependably and from various initial conditions.
 #  Inflation can be changed, then expansion/inflation converge to again cancel each other in a different stable orbit.
@@ -53,11 +57,11 @@
 #  Arguments to this program:
 #
 #     n       as above
-#     k       x will be initialised as 1/k
+#     k       x will be initialised as 1/k, unless k=0 in which case x is set to 0
 #     infl    initial inflation value
 #     lim     number of expansion/inflation cycles to compute
 #     delta   inflation will change every 5 cycles. It will initially increment upwards by delta,
-               then slightly over half-way it will decrement by delta (every 5 cycles).
+#              then slightly over half-way it will decrement by delta (every 5 cycles).
 # 
 # Example invocations:
 # python3 elastiflop.py 31 215 2.0 50 1.0
@@ -85,8 +89,8 @@ try:
 except IndexError:
     print("Provide <N> <kstart> <start-inflation> <lim> - proceeding with pre-sets")
 
-x = 1/kstart
-y = 0.5 - (N / (2*kstart))
+x = 1/kstart if kstart > 0 else 0.0
+y = 0.5 - (N * x / 2.0)
 ite = 0
 
 sum = x * N + y * 2
@@ -113,7 +117,7 @@ while ite < lim:
       kinv = 1/x2
       q = 1/(N-kinv/2)
       qratio = q / qprev if up else qprev / q
-   except ValueError:
+   except (ValueError, ZeroDivisionError):
       contraction, kinv, q, qratio = 0, 0, 0, 0
    print("Exp ite=%d x=%.16f y=%.16f sum=%f contraction=%f k'=%.10f kinv2Ndiff=%.4f ratio=%.10f" % (ite, x2, y2, sum2, contraction, kinv, q, qratio))
    # test = x2 - x2b                            # An old test. It checked out.

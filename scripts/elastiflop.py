@@ -3,10 +3,10 @@
 #
 #  Zhitia-wu found the following interesting class of states that have the remarkable
 #  property of converging to a stable flip-flop state for a large set of starting conditions, with the equally
-#  remarkable property of adapation that when changing inflation those states converge to a different stable orbit.
+#  remarkable property of adaptation that when changing inflation those states converge to a different stable orbit.
 #  Note that these states are not stable under perturbations of matrix entries.
 #
-#  Start with the following matrix, where x is initially quite a bit smaller than 1/2n:
+#  Start with the following matrix, where x is initially quite a bit smaller than 1/2n (or zero).
 #
 #        <---     n + 1 copies    -->                          
 #                                                              
@@ -44,7 +44,7 @@
 #  Thus for very small x we get that x' is approxiately x away from 1/2n.
 #  Then for high inflation values x'' (the inflated value of the expansion value x') will be very small again,
 #  but crucially x' is about 1/2n and y' is about 1/4, so x'' is determined by n and the inflation value.
-#  whatever x'' ends up as, the next expansion value will be about x'' away again from 1/2n.
+#  Whatever x'' ends up as, the next expansion value will be about x'' away again from 1/2n.
 #
 #  These counteracting forces settle into a stable orbit dependably and from various initial conditions.
 #  Inflation can be changed, then expansion/inflation converge to again cancel each other in a different stable orbit.
